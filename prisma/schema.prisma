@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  username       String   @unique
+  password       String
+  wikidotAccount String?
+  balance        Float    @default(10000)
+  createdAt      DateTime @default(now())
+  isAdmin        Boolean  @default(false)
+  
+  status         String   @default("active") // 新增此行用于封禁状态管理
+
+  images         Image[]
+  trades         Trade[]
+  gachas         Gacha[]
+}
+
+model TempReg {
+  id         Int      @id @default(autoincrement())
+  username   String   @unique
+  verifyCode String
+  password   String
+  wdid       String?
+  expiresAt  DateTime
+}
+
+model Image {
+  id          Int      @id @default(autoincrement())
+  url         String
+  title       String?
+  description String?
+  createdAt   DateTime @default(now())
+
+  uploaderId  Int
+  uploader    User     @relation(fields: [uploaderId], references: [id])
+}
+
+model Trade {
+  id        Int      @id @default(autoincrement())
+  data      Json
+  createdAt DateTime @default(now())
+
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Gacha {
+  id        Int      @id @default(autoincrement())
+  data      Json
+  createdAt DateTime @default(now())
+
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+ }
+
+  model Setting {
+  key   String @id
+  value String
+}
