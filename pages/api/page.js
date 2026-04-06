@@ -219,7 +219,7 @@ export default async function handler(req, res) {
                 fetch(ajaxUrl, {
                     method: 'POST',
                     headers: ajaxHeaders,
-                    body: `page_id=${pageId}&moduleName=pagerate/WhoRatedPageModule&wikidot_token7=123456`,
+                    body: `pageId=${pageId}&page_id=${pageId}&moduleName=pagerate/WhoRatedPageModule&wikidot_token7=123456`,
                     cache: 'no-store'
                 })
             ];
@@ -265,9 +265,25 @@ export default async function handler(req, res) {
                         $rate('.printuser').each((i, el) => {
                             const user = $rate(el).text().trim();
                             let vote = '+1';
-                            const parentHtml = $rate(el).parent().text() || '';
-                            if (parentHtml.includes('-')) vote = '-1';
-                            else if (parentHtml.includes('+')) vote = '+1';
+                            
+                            // 核心修复：精准捕获紧跟在当前用户节点之后的文本，不被其他用户干扰
+                            let textAfter = '';
+                            let curr = el.next;
+                            while (curr) {
+                                // 遇到换行或下一个用户时停止捕获
+                                if (curr.type === 'tag' && (curr.tagName === 'br' || (curr.attribs && curr.attribs.class && curr.attribs.class.includes('printuser')))) {
+                                    break;
+                                }
+                                if (curr.type === 'text') {
+                                    textAfter += curr.data;
+                                } else if (curr.type === 'tag') {
+                                    textAfter += $rate(curr).text();
+                                }
+                                curr = curr.next;
+                            }
+
+                            if (textAfter.includes('-')) vote = '-1';
+                            else if (textAfter.includes('+')) vote = '+1';
 
                             const imgTag = $rate(el).find('img').attr('src');
                             let avatar = '';
@@ -277,6 +293,11 @@ export default async function handler(req, res) {
                                 const accountStr = user.toLowerCase().replace(/_/g, '-').replace(/ /g, '-');
                                 avatar = `https://www.wikidot.com/avatar.php?account=${accountStr}`;
                             }
+                            
+                            if (avatar && avatar.includes('default')) {
+                                avatar = 'https://www.wikidot.com/avatar.php?account=default';
+                            }
+                            
                             ratingTable.push({ user, avatar, vote });
                         });
                         ratingTable = ratingTable.filter((v, i, a) => a.findIndex(t => (t.user === v.user)) === i);
@@ -410,6 +431,16 @@ export default async function handler(req, res) {
             historyHtml = $hist.html();
         }
 
+        let finalUpvotes = gqlData?.upvotes;
+        let finalDownvotes = gqlData?.downvotes;
+
+        if (ratingTable.length > 0) {
+            const upCount = ratingTable.filter(r => r.vote === '+1').length;
+            const downCount = ratingTable.filter(r => r.vote === '-1').length;
+            if (!finalUpvotes) finalUpvotes = upCount;
+            if (!finalDownvotes) finalDownvotes = downCount;
+        }
+
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
@@ -423,8 +454,8 @@ export default async function handler(req, res) {
             creatorName: creatorName,
             creatorAvatar: creatorAvatar,
             rating: rating,
-            upvotes: gqlData?.upvotes,
-            downvotes: gqlData?.downvotes,
+            upvotes: finalUpvotes,
+            downvotes: finalDownvotes,
             comments: gqlData?.comments,
             lastUpdated: lastUpdated,
             sourceCode: sourceCode,

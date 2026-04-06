@@ -2,7 +2,15 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import dynamic from 'next/dynamic';
+
 const config = require('../wikitdb.config.js');
+
+// 核心修复 1：使用 dynamic 动态加载图表，并彻底关闭 SSR（服务端渲染），防止 Canvas 在服务端报错崩溃
+const AuthorActivityChart = dynamic(() => import('../components/AuthorActivityChart'), { 
+    ssr: false,
+    loading: () => <div className="flex items-center justify-center h-full text-gray-500 text-sm">正在加载图表引擎...</div>
+});
 
 const AuthorProfile = () => {
     const router = useRouter();
@@ -107,7 +115,8 @@ const AuthorProfile = () => {
     if (!name && search) {
         const lowerSearch = search.toLowerCase();
         displayedRankingList = currentRankingList.filter(author => 
-            author.name.toLowerCase().includes(lowerSearch)
+            // 核心修复 2：增加 null 保护，防止有注销用户的名字为 null 导致 toLowerCase 崩溃
+            (author.name || '').toLowerCase().includes(lowerSearch)
         );
     }
 
@@ -216,6 +225,74 @@ const AuthorProfile = () => {
                             )}
                         </div>
 
+                        {data.activityData && data.activityData.length > 0 && (
+                            <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10">
+                                <h3 className="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">作者活力图</h3>
+                                <div className="h-[280px] w-full">
+                                    <AuthorActivityChart data={data.activityData} />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10 flex flex-col">
+                                <h3 className="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">最喜欢的作者</h3>
+                                {data.favoriteAuthors && data.favoriteAuthors.length > 0 ? (
+                                    <div className="space-y-3 flex-1">
+                                        {data.favoriteAuthors.map((author, idx) => {
+                                            const maxVotes = data.favoriteAuthors[0].count;
+                                            const percentage = Math.max(5, (author.count / maxVotes) * 100);
+                                            return (
+                                                <div key={idx} className="flex items-center gap-3">
+                                                    <Link href={`/authors?name=${encodeURIComponent(author.name)}`} className="w-1/3 text-sm font-medium text-indigo-400 hover:text-indigo-300 truncate">
+                                                        {author.name}
+                                                    </Link>
+                                                    <div className="flex-1 h-6 bg-gray-900 rounded overflow-hidden flex items-center relative">
+                                                        <div className="h-full bg-indigo-600/40 border-r border-indigo-500/50 rounded-r transition-all duration-500" style={{ width: `${percentage}%` }}></div>
+                                                        <span className="text-xs text-gray-200 absolute left-2 font-medium">{author.count} 票</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-gray-500 py-8 flex-1 flex items-center justify-center bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
+                                        暂无数据或数据未收录
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10 flex flex-col">
+                                <h3 className="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">最近的投票</h3>
+                                {data.recentVotes && data.recentVotes.length > 0 ? (
+                                    <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] pr-2">
+                                        {data.recentVotes.map((vote, idx) => {
+                                            const isUp = vote.vote === '+1' || vote.vote === '1';
+                                            return (
+                                                <div key={idx} className="flex items-center justify-between gap-3 text-sm bg-gray-900/40 p-2.5 rounded hover:bg-gray-800/80 transition-colors border border-gray-700/30">
+                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                        <span className={`font-bold px-2 py-0.5 rounded text-xs shrink-0 ${isUp ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+                                                            {isUp ? '+1' : '-1'}
+                                                        </span>
+                                                        <Link href={`/page?site=${vote.wiki}&page=${encodeURIComponent(vote.page)}`} className="text-indigo-400 hover:text-indigo-300 font-medium truncate">
+                                                            {vote.title || vote.page}
+                                                        </Link>
+                                                    </div>
+                                                    <Link href={`/authors?name=${encodeURIComponent(vote.author)}`} className="text-gray-500 hover:text-gray-300 shrink-0 truncate max-w-[100px] text-xs">
+                                                        {vote.author}
+                                                    </Link>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-gray-500 py-8 flex-1 flex items-center justify-center bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
+                                        暂无近期投票记录
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 border-b border-gray-700 pb-2">
                                 <h3 className="text-xl font-semibold text-white">
@@ -230,7 +307,7 @@ const AuthorProfile = () => {
                                     >
                                         <option value="all">全站总览</option>
                                         {Object.entries(siteCounts).map(([wikiId, count]) => {
-                                            const siteConfig = config.SUPPORT_WIKI.find(w => w.WIKIT_ID === wikiId || w.URL.includes(wikiId));
+                                            const siteConfig = config.SUPPORT_WIKI.find(w => w.WIKIT_ID === wikiId || (w.URL && w.URL.includes(wikiId)));
                                             const siteName = siteConfig ? siteConfig.NAME : wikiId;
                                             return (
                                                 <option key={wikiId} value={wikiId}>
@@ -245,9 +322,13 @@ const AuthorProfile = () => {
                             {displayedPages.length > 0 ? (
                                 <div className="space-y-4">
                                     {displayedPages.map((page, index) => {
-                                        const siteConfig = config.SUPPORT_WIKI.find(w => w.WIKIT_ID === page.wiki || w.URL.includes(page.wiki));
+                                        const siteConfig = config.SUPPORT_WIKI.find(w => w.WIKIT_ID === page.wiki || (w.URL && w.URL.includes(page.wiki)));
                                         const siteParam = siteConfig ? siteConfig.PARAM : page.wiki;
-                                        const dateStr = page.created_at ? new Date(page.created_at).toLocaleDateString('zh-CN') : '未知时间';
+                                        
+                                        // 核心修复 3：使用 timezone 绝对安全的字符串截取，彻底消灭 Hydration 报错
+                                        const dateStr = page.created_at && page.created_at.includes('T') 
+                                            ? page.created_at.split('T')[0] 
+                                            : (page.created_at || '未知时间');
 
                                         return (
                                             <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-gray-900/50 rounded-lg border border-gray-700/50 hover:border-gray-600 transition-colors">

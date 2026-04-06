@@ -1,4 +1,7 @@
 import * as cheerio from 'cheerio';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     const { name } = req.query;
@@ -19,7 +22,6 @@ export default async function handler(req, res) {
         let userid = null;
         let articlesData = [];
 
-        // 发起并发请求
         const [rankRes, gqlRes] = await Promise.allSettled([
             fetch(`https://wikit.unitreaty.org/wikidot/rank?user=${encodeURIComponent(queryName)}`, {
                 method: 'GET',
@@ -35,7 +37,6 @@ export default async function handler(req, res) {
             })
         ]);
 
-        // 解析排名
         if (rankRes.status === 'fulfilled' && rankRes.value.ok) {
             const rankHtml = await rankRes.value.text();
             const cleanHtml = rankHtml.replace(/<br\s*\/?>/gi, '\n');
@@ -68,31 +69,51 @@ export default async function handler(req, res) {
             }
         }
 
-        // 解析文章并提取作者 ID
         if (gqlRes.status === 'fulfilled' && gqlRes.value.ok) {
             const gqlJson = await gqlRes.value.json();
             if (!gqlJson.errors && gqlJson.data && gqlJson.data.articles) {
                 articlesData = gqlJson.data.articles.nodes || [];
-                // 如果有文章数据，直接从第一篇里抽出 userid
                 if (articlesData.length > 0 && articlesData[0].author_id) {
                     userid = articlesData[0].author_id;
                 }
             }
         }
 
-        // ==========================================
-        // 核心修复：用户查无此人校验
-        // 如果排名接口没数据，且名下一篇文章都没有，直接抛出 404 拦截
-        // ==========================================
-        if (!parsedFromRankApi && articlesData.length === 0) {
+        let voteRecords = [];
+        let favoriteAuthors = [];
+        
+        try {
+            const voteKey = `user_votes_${accountName}`;
+            const setting = await prisma.setting.findUnique({ where: { key: voteKey } });
+            
+            if (setting && setting.value) {
+                const allVotes = JSON.parse(setting.value);
+                voteRecords = allVotes;
+                
+                const authorCounts = {};
+                allVotes.forEach(v => {
+                    if (v.vote === '+1' && v.author && v.author !== '未知') {
+                        authorCounts[v.author] = (authorCounts[v.author] || 0) + 1;
+                    }
+                });
+                
+                favoriteAuthors = Object.entries(authorCounts)
+                    .map(([author, count]) => ({ author, count }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 5); 
+            }
+        } catch (e) {
+            console.error("提取投票记录失败:", e);
+        }
+
+        if (!parsedFromRankApi && articlesData.length === 0 && voteRecords.length === 0) {
             return res.status(404).json({ 
                 error: '未查找到该作者', 
-                details: '在数据库中未找到该用户的任何记录。请检查 Wikidot 用户名拼写是否正确。' 
+                details: '在数据库中未找到该用户的发文或投票记录。请检查用户名拼写是否正确。' 
             });
         }
 
-        // 兜底计算
-        if (!parsedFromRankApi) {
+        if (!parsedFromRankApi && articlesData.length > 0) {
             let calcGlobalRating = 0;
             const siteStatsMap = {};
             articlesData.forEach(article => {
@@ -112,7 +133,6 @@ export default async function handler(req, res) {
         let averageRating = 0;
         if (totalPages > 0) averageRating = (totalRating / totalPages).toFixed(1);
 
-        // 构造头像链接
         const avatarUrl = userid ? `http://www.wikidot.com/avatar.php?userid=${userid}&timestamp=${Date.now()}` : `https://www.wikidot.com/avatar.php?account=${accountName}`;
 
         const authorData = {
@@ -123,7 +143,9 @@ export default async function handler(req, res) {
             totalPages: totalPages,
             averageRating: averageRating,
             siteStats: siteStats,
-            pages: articlesData
+            pages: articlesData,
+            voteRecords: voteRecords.slice(0, 100),
+            favoriteAuthors: favoriteAuthors
         };
 
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

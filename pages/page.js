@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import TradingChart from '../components/TradingChart';
+// 评分线先注释掉，等待 Wikit 数据
+// import TradingChart from '../components/TradingChart';
 
 const config = require('../wikitdb.config.js');
 
@@ -371,6 +372,12 @@ const PageDetail = () => {
                                             <span className={`font-medium ${data.rating && data.rating.toString().includes('+') ? 'text-red-500' : data.rating && data.rating.toString().includes('-') ? 'text-green-500' : 'text-gray-300'}`}>
                                                 {data.rating}
                                             </span>
+                                            {/* 屏蔽全为0或者非数字的死数据，只在有真实票数时展示 */}
+                                            {data.upvotes != null && data.downvotes != null && !isNaN(data.upvotes) && !isNaN(data.downvotes) && (Number(data.upvotes) > 0 || Math.abs(Number(data.downvotes)) > 0) && (
+                                                <span className="text-gray-400 ml-1.5 text-sm font-normal">
+                                                    (+{Number(data.upvotes)}, -{Math.abs(Number(data.downvotes))})
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -578,8 +585,10 @@ const PageDetail = () => {
                                             开仓
                                         </button>
                                     </div>
-                                    <div className="w-full h-[320px] relative border border-gray-100 rounded overflow-hidden">
-                                        <TradingChart data={chartData} markers={markers} isCandle={false} />
+                                    <div className="w-full h-[320px] relative border border-gray-100 rounded overflow-hidden bg-gray-50 flex items-center justify-center">
+                                        {/* 评分线图表暂时隐藏，等待大盘数据接入 */}
+                                        {/* <TradingChart data={chartData} markers={markers} isCandle={false} /> */}
+                                        <span className="text-gray-400 text-sm">图表暂时隐藏，等待大盘数据接入...</span>
                                     </div>
                                 </div>
                             ) : (
@@ -591,7 +600,7 @@ const PageDetail = () => {
                             {data.ratingTable && data.ratingTable.length > 0 && (
                                 <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-700">
                                     <h3 className="text-lg font-medium text-white mb-6 flex items-center gap-2">
-                                        原站评分者参考
+                                        评分表
                                     </h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                         {data.ratingTable.map((rate, index) => (

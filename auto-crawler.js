@@ -22,13 +22,13 @@ let isRunning = false;
 
 async function runCrawler() {
     if (isRunning) {
-        console.log(`[${new Date().toLocaleString()}] ¾¯¸æ£ºÉÏÒ»ÂÖÅÀ³æÉĞÎ´½áÊø£¬Ìø¹ı±¾´Î´¥·¢¡£`);
+        console.log(`[${new Date().toLocaleString()}] è­¦å‘Šï¼šä¸Šä¸€è½®çˆ¬è™«å°šæœªç»“æŸï¼Œè·³è¿‡æœ¬æ¬¡è§¦å‘ã€‚`);
         return;
     }
     isRunning = true;
 
     try {
-        console.log(`\n[${new Date().toLocaleString()}] ¿ªÊ¼Ö´ĞĞÈ«Õ¾ÆÀ·Ö±íÅÀÈ¡...`);
+        console.log(`\n[${new Date().toLocaleString()}] å¼€å§‹æ‰§è¡Œå…¨ç«™è¯„åˆ†è¡¨çˆ¬å–...`);
         for (const siteConfig of config.SUPPORT_WIKI) {
             const wikiParam = siteConfig.PARAM;
             const actualWikiName = siteConfig.URL.replace(/^https?:\/\//i, '').split('.')[0];
@@ -41,7 +41,7 @@ async function runCrawler() {
 
             while (hasMore) {
                 try {
-                    process.stdout.write(`»ñÈ¡Çåµ¥ µÚ ${pageNum} Ò³... `);
+                    process.stdout.write(`è·å–æ¸…å• ç¬¬ ${pageNum} é¡µ... `);
                     const res = await request.get(`https://wikit.unitreaty.org/listpages?wiki=${actualWikiName}&p=${pageNum}`);
                     const lines = res.data.split('\n').map(l => l.trim()).filter(Boolean);
                     let countThisPage = 0;
@@ -54,7 +54,7 @@ async function runCrawler() {
                             if (parts.length >= 7) {
                                 const url = parts[0];
                                 const pageSlug = url.split('/').pop();
-                                let author = parts[6] || 'Î´Öª';
+                                let author = parts[6] || 'æœªçŸ¥';
                                 const match = author.match(/^(.*?)\s*\(\d+\)$/);
                                 if (match) author = match[1].trim();
 
@@ -63,7 +63,7 @@ async function runCrawler() {
                             }
                         }
                     });
-                    console.log(`³É¹¦ ${countThisPage} Æª`);
+                    console.log(`æˆåŠŸ ${countThisPage} ç¯‡`);
                     if (pageNum >= totalPages) hasMore = false;
                     else pageNum++;
                 } catch (e) {
@@ -124,7 +124,7 @@ async function runCrawler() {
                 }));
 
                 count += batch.length;
-                console.log(`--- µ±Ç°½ø¶È: [${count}/${allPages.length}] ---`);
+                console.log(`--- å½“å‰è¿›åº¦: [${count}/${allPages.length}] ---`);
 
                 if (count % 100 === 0 || count >= allPages.length) {
                     for (const [user, newVotes] of Object.entries(userVotesMap)) {
@@ -155,7 +155,7 @@ async function runCrawler() {
             }
         }
     } catch (e) {
-        console.error(`·¢ÉúÒì³£: ${e.message}`);
+        console.error(`å‘ç”Ÿå¼‚å¸¸: ${e.message}`);
     } finally {
         isRunning = false;
     }

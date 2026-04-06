@@ -20,7 +20,7 @@ async function runImageCrawler() {
     isRunning = true;
 
     try {
-        console.log(`\n[${new Date().toLocaleString()}] ¿ªÊ¼Ö´ĞĞÈ«Õ¾Í¼Æ¬»­ÀÈÅÀÈ¡...`);
+        console.log(`\n[${new Date().toLocaleString()}] å¼€å§‹æ‰§è¡Œå…¨ç«™å›¾ç‰‡ç”»å»Šçˆ¬å–...`);
         for (const siteConfig of config.SUPPORT_WIKI) {
             const wikiParam = siteConfig.PARAM;
             const actualWikiName = siteConfig.URL.replace(/^https?:\/\//i, '').split('.')[0];
