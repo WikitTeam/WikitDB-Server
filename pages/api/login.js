@@ -21,11 +21,11 @@ export default async function handler(req, res) {
             where: { username }
         });
         
-        if (!user) return res.status(400).json({ error: '用户不存在' });
+        if (!user) return res.status(400).json({ error: '用户名或密码错误' });
 
         const isMatch = await bcrypt.compare(password, user.password);
         
-        if (!isMatch) return res.status(400).json({ error: '密码错误' });
+        if (!isMatch) return res.status(400).json({ error: '用户名或密码错误' });
 
         const token = signToken({ username: user.username });
 

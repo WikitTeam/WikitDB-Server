@@ -1,10 +1,13 @@
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
-const SECRET = process.env.JWT_SECRET || 'WIKIT_DB_SECURE_KEY_882910';
-
 export function signToken(payload) {
-    return jwt.sign(payload, SECRET, { expiresIn: '7d' });
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        console.error('致命错误: 环境变量中未配置 JWT_SECRET');
+        throw new Error('服务器安全配置缺失');
+    }
+    return jwt.sign(payload, secret, { expiresIn: '7d' });
 }
 
 export function verifyToken(req) {
@@ -13,7 +16,9 @@ export function verifyToken(req) {
     if (!token) return null;
     
     try {
-        return jwt.verify(token, SECRET);
+        const secret = process.env.JWT_SECRET;
+        if (!secret) return null;
+        return jwt.verify(token, secret);
     } catch (e) {
         return null;
     }

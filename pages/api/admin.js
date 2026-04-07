@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { verifyToken } from '../../utils/auth';
 
 const prisma = new PrismaClient();
 const SUPER_ADMIN = 'Laimu_slime';
@@ -8,17 +9,20 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: '仅支持 POST 请求' });
     }
 
-    const { action, username, targetUser, amount } = req.body;
-
-    if (!username) {
-        return res.status(401).json({ error: '未登录' });
+    // 核心安全修复：从服务端验证 Token，获取真实操作者身份
+    const decoded = verifyToken(req);
+    if (!decoded || !decoded.username) {
+        return res.status(401).json({ error: '未登录或身份凭证无效' });
     }
+    const realOperator = decoded.username;
+
+    const { action, targetUser, amount } = req.body;
 
     // 验证操作者权限
-    let isAuthorized = username === SUPER_ADMIN;
+    let isAuthorized = realOperator === SUPER_ADMIN;
     if (!isAuthorized) {
         const caller = await prisma.user.findUnique({
-            where: { username: username }
+            where: { username: realOperator }
         });
         if (caller && caller.isAdmin) {
             isAuthorized = true;
@@ -26,19 +30,16 @@ export default async function handler(req, res) {
     }
 
     if (!isAuthorized) {
-        return res.status(403).json({ error: '权限不足，仅限管理员访问' });
+        return res.status(403).json({ error: '权限不足，发生非法调用记录' });
     }
 
     try {
         if (action === 'check') {
-            // 从数据库里查出所有被标记为管理员的用户
             const adminUsers = await prisma.user.findMany({
                 where: { isAdmin: true },
                 select: { username: true }
             });
             const adminSet = adminUsers.map(u => u.username);
-            
-            // 过滤掉可能重复的创始人账号，合并返回给前端
             const admins = [SUPER_ADMIN, ...adminSet.filter(a => a !== SUPER_ADMIN)];
             return res.status(200).json({ isAdmin: true, admins });
         }
@@ -69,7 +70,7 @@ export default async function handler(req, res) {
                 where: { username: targetUser }
             });
             
-            if (!user) return res.status(404).json({ error: '找不到该用户，请确认用户名是否正确' });
+            if (!user) return res.status(404).json({ error: '找不到该用户' });
 
             const currentBalance = user.balance !== null ? Number(user.balance) : 10000;
             const newBalance = currentBalance + Number(amount);
