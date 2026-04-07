@@ -11,11 +11,11 @@ model User {
   id             Int      @id @default(autoincrement())
   username       String   @unique
   password       String
+  email          String?  @unique
   wikidotAccount String?
   balance        Float    @default(10000)
   createdAt      DateTime @default(now())
   isAdmin        Boolean  @default(false)
-  
   status         String   @default("active") // 新增此行用于封禁状态管理
 
   images         Image[]
@@ -59,9 +59,17 @@ model Gacha {
 
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
- }
+}
 
-  model Setting {
+model Setting {
   key   String @id
   value String
+}
+
+// 邮箱验证码
+model VerificationCode {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  code      String
+  expiresAt DateTime
 }

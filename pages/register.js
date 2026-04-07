@@ -1,4 +1,3 @@
-// pages/register.js
 import React, { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -9,21 +8,69 @@ export default function Register() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     
+    // 新增：邮箱验证相关的状态
+    const [email, setEmail] = useState('');
+    const [code, setCode] = useState('');
+    const [countdown, setCountdown] = useState(0);
+    
     const [step, setStep] = useState(1);
     const [verifyCode, setVerifyCode] = useState('');
-    const [boundWdid, setBoundWdid] = useState(''); // 新增：保存查到的维基账号
+    const [boundWdid, setBoundWdid] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
     
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
+    // 获取邮箱验证码
+    const handleSendCode = async () => {
+        setError('');
+        setSuccess('');
+        
+        if (!email) return setError('请先输入邮箱地址');
+        if (!/^\S+@\S+\.\S+$/.test(email)) return setError('邮箱格式不正确');
+
+        setCountdown(60);
+        const timer = setInterval(() => {
+            setCountdown((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        try {
+            const res = await fetch('/api/send-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json();
+            
+            if (!res.ok) {
+                setError(data.error || '验证码发送失败');
+                setCountdown(0);
+                clearInterval(timer);
+            } else {
+                setSuccess('验证码已发送，请前往邮箱查收（有效时间10分钟）');
+                setTimeout(() => setSuccess(''), 5000);
+            }
+        } catch (err) {
+            setError('网络错误，请稍后再试');
+            setCountdown(0);
+            clearInterval(timer);
+        }
+    };
+
     // 第一步：向后端发送 start 动作
     const handleNextStep = async (e) => {
         e.preventDefault();
         setError('');
+        setSuccess('');
         
-        if (!username || !password) {
-            setError('请填写用户名和密码');
+        if (!username || !password || !email || !code) {
+            setError('请完整填写所有信息（含邮箱和验证码）');
             return;
         }
         if (password !== confirmPassword) {
@@ -35,7 +82,8 @@ export default function Register() {
             const res = await fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'start', username, password })
+                // 把 email 也传过去，让后端查一下邮箱有没有被占用
+                body: JSON.stringify({ action: 'start', username, password, email })
             });
             const data = await res.json();
 
@@ -50,10 +98,11 @@ export default function Register() {
         }
     };
 
-    // 第二步：向后端发送 check 动作，查到了就进入第三步让用户确认
+    // 第二步：向后端发送 check 动作
     const handleCheckVerification = async () => {
         setIsVerifying(true);
         setError('');
+        setSuccess('');
         
         try {
             const checkRes = await fetch('/api/register', {
@@ -66,7 +115,6 @@ export default function Register() {
             if (!checkRes.ok) {
                 setError(checkData.error || '验证失败，请重试');
             } else {
-                // 查到了！把拿到的维基账号存起来，进入第三步确认
                 setBoundWdid(checkData.wdid);
                 setStep(3);
             }
@@ -81,12 +129,14 @@ export default function Register() {
     const handleFinalSubmit = async () => {
         setIsVerifying(true);
         setError('');
+        setSuccess('');
 
         try {
             const submitRes = await fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'submit', username })
+                // 最终入库时，把邮箱和验证码带上，做最后校验
+                body: JSON.stringify({ action: 'submit', username, email, code })
             });
             const submitData = await submitRes.json();
 
@@ -162,11 +212,51 @@ export default function Register() {
                                 placeholder="再次输入密码"
                             />
                         </div>
+                        
+                        <div className="pt-2 border-t border-gray-700"></div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-1">电子邮箱</label>
+                            <input 
+                                type="email" 
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                                placeholder="请输入接收通知的邮箱"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-1">邮箱验证码</label>
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    value={code}
+                                    onChange={(e) => setCode(e.target.value)}
+                                    className="flex-1 bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                                    placeholder="6位验证码"
+                                    maxLength="6"
+                                />
+                                <button 
+                                    type="button" 
+                                    onClick={handleSendCode}
+                                    disabled={countdown > 0}
+                                    className={`px-4 py-3 rounded-lg font-bold text-sm transition-colors whitespace-nowrap ${
+                                        countdown > 0 
+                                            ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700' 
+                                            : 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-600/30'
+                                    }`}
+                                >
+                                    {countdown > 0 ? `${countdown}s 后重发` : '获取验证码'}
+                                </button>
+                            </div>
+                        </div>
+
                         <button 
                             type="submit"
-                            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-colors mt-2"
+                            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-colors mt-4"
                         >
-                            下一步：绑定验证
+                            下一步：绑定 Wikidot 身份
                         </button>
                     </form>
                 )}
@@ -213,10 +303,11 @@ export default function Register() {
                     <div className="space-y-6 relative z-10 text-center">
                         <div className="bg-green-900/20 border border-green-500/30 p-6 rounded-xl">
                             <div className="text-green-500 text-5xl mb-4">
+                                {/* 请确保您的环境引入了 FontAwesome，否则这个图标不会显示 */}
                                 <i className="fa-solid fa-user-check"></i>
                             </div>
                             <h3 className="text-xl font-bold text-white mb-2">识别成功</h3>
-                            <p className="text-gray-400 text-sm mb-6">我们在验证记录中找到了您的账户。</p>
+                            <p className="text-gray-400 text-sm mb-6">我们在验证记录中找到了您的账户，并且邮箱验证也已就绪。</p>
                             
                             <div className="bg-gray-900/80 p-4 rounded-lg border border-gray-700">
                                 <span className="text-sm text-gray-500 block mb-1">即将绑定的 Wikidot 身份</span>

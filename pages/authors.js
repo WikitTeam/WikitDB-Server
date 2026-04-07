@@ -6,7 +6,6 @@ import dynamic from 'next/dynamic';
 
 const config = require('../wikitdb.config.js');
 
-// 核心修复 1：使用 dynamic 动态加载图表，并彻底关闭 SSR（服务端渲染），防止 Canvas 在服务端报错崩溃
 const AuthorActivityChart = dynamic(() => import('../components/AuthorActivityChart'), { 
     ssr: false,
     loading: () => <div className="flex items-center justify-center h-full text-gray-500 text-sm">正在加载图表引擎...</div>
@@ -115,7 +114,6 @@ const AuthorProfile = () => {
     if (!name && search) {
         const lowerSearch = search.toLowerCase();
         displayedRankingList = currentRankingList.filter(author => 
-            // 核心修复 2：增加 null 保护，防止有注销用户的名字为 null 导致 toLowerCase 崩溃
             (author.name || '').toLowerCase().includes(lowerSearch)
         );
     }
@@ -225,11 +223,11 @@ const AuthorProfile = () => {
                             )}
                         </div>
 
-                        {data.activityData && data.activityData.length > 0 && (
+                        {data.pages && data.pages.length > 0 && (
                             <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10">
                                 <h3 className="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">作者活力图</h3>
                                 <div className="h-[280px] w-full">
-                                    <AuthorActivityChart data={data.activityData} />
+                                    <AuthorActivityChart pages={data.pages} />
                                 </div>
                             </div>
                         )}
@@ -264,9 +262,9 @@ const AuthorProfile = () => {
 
                             <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10 flex flex-col">
                                 <h3 className="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">最近的投票</h3>
-                                {data.recentVotes && data.recentVotes.length > 0 ? (
+                                {data.voteRecords && data.voteRecords.length > 0 ? (
                                     <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] pr-2">
-                                        {data.recentVotes.map((vote, idx) => {
+                                        {data.voteRecords.map((vote, idx) => {
                                             const isUp = vote.vote === '+1' || vote.vote === '1';
                                             return (
                                                 <div key={idx} className="flex items-center justify-between gap-3 text-sm bg-gray-900/40 p-2.5 rounded hover:bg-gray-800/80 transition-colors border border-gray-700/30">
@@ -325,7 +323,6 @@ const AuthorProfile = () => {
                                         const siteConfig = config.SUPPORT_WIKI.find(w => w.WIKIT_ID === page.wiki || (w.URL && w.URL.includes(page.wiki)));
                                         const siteParam = siteConfig ? siteConfig.PARAM : page.wiki;
                                         
-                                        // 核心修复 3：使用 timezone 绝对安全的字符串截取，彻底消灭 Hydration 报错
                                         const dateStr = page.created_at && page.created_at.includes('T') 
                                             ? page.created_at.split('T')[0] 
                                             : (page.created_at || '未知时间');

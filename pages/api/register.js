@@ -6,20 +6,20 @@ const prisma = new PrismaClient();
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).end();
 
-    const { action, username, password } = req.body;
+    const { action, username, password, email, code } = req.body;
 
     if (!username) return res.status(400).json({ error: '缺少显示名称' });
 
     if (action === 'start') {
         if (!password) return res.status(400).json({ error: '缺少密码' });
 
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\w\W]{8,}$/;
-        if (!passwordRegex.test(password)) {
-            return res.status(400).json({ error: '密码强度不足：至少需要8位，且必须包含大写字母、小写字母和数字' });
-        }
-
         const exists = await prisma.user.findUnique({ where: { username } });
         if (exists) return res.status(400).json({ error: '该名称已被占用' });
+
+        if (email) {
+            const emailExists = await prisma.user.findFirst({ where: { email } });
+            if (emailExists) return res.status(400).json({ error: '该邮箱已被注册' });
+        }
 
         const verifyCode = 'WIKIT-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
@@ -87,6 +87,21 @@ export default async function handler(req, res) {
     }
 
     if (action === 'submit') {
+        if (!email || !code) {
+            return res.status(400).json({ error: '邮箱和验证码不能为空' });
+        }
+
+        const record = await prisma.verificationCode.findUnique({ where: { email } });
+        if (!record) {
+            return res.status(400).json({ error: '未找到该邮箱的验证码记录' });
+        }
+        if (record.code !== code) {
+            return res.status(400).json({ error: '验证码错误' });
+        }
+        if (new Date() > record.expiresAt) {
+            return res.status(400).json({ error: '验证码已过期，请重新获取' });
+        }
+
         const tempRecord = await prisma.tempReg.findUnique({ where: { username } });
         
         if (!tempRecord || !tempRecord.wdid || tempRecord.expiresAt < new Date()) {
@@ -100,11 +115,15 @@ export default async function handler(req, res) {
                         username: username,
                         wikidotAccount: tempRecord.wdid,
                         password: tempRecord.password,
+                        email: email,
                         balance: 10000
                     }
                 }),
                 prisma.tempReg.delete({
                     where: { username }
+                }),
+                prisma.verificationCode.delete({
+                    where: { email }
                 })
             ]);
             return res.status(200).json({ message: '注册成功' });
