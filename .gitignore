@@ -6,3 +6,4 @@ package-lock.json
 .next
 .vscode
 .env
+migrate-data.mjs
