@@ -6,7 +6,11 @@ const https = require('https');
 const { PrismaClient } = require('@prisma/client');
 const config = require('./wikitdb.config.js');
 
-const prisma = new PrismaClient();
+// 加上连接池限制，防止爬虫把 Web 主站的通道挤占导致全站崩溃
+const crawlerDbUrl = process.env.DATABASE_URL + (process.env.DATABASE_URL.includes('?') ? '&' : '?') + 'connection_limit=3&pool_timeout=20';
+const prisma = new PrismaClient({
+    datasources: { db: { url: crawlerDbUrl } },
+});
 
 const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 10 });
 const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 10 });
@@ -28,7 +32,7 @@ async function runCrawler() {
     isRunning = true;
 
     try {
-        console.log(`\n[${new Date().toLocaleString()}] 开始执行全站评分表爬取...`);
+        console.log(`\n[${new Date().toLocaleString()}] 开始执行全站数据(评分+讨论区)爬取...`);
         for (const siteConfig of config.SUPPORT_WIKI) {
             const wikiParam = siteConfig.PARAM;
             const actualWikiName = siteConfig.URL.replace(/^https?:\/\//i, '').split('.')[0];
@@ -41,7 +45,7 @@ async function runCrawler() {
 
             while (hasMore) {
                 try {
-                    process.stdout.write(`获取清单 第 ${pageNum} 页... `);
+                    process.stdout.write(`获取 [${wikiParam}] 清单 第 ${pageNum} 页... `);
                     const res = await request.get(`https://wikit.unitreaty.org/listpages?wiki=${actualWikiName}&p=${pageNum}`);
                     const lines = res.data.split('\n').map(l => l.trim()).filter(Boolean);
                     let countThisPage = 0;
@@ -81,11 +85,65 @@ async function runCrawler() {
                 await Promise.all(batch.map(async (pageNode) => {
                     const secureUrl = `${baseUrl}/${pageNode.page}`;
                     let success = false, attempt = 0;
+                    
                     while (!success && attempt < 3) {
                         attempt++;
                         try {
-                            let pageId = null;
                             const { data: html } = await request.get(secureUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+                            
+                            // ============================================
+                            // 核心新增：嗅探 threadId 并自动抓取论坛讨论区
+                            // ============================================
+                            const threadMatch = html.match(/\/forum\/t-(\d+)/i);
+                            if (threadMatch) {
+                                const threadId = threadMatch[1];
+                                try {
+                                    const forumUrl = `${baseUrl}/forum/t-${threadId}`;
+                                    const { data: forumHtml } = await request.get(forumUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+                                    const $forum = cheerio.load(forumHtml);
+                                    const posts = [];
+                                    
+                                    function parseContainer(container, parentId = null) {
+                                        const currentPost = $forum(container).children('.post').first();
+                                        if (!currentPost.length) return;
+                                        
+                                        const postId = (currentPost.attr('id') || '').replace('post-', '');
+                                        const author = currentPost.find('.info .printuser').first().text().trim() || 
+                                                       currentPost.find('.author a').first().text().trim() || '未知';
+                                        const contentHtml = currentPost.find('.content').first().html() || '';
+                                        const odate = currentPost.find('.odate').first();
+                                        const timestamp = odate.attr('title') || odate.text().trim() || '';
+                                        
+                                        posts.push({ postId, parentId, author, timestamp, contentHtml });
+                                        $forum(container).children('.post-container').each((_, child) => parseContainer(child, postId));
+                                    }
+                                    
+                                    $forum('#thread-container > .post-container').each((_, c) => parseContainer(c, null));
+                                    
+                                    const postMap = {};
+                                    const rootPosts = [];
+                                    posts.forEach(p => { p.children = []; postMap[p.postId] = p; });
+                                    posts.forEach(p => { 
+                                        if (p.parentId && postMap[p.parentId]) postMap[p.parentId].children.push(p); 
+                                        else rootPosts.push(p); 
+                                    });
+                                    
+                                    const forumData = { threadId, url: forumUrl, total: posts.length, threads: rootPosts };
+                                    
+                                    // 彻底本地化：将整栋楼的评论写进本地数据库
+                                    const cacheKey = `forum_cache:${wikiParam}:${pageNode.page}`;
+                                    await prisma.setting.upsert({
+                                        where: { key: cacheKey },
+                                        update: { value: JSON.stringify(forumData) },
+                                        create: { key: cacheKey, value: JSON.stringify(forumData) }
+                                    });
+                                } catch (forumErr) {
+                                    // 静默处理，不影响后续投票抓取
+                                }
+                            }
+                            // ============================================
+
+                            let pageId = null;
                             const idMatch = html.match(/pageId\s*[:=]\s*['"]?(\d+)['"]?/i) || html.match(/page_id\s*[:=]\s*['"]?(\d+)['"]?/i);
                             if (idMatch) pageId = idMatch[1];
                             if (!pageId) { success = true; return; }
@@ -126,6 +184,7 @@ async function runCrawler() {
                 count += batch.length;
                 console.log(`--- 当前进度: [${count}/${allPages.length}] ---`);
 
+                // 定期落库防止内存溢出
                 if (count % 100 === 0 || count >= allPages.length) {
                     for (const [user, newVotes] of Object.entries(userVotesMap)) {
                         const key = `user_votes_${user.toLowerCase().replace(/_/g, '-').replace(/ /g, '-')}`;
@@ -151,7 +210,8 @@ async function runCrawler() {
                     }
                     userVotesMap = {}; 
                 }
-                await sleep(1500);
+                // 拟人化休眠，防死原站
+                await sleep(2500);
             }
         }
     } catch (e) {
