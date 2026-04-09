@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 // 评分线先注释掉，等待 Wikit 数据
 // import TradingChart from '../components/TradingChart';
+import WikidotDiscussion from '../components/WikidotDiscussion';
 
 const config = require('../wikitdb.config.js');
 
@@ -14,6 +15,7 @@ const PageDetail = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    // 默认打开的标签页依然可以保持为 '评分' 或 '信息'
     const [activeTab, setActiveTab] = useState('评分');
 
     const [hpage, setHpage] = useState(1);
@@ -27,9 +29,10 @@ const PageDetail = () => {
     const [lockType, setLockType] = useState('T1 (24h)');
     const [leverage, setLeverage] = useState('2x');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [userBalance, setUserBalance] = useState(null); // 存储用户余额
+    const [userBalance, setUserBalance] = useState(null);
 
-    const tabs = ['源码', '信息', '历史', '评分'];
+    // 【修改点 1】：在导航栏数组里加上 '讨论'
+    const tabs = ['源码', '信息', '历史', '评分', '讨论'];
 
     const fetchPageData = async (signal) => {
         if (!site || !page) return;
@@ -98,7 +101,6 @@ const PageDetail = () => {
             return;
         }
 
-        // 打开弹窗时查询余额
         try {
             const res = await fetch(`/api/user?username=${encodeURIComponent(username)}`);
             if (res.ok) {
@@ -128,7 +130,6 @@ const PageDetail = () => {
             return;
         }
 
-        // 前端拦截余额不足
         const totalCost = marginNum * 1.01;
         if (userBalance !== null && totalCost > userBalance) {
             alert(`余额不足！开仓需要 ${totalCost.toFixed(2)}，当前可用 ${userBalance.toFixed(2)}`);
@@ -372,7 +373,6 @@ const PageDetail = () => {
                                             <span className={`font-medium ${data.rating && data.rating.toString().includes('+') ? 'text-red-500' : data.rating && data.rating.toString().includes('-') ? 'text-green-500' : 'text-gray-300'}`}>
                                                 {data.rating}
                                             </span>
-                                            {/* 屏蔽全为0或者非数字的死数据，只在有真实票数时展示 */}
                                             {data.upvotes != null && data.downvotes != null && !isNaN(data.upvotes) && !isNaN(data.downvotes) && (Number(data.upvotes) > 0 || Math.abs(Number(data.downvotes)) > 0) && (
                                                 <span className="text-gray-400 ml-1.5 text-sm font-normal">
                                                     (+{Number(data.upvotes)}, -{Math.abs(Number(data.downvotes))})
@@ -586,8 +586,6 @@ const PageDetail = () => {
                                         </button>
                                     </div>
                                     <div className="w-full h-[320px] relative border border-gray-100 rounded overflow-hidden bg-gray-50 flex items-center justify-center">
-                                        {/* 评分线图表暂时隐藏，等待大盘数据接入 */}
-                                        {/* <TradingChart data={chartData} markers={markers} isCandle={false} /> */}
                                         <span className="text-gray-400 text-sm">图表暂时隐藏，等待大盘数据接入...</span>
                                     </div>
                                 </div>
@@ -624,6 +622,13 @@ const PageDetail = () => {
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* 【修改点 2】：把讨论区组件移动到条件渲染框内部，并向上拉回一点外边距消除断层感 */}
+                    {activeTab === '讨论' && (
+                        <div className="-mt-6">
+                            <WikidotDiscussion wiki={site} pageId={page} />
                         </div>
                     )}
                 </div>
