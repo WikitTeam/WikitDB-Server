@@ -6,7 +6,6 @@ const https = require('https');
 const { PrismaClient } = require('@prisma/client');
 const config = require('./wikitdb.config.js');
 
-// 加上连接池限制，防止爬虫把 Web 主站的通道挤占导致全站崩溃
 const crawlerDbUrl = process.env.DATABASE_URL + (process.env.DATABASE_URL.includes('?') ? '&' : '?') + 'connection_limit=3&pool_timeout=20';
 const prisma = new PrismaClient({
     datasources: { db: { url: crawlerDbUrl } },
@@ -22,6 +21,41 @@ const request = axios.create({
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+let botCookieCache = null;
+
+async function getBotCookie() {
+    if (botCookieCache) return botCookieCache;
+    const user = process.env.WIKIDOT_BOT_USER;
+    const pass = process.env.WIKIDOT_BOT_PASS;
+    if (!user || !pass) {
+        console.log("未配置机器人账号，将以访客身份进行抓取...");
+        return null;
+    }
+
+    try {
+        const payload = new URLSearchParams({ login: user, password: pass, action: 'Login2Action', event: 'login' });
+        const res = await axios.post('https://www.wikidot.com/default--flow/login__LoginPopupScreen', payload.toString(), {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'WikitDB-Bot/1.0' },
+            maxRedirects: 0,
+            validateStatus: status => status >= 200 && status < 400
+        });
+        let sessionId = '';
+        const cookies = res.headers['set-cookie'] || [];
+        for (const c of cookies) {
+            if (c.includes('WIKIDOT_SESSION_ID=')) {
+                sessionId = c.split('WIKIDOT_SESSION_ID=')[1].split(';')[0];
+            }
+        }
+        if (sessionId) {
+            botCookieCache = `WIKIDOT_SESSION_ID=${sessionId}; wikidot_token7=123456;`;
+            console.log("机器人账号登录成功，已获取受限站点抓取权限。");
+        }
+    } catch (e) {
+        console.error('获取 Bot Cookie 失败:', e.message);
+    }
+    return botCookieCache;
+}
+
 let isRunning = false;
 
 async function runCrawler() {
@@ -32,6 +66,10 @@ async function runCrawler() {
     isRunning = true;
 
     try {
+        const botCookie = await getBotCookie();
+        const baseHeaders = { 'User-Agent': 'Mozilla/5.0' };
+        if (botCookie) baseHeaders['Cookie'] = botCookie;
+
         console.log(`\n[${new Date().toLocaleString()}] 开始执行全站数据(评分+讨论区)爬取...`);
         for (const siteConfig of config.SUPPORT_WIKI) {
             const wikiParam = siteConfig.PARAM;
@@ -89,36 +127,105 @@ async function runCrawler() {
                     while (!success && attempt < 3) {
                         attempt++;
                         try {
-                            const { data: html } = await request.get(secureUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+                            const { data: html } = await request.get(secureUrl, { headers: baseHeaders });
                             
-                            // ============================================
-                            // 核心新增：嗅探 threadId 并自动抓取论坛讨论区
-                            // ============================================
-                            const threadMatch = html.match(/\/forum\/t-(\d+)/i);
-                            if (threadMatch) {
-                                const threadId = threadMatch[1];
+                            const $page = cheerio.load(html);
+                            let threadId = null;
+                            
+                            let href = $page('#discuss-button').attr('href');
+                            if (!href) href = $page('#page-info a').filter((_, el) => ($page(el).attr('href')||'').includes('/forum/t-')).attr('href');
+                            if (!href) href = $page('#page-content').parent().find('a').filter((_, el) => {
+                                const text = $page(el).text().toLowerCase();
+                                return (text.includes('discuss') || text.includes('讨论') || text.includes('评论')) && ($page(el).attr('href')||'').includes('/forum/t-');
+                            }).attr('href');
+
+                            if (href) {
+                                const match = href.match(/\/forum\/t-(\d+)/);
+                                if (match) threadId = match[1];
+                            }
+
+                            const cacheKey = `forum_v7:${wikiParam}:${pageNode.page}`;
+
+                            if (threadId) {
                                 try {
                                     const forumUrl = `${baseUrl}/forum/t-${threadId}`;
-                                    const { data: forumHtml } = await request.get(forumUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+                                    const { data: forumHtml } = await request.get(forumUrl, { headers: baseHeaders });
                                     const $forum = cheerio.load(forumHtml);
                                     const posts = [];
+                                    const userIdCache = {};
                                     
-                                    function parseContainer(container, parentId = null) {
-                                        const currentPost = $forum(container).children('.post').first();
-                                        if (!currentPost.length) return;
+                                    const postElements = $forum('.post').toArray();
+                                    for (const el of postElements) {
+                                        const $el = $forum(el);
+                                        const postId = ($el.attr('id') || '').replace('post-', '');
+                                        if (!postId) continue;
+
+                                        let parentId = null;
+                                        const $parentContainer = $el.parent('.post-container').parent('.post-container');
+                                        if ($parentContainer.length) {
+                                            const $parentPost = $parentContainer.children('.post').first();
+                                            parentId = ($parentPost.attr('id') || '').replace('post-', '');
+                                        }
+
+                                        let author = '未知用户';
+                                        const $printUser = $el.find('.head .printuser').length ? $el.find('.head .printuser').first() : $el.find('.info .printuser').first();
                                         
-                                        const postId = (currentPost.attr('id') || '').replace('post-', '');
-                                        const author = currentPost.find('.info .printuser').first().text().trim() || 
-                                                       currentPost.find('.author a').first().text().trim() || '未知';
-                                        const contentHtml = currentPost.find('.content').first().html() || '';
-                                        const odate = currentPost.find('.odate').first();
-                                        const timestamp = odate.attr('title') || odate.text().trim() || '';
+                                        if ($printUser.length) {
+                                            const $links = $printUser.find('a');
+                                            if ($links.length) author = $links.last().text().trim();
+                                            else author = $printUser.text().trim();
+                                        } else {
+                                            author = $el.find('.head .author, .info .author').first().text().trim() || '未知用户';
+                                        }
+                                        author = author.replace(/[\r\n\t]+/g, '').trim();
+
+                                        let userid = null;
+                                        const headHtml = $el.find('.head').html() || $el.find('.info').html() || $el.html() || '';
+                                        const srcMatch = headHtml.match(/avatar\.php\?userid=(\d+)/i);
+                                        const clickMatch = headHtml.match(/userInfo\(\s*(\d+)\s*\)/i);
+                                        const karmaMatch = headHtml.match(/userkarma\.php\?u=(\d+)/i);
+
+                                        if (srcMatch) userid = srcMatch[1];
+                                        else if (clickMatch) userid = clickMatch[1];
+                                        else if (karmaMatch) userid = karmaMatch[1];
+
+                                        if (!userid && author !== '未知用户') {
+                                            if (userIdCache[author]) {
+                                                userid = userIdCache[author];
+                                            } else {
+                                                try {
+                                                    const lookupRes = await axios.get(`https://www.wikidot.com/quickmodule.php?module=UserLookupQModule&q=${encodeURIComponent(author)}`, { timeout: 5000 });
+                                                    if (lookupRes.data && lookupRes.data.users && lookupRes.data.users.length > 0) {
+                                                        userid = lookupRes.data.users[0].user_id;
+                                                        userIdCache[author] = userid;
+                                                    }
+                                                } catch (lookupErr) {
+                                                    // 忽略查询报错
+                                                }
+                                            }
+                                        }
+
+                                        let avatarUrl = '';
+                                        if (userid) {
+                                            const currentTs = Math.floor(Date.now() / 1000);
+                                            avatarUrl = `https://www.wikidot.com/avatar.php?userid=${userid}&timestamp=${currentTs}`;
+                                        } else {
+                                            avatarUrl = `https://www.wikidot.com/avatar.php?account=default`;
+                                        }
+
+                                        const contentHtml = $el.find('.content').html() || '';
+                                        const odate = $el.find('.odate').first();
+                                        const odateClass = odate.attr('class') || '';
+                                        const timeMatch = odateClass.match(/time_(\d+)/);
                                         
-                                        posts.push({ postId, parentId, author, timestamp, contentHtml });
-                                        $forum(container).children('.post-container').each((_, child) => parseContainer(child, postId));
+                                        let timestamp = odate.text().trim();
+                                        if (timeMatch) {
+                                            const dateObj = new Date(parseInt(timeMatch[1]) * 1000);
+                                            timestamp = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
+                                        } else if (odate.attr('title')) timestamp = odate.attr('title');
+
+                                        posts.push({ postId, parentId, author, avatarUrl, timestamp, contentHtml, children: [] });
                                     }
-                                    
-                                    $forum('#thread-container > .post-container').each((_, c) => parseContainer(c, null));
                                     
                                     const postMap = {};
                                     const rootPosts = [];
@@ -130,18 +237,23 @@ async function runCrawler() {
                                     
                                     const forumData = { threadId, url: forumUrl, total: posts.length, threads: rootPosts };
                                     
-                                    // 彻底本地化：将整栋楼的评论写进本地数据库
-                                    const cacheKey = `forum_cache:${wikiParam}:${pageNode.page}`;
                                     await prisma.setting.upsert({
                                         where: { key: cacheKey },
                                         update: { value: JSON.stringify(forumData) },
                                         create: { key: cacheKey, value: JSON.stringify(forumData) }
                                     });
+                                    console.log(`[成功] 讨论区入库: ${pageNode.page} (${posts.length}条)`);
                                 } catch (forumErr) {
-                                    // 静默处理，不影响后续投票抓取
+                                    console.error(`[失败] ${pageNode.page} 讨论区抓取报错: ${forumErr.message}`);
                                 }
+                            } else {
+                                const emptyData = { threadId: null, url: '', total: 0, threads: [] };
+                                await prisma.setting.upsert({
+                                    where: { key: cacheKey },
+                                    update: { value: JSON.stringify(emptyData) },
+                                    create: { key: cacheKey, value: JSON.stringify(emptyData) }
+                                });
                             }
-                            // ============================================
 
                             let pageId = null;
                             const idMatch = html.match(/pageId\s*[:=]\s*['"]?(\d+)['"]?/i) || html.match(/page_id\s*[:=]\s*['"]?(\d+)['"]?/i);
@@ -150,12 +262,14 @@ async function runCrawler() {
 
                             const origin = new URL(secureUrl).origin;
                             const ajaxUrl = `${origin}/ajax-module-connector.php`;
+                            
+                            const ajaxHeaders = {
+                                'User-Agent': 'Mozilla/5.0',
+                                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                'Cookie': botCookie ? botCookie : 'wikidot_token7=123456;'
+                            };
                             const { data: rateData } = await request.post(ajaxUrl, `pageId=${pageId}&page_id=${pageId}&moduleName=pagerate/WhoRatedPageModule&wikidot_token7=123456`, {
-                                headers: {
-                                    'User-Agent': 'Mozilla/5.0',
-                                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                    'Cookie': 'wikidot_token7=123456;'
-                                }
+                                headers: ajaxHeaders
                             });
 
                             if (rateData.status === 'ok' && rateData.body) {
@@ -184,7 +298,6 @@ async function runCrawler() {
                 count += batch.length;
                 console.log(`--- 当前进度: [${count}/${allPages.length}] ---`);
 
-                // 定期落库防止内存溢出
                 if (count % 100 === 0 || count >= allPages.length) {
                     for (const [user, newVotes] of Object.entries(userVotesMap)) {
                         const key = `user_votes_${user.toLowerCase().replace(/_/g, '-').replace(/ /g, '-')}`;
@@ -210,7 +323,6 @@ async function runCrawler() {
                     }
                     userVotesMap = {}; 
                 }
-                // 拟人化休眠，防死原站
                 await sleep(2500);
             }
         }

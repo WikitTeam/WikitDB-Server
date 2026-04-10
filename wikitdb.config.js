@@ -53,5 +53,12 @@ module.exports = {
             WIKIT_ID: "rule-wiki",
             AUTHOR_TAG: "作者"
         },
+        {
+            NAME: "纸上书",
+            URL: "https://write-on-paper.wikidot.com/",
+            ImgURL: "https://woptheme.pages.dev/images/penlogoround_l_command.png",
+            PARAM: "wop",
+            WIKIT_ID: "write-on-paper"
+        },
     ]
 };
