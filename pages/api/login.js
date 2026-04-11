@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     const { username, password } = req.body;
 
     if (!username || !password) {
-        return res.status(400).json({ error: '信息没填全' });
+        return res.status(400).json({ error: '用户名或密码不能为空' });
     }
 
     try {
@@ -45,4 +45,5 @@ export default async function handler(req, res) {
     } catch (error) {
         res.status(500).json({ error: '数据库连接异常' });
     }
+}
 }

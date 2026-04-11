@@ -8,17 +8,17 @@ export default async function handler(req, res) {
 
     const { action, username, password, email, code } = req.body;
 
-    if (!username) return res.status(400).json({ error: '缺少显示名称' });
+    if (!username) return res.status(400).json({ error: '用户显示名称不能为空' });
 
     if (action === 'start') {
-        if (!password) return res.status(400).json({ error: '缺少密码' });
+        if (!password) return res.status(400).json({ error: '密码不能为空' });
 
         const exists = await prisma.user.findUnique({ where: { username } });
-        if (exists) return res.status(400).json({ error: '该名称已被占用' });
+        if (exists) return res.status(400).json({ error: '该用户名已被注册' });
 
         if (email) {
             const emailExists = await prisma.user.findFirst({ where: { email } });
-            if (emailExists) return res.status(400).json({ error: '该邮箱已被注册' });
+            if (emailExists) return res.status(400).json({ error: '该电子邮箱已被绑定' });
         }
 
         const verifyCode = 'WIKIT-' + Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
             
             return res.status(200).json({ verifyUrl: verifyCode }); 
         } catch (err) {
-            return res.status(500).json({ error: '验证码生成失败' });
+            return res.status(500).json({ error: '身份验证令牌生成失败' });
         }
     }
 
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
         const tempRecord = await prisma.tempReg.findUnique({ where: { username } });
         
         if (!tempRecord || tempRecord.expiresAt < new Date()) {
-            return res.status(400).json({ error: '验证会话已过期 (超过24小时) 或不存在' });
+            return res.status(400).json({ error: '验证会话已过期或不存在，请重新发起' });
         }
 
         try {
@@ -77,26 +77,26 @@ export default async function handler(req, res) {
                 });
                 return res.status(200).json({ wdid });
             } else {
-                return res.status(400).json({ error: '未查到匹配的验证记录，请确保已保存并在摘要中填写了验证码' });
+                return res.status(400).json({ error: '未检测到匹配的验证记录，请确认已在页面摘要中填写验证码并保存' });
             }
             
         } catch (err) {
             console.error(err);
-            return res.status(500).json({ error: '查询绑定状态失败，解析接口数据出错' });
+            return res.status(500).json({ error: '外部验证接口同步失败' });
         }
     }
 
     if (action === 'submit') {
         if (!email || !code) {
-            return res.status(400).json({ error: '邮箱和验证码不能为空' });
+            return res.status(400).json({ error: '电子邮箱与验证码不能为空' });
         }
 
         const record = await prisma.verificationCode.findUnique({ where: { email } });
         if (!record) {
-            return res.status(400).json({ error: '未找到该邮箱的验证码记录' });
+            return res.status(400).json({ error: '验证码记录不存在' });
         }
         if (record.code !== code) {
-            return res.status(400).json({ error: '验证码错误' });
+            return res.status(400).json({ error: '验证码无效' });
         }
         if (new Date() > record.expiresAt) {
             return res.status(400).json({ error: '验证码已过期，请重新获取' });
@@ -105,7 +105,7 @@ export default async function handler(req, res) {
         const tempRecord = await prisma.tempReg.findUnique({ where: { username } });
         
         if (!tempRecord || !tempRecord.wdid || tempRecord.expiresAt < new Date()) {
-            return res.status(400).json({ error: '数据已过期或未完成验证' });
+            return res.status(400).json({ error: '注册会话已失效' });
         }
 
         try {
@@ -126,11 +126,11 @@ export default async function handler(req, res) {
                     where: { email }
                 })
             ]);
-            return res.status(200).json({ message: '注册成功' });
+            return res.status(200).json({ message: '账号注册成功' });
         } catch (e) {
-            return res.status(500).json({ error: '入库失败' });
+            return res.status(500).json({ error: '用户数据入库失败' });
         }
     }
 
-    return res.status(400).json({ error: '未知操作' });
+    return res.status(400).json({ error: '无效的操作请求' });
 }

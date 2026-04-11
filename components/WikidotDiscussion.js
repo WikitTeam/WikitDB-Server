@@ -69,21 +69,12 @@ const WikidotDiscussion = ({ wiki, pageId }) => {
         setSubmitMsg('');
 
         try {
-            // 【核心修复】：回归项目原有的 username 验证体系
-            const username = localStorage.getItem('username');
-            if (!username) {
-                setSubmitMsg('未检测到本地登录凭证，请先登录');
-                setIsSubmitting(false);
-                return;
-            }
-
             const res = await fetch('/api/anon-reply', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    username: username, // 把 username 塞进请求体里发给后端
                     wiki: wiki,
                     threadId: data.threadId,
                     content: anonContent
@@ -92,13 +83,13 @@ const WikidotDiscussion = ({ wiki, pageId }) => {
 
             const resData = await res.json();
             if (res.ok) {
-                setSubmitMsg('匿名发送成功！内容可能需要等待爬虫下次刷新才能在本地看到。');
+                setSubmitMsg('评论投递成功。内容同步至本地库可能需要一定时间。');
                 setAnonContent('');
             } else {
-                setSubmitMsg(resData.error || '发送失败');
+                setSubmitMsg(resData.error || '投递失败');
             }
         } catch (err) {
-            setSubmitMsg('网络请求异常，请检查连接');
+            setSubmitMsg('网络连接异常');
         } finally {
             setIsSubmitting(false);
         }

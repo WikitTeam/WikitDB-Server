@@ -1,11 +1,23 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../lib/prisma';
 import * as cheerio from 'cheerio';
 import axios from 'axios';
 
 const config = require('../../wikitdb.config.js');
-const prisma = new PrismaClient();
 
 let botCookieCache = null;
+
+// 简单的 HTML 清洗函数，剔除恶意脚本和内联事件
+function sanitizeHtml(html) {
+    if (!html) return '';
+    // 移除 script 标签及其内容
+    let sanitized = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    // 移除 onXXX 事件处理器
+    sanitized = sanitized.replace(/\son\w+="[^"]*"/gi, '');
+    sanitized = sanitized.replace(/\son\w+='[^']*'/gi, '');
+    // 移除 javascript: 伪协议
+    sanitized = sanitized.replace(/href="javascript:[^"]*"/gi, 'href="#"');
+    return sanitized;
+}
 
 async function getBotCookie() {
     if (botCookieCache) return botCookieCache;
@@ -35,14 +47,13 @@ async function getBotCookie() {
 }
 
 export default async function handler(req, res) {
-    if (req.method !== 'GET') return res.status(405).json({ error: '仅支持 GET 请求' });
+    if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
     const { wiki, pageId } = req.query;
-    if (!wiki || !pageId) return res.status(400).json({ error: '缺少站点或页面参数' });
+    if (!wiki || !pageId) return res.status(400).json({ error: 'Missing parameters' });
 
     try {
-        // V7：加入官方查询 API，彻底洗掉之前的死图
-        const cacheKey = `forum_v7:${wiki}:${pageId}`;
+        const cacheKey = `forum_v8:${wiki}:${pageId}`;
         
         const record = await prisma.setting.findUnique({ where: { key: cacheKey } });
         if (record && record.value) {
@@ -53,7 +64,7 @@ export default async function handler(req, res) {
         }
 
         const siteConfig = config.SUPPORT_WIKI.find(s => s.PARAM === wiki);
-        if (!siteConfig) return res.status(404).json({ error: '未找到该站点' });
+        if (!siteConfig) return res.status(404).json({ error: 'Site config not found' });
 
         const baseUrl = siteConfig.URL.replace(/\/$/, '');
         const pageUrl = `${baseUrl}/${pageId}`;
@@ -67,7 +78,7 @@ export default async function handler(req, res) {
             const pageRes = await axios.get(pageUrl, { headers: reqHeaders, timeout: 12000 });
             pageHtml = pageRes.data;
         } catch (e) {
-            return res.status(500).json({ error: `文章连接失败` });
+            return res.status(500).json({ error: `Connection failed` });
         }
 
         const $page = cheerio.load(pageHtml);
@@ -75,11 +86,7 @@ export default async function handler(req, res) {
 
         let href = $page('#discuss-button').attr('href');
         if (!href) href = $page('#page-info a').filter((_, el) => ($page(el).attr('href')||'').includes('/forum/t-')).attr('href');
-        if (!href) href = $page('#page-content').parent().find('a').filter((_, el) => {
-            const text = $page(el).text().toLowerCase();
-            return (text.includes('discuss') || text.includes('讨论') || text.includes('评论')) && ($page(el).attr('href')||'').includes('/forum/t-');
-        }).attr('href');
-
+        
         if (href) {
             const match = href.match(/\/forum\/t-(\d+)/);
             if (match) threadId = match[1];
@@ -87,28 +94,15 @@ export default async function handler(req, res) {
 
         if (!threadId) {
             const emptyData = { threadId: null, url: '', total: 0, threads: [] };
-            await prisma.setting.upsert({
-                where: { key: cacheKey },
-                update: { value: JSON.stringify(emptyData) },
-                create: { key: cacheKey, value: JSON.stringify(emptyData) }
-            });
             return res.status(200).json(emptyData);
         }
 
         const forumUrl = `${baseUrl}/forum/t-${threadId}`;
-        let forumHtml;
-        try {
-            const forumRes = await axios.get(forumUrl, { headers: reqHeaders, timeout: 12000 });
-            forumHtml = forumRes.data;
-        } catch (e) {
-            return res.status(500).json({ error: `讨论区连接失败` });
-        }
-
-        const $forum = cheerio.load(forumHtml);
+        const forumRes = await axios.get(forumUrl, { headers: reqHeaders, timeout: 12000 });
+        const $forum = cheerio.load(forumRes.data);
         const posts = [];
-        const userIdCache = {}; // 用户ID缓存池
+        const userIdCache = {};
 
-        // 改为异步 for...of 循环，以支持 await 查询
         const postElements = $forum('.post').toArray();
         for (const el of postElements) {
             const $el = $forum(el);
@@ -123,64 +117,24 @@ export default async function handler(req, res) {
             }
 
             let author = '未知用户';
-            const $printUser = $el.find('.head .printuser').length ? $el.find('.head .printuser').first() : $el.find('.info .printuser').first();
-            
-            if ($printUser.length) {
-                const $links = $printUser.find('a');
-                if ($links.length) author = $links.last().text().trim();
-                else author = $printUser.text().trim();
-            } else {
-                author = $el.find('.head .author, .info .author').first().text().trim() || '未知用户';
-            }
-            author = author.replace(/[\r\n\t]+/g, '').trim();
+            const $printUser = $el.find('.head .printuser, .info .printuser').first();
+            if ($printUser.length) author = $printUser.text().trim();
 
             let userid = null;
-            
-            // 1. 优先尝试从本地 HTML 高速提取
-            const headHtml = $el.find('.head').html() || $el.find('.info').html() || $el.html() || '';
+            const headHtml = $el.find('.head, .info').html() || '';
             const srcMatch = headHtml.match(/avatar\.php\?userid=(\d+)/i);
-            const clickMatch = headHtml.match(/userInfo\(\s*(\d+)\s*\)/i);
-            const karmaMatch = headHtml.match(/userkarma\.php\?u=(\d+)/i);
-
             if (srcMatch) userid = srcMatch[1];
-            else if (clickMatch) userid = clickMatch[1];
-            else if (karmaMatch) userid = karmaMatch[1];
 
-            // 2. 如果本地提取失败，调用官方 API 查询（带缓存）
-            if (!userid && author !== '未知用户') {
-                if (userIdCache[author]) {
-                    userid = userIdCache[author];
-                } else {
-                    try {
-                        const lookupRes = await axios.get(`https://www.wikidot.com/quickmodule.php?module=UserLookupQModule&q=${encodeURIComponent(author)}`, { timeout: 5000 });
-                        if (lookupRes.data && lookupRes.data.users && lookupRes.data.users.length > 0) {
-                            userid = lookupRes.data.users[0].user_id;
-                            userIdCache[author] = userid; // 存入缓存
-                        }
-                    } catch (lookupErr) {
-                        // 忽略查询错误，直接走兜底
-                    }
-                }
-            }
+            let avatarUrl = userid 
+                ? `https://www.wikidot.com/avatar.php?userid=${userid}&timestamp=${Math.floor(Date.now()/1000)}`
+                : `https://www.wikidot.com/avatar.php?account=default`;
 
-            let avatarUrl = '';
-            if (userid) {
-                const currentTs = Math.floor(Date.now() / 1000);
-                avatarUrl = `https://www.wikidot.com/avatar.php?userid=${userid}&timestamp=${currentTs}`;
-            } else {
-                avatarUrl = `https://www.wikidot.com/avatar.php?account=default`;
-            }
+            // 【XSS 防护】：在存入数据库/返回前端前清洗 HTML
+            const rawContentHtml = $el.find('.content').html() || '';
+            const contentHtml = sanitizeHtml(rawContentHtml);
 
-            const contentHtml = $el.find('.content').html() || '';
             const odate = $el.find('.odate').first();
-            const odateClass = odate.attr('class') || '';
-            const timeMatch = odateClass.match(/time_(\d+)/);
-            
-            let timestamp = odate.text().trim();
-            if (timeMatch) {
-                const dateObj = new Date(parseInt(timeMatch[1]) * 1000);
-                timestamp = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
-            } else if (odate.attr('title')) timestamp = odate.attr('title');
+            const timestamp = odate.text().trim();
 
             posts.push({ postId, parentId, author, avatarUrl, timestamp, contentHtml, children: [] });
         }
@@ -204,7 +158,7 @@ export default async function handler(req, res) {
         return res.status(200).json(forumData);
 
     } catch (err) {
-        console.error('解析失败:', err);
-        return res.status(500).json({ error: `解析引擎运行异常: ${err.message}` });
+        console.error('Forum Fetch Failure:', err);
+        return res.status(500).json({ error: `Audit Engine Error` });
     }
 }
