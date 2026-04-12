@@ -31,10 +31,11 @@ export default async function handler(req, res) {
 
         res.setHeader('Set-Cookie', serialize('auth_token', token, {
             httpOnly: true,
-            secure: false, // 暂时放宽，确保 HTTP 环境可用
+            secure: false, 
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7,
-            path: '/'
+            path: '/',
+            domain: req.headers.host.split(':')[0] // 动态适配当前域名
         }));
 
         res.status(200).json({ 

@@ -81,6 +81,7 @@ const WikidotDiscussion = ({ wiki, pageId }) => {
                 headers: { 
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include', // 强制携带 Cookie
                 body: JSON.stringify({
                     username: username,
                     wiki: wiki,
