@@ -13,13 +13,21 @@ export function signToken(payload) {
 export function verifyToken(req) {
     const cookies = parse(req.headers.cookie || '');
     const token = cookies.auth_token;
-    if (!token) return null;
+    
+    if (!token) {
+        // console.log('[Auth] No auth_token found in cookies');
+        return null;
+    }
     
     try {
         const secret = process.env.JWT_SECRET;
-        if (!secret) return null;
+        if (!secret) {
+            console.error('[Auth Critical] JWT_SECRET is not defined in environment variables!');
+            return null;
+        }
         return jwt.verify(token, secret);
     } catch (e) {
+        console.error('[Auth Error] Token verification failed:', e.message);
         return null;
     }
 }
