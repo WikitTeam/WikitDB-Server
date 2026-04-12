@@ -81,8 +81,9 @@ async function handler(req, res) {
         });
 
         if (wdRes.data && wdRes.data.status === 'ok') {
+            const newBalance = currentBalance - COST;
             await prisma.$transaction([
-                prisma.user.update({ where: { id: user.id }, data: { balance: currentBalance - COST } }),
+                prisma.user.update({ where: { id: user.id }, data: { balance: newBalance } }),
                 prisma.trade.create({
                     data: {
                         userId: user.id,
@@ -90,9 +91,11 @@ async function handler(req, res) {
                     }
                 })
             ]);
-            return res.status(200).json({ success: true, newBalance: currentBalance - COST });
+            return res.status(200).json({ success: true, newBalance });
         } else {
-            return res.status(500).json({ error: '原站拒收评论' });
+            console.error('[Wikidot Error Response]:', JSON.stringify(wdRes.data));
+            const errorMsg = wdRes.data && wdRes.data.message ? `原站拒绝: ${wdRes.data.message}` : '原站拒收评论，可能存在权限限制或 Token 失效';
+            return res.status(500).json({ error: errorMsg });
         }
     } catch (error) {
         console.error('Anon Reply Error:', error);
