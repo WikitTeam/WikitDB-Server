@@ -6,15 +6,11 @@ const config = require('../../wikitdb.config.js');
 
 let botCookieCache = null;
 
-// 简单的 HTML 清洗函数，剔除恶意脚本和内联事件
 function sanitizeHtml(html) {
     if (!html) return '';
-    // 移除 script 标签及其内容
     let sanitized = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    // 移除 onXXX 事件处理器
     sanitized = sanitized.replace(/\son\w+="[^"]*"/gi, '');
     sanitized = sanitized.replace(/\son\w+='[^']*'/gi, '');
-    // 移除 javascript: 伪协议
     sanitized = sanitized.replace(/href="javascript:[^"]*"/gi, 'href="#"');
     return sanitized;
 }
@@ -49,17 +45,19 @@ async function getBotCookie() {
 export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { wiki, pageId } = req.query;
+    // 接收参数，支持页码 p
+    const { wiki, pageId, p = 1 } = req.query;
     if (!wiki || !pageId) return res.status(400).json({ error: 'Missing parameters' });
+    const pageNum = parseInt(p, 10) || 1;
 
     try {
-        const cacheKey = `forum_v8:${wiki}:${pageId}`;
+        const cacheKey = `forum_v11:${wiki}:${pageId}:p${pageNum}`;
         
         const record = await prisma.setting.findUnique({ where: { key: cacheKey } });
         if (record && record.value) {
             try {
                 const parsed = JSON.parse(record.value);
-                if (parsed && parsed.threadId && parsed.total > 0) return res.status(200).json(parsed);
+                if (parsed && parsed.threadId) return res.status(200).json(parsed);
             } catch (e) {}
         }
 
@@ -84,8 +82,13 @@ export default async function handler(req, res) {
         const $page = cheerio.load(pageHtml);
         let threadId = null;
 
-        let href = $page('#discuss-button').attr('href');
-        if (!href) href = $page('#page-info a').filter((_, el) => ($page(el).attr('href')||'').includes('/forum/t-')).attr('href');
+        // 增强的讨论链接检测
+        let href = $page('#discuss-button').attr('href') || 
+                   $page('#page-info a').filter((_, el) => ($page(el).attr('href')||'').includes('/forum/t-')).attr('href') ||
+                   $page('#page-content').parent().find('a').filter((_, el) => {
+                       const text = $page(el).text().toLowerCase();
+                       return (text.includes('discuss') || text.includes('讨论') || text.includes('评论')) && ($page(el).attr('href')||'').includes('/forum/t-');
+                   }).attr('href');
         
         if (href) {
             const match = href.match(/\/forum\/t-(\d+)/);
@@ -93,15 +96,16 @@ export default async function handler(req, res) {
         }
 
         if (!threadId) {
-            const emptyData = { threadId: null, url: '', total: 0, threads: [] };
+            const emptyData = { threadTitle: '暂无讨论', threadId: null, url: '', maxPage: 1, currentPage: pageNum, threads: [] };
             return res.status(200).json(emptyData);
         }
 
         const forumUrl = `${baseUrl}/forum/t-${threadId}`;
-        const forumRes = await axios.get(forumUrl, { headers: reqHeaders, timeout: 12000 });
+        const targetForumUrl = pageNum > 1 ? `${forumUrl}/page/${pageNum}` : forumUrl;
+        
+        const forumRes = await axios.get(targetForumUrl, { headers: reqHeaders, timeout: 12000 });
         const $forum = cheerio.load(forumRes.data);
         const posts = [];
-        const userIdCache = {};
 
         const postElements = $forum('.post').toArray();
         for (const el of postElements) {
@@ -121,7 +125,7 @@ export default async function handler(req, res) {
             if ($printUser.length) author = $printUser.text().trim();
 
             let userid = null;
-            const headHtml = $el.find('.head, .info').html() || '';
+            const headHtml = $el.find('.head').html() || $el.find('.info').html() || $el.html() || '';
             const srcMatch = headHtml.match(/avatar\.php\?userid=(\d+)/i);
             if (srcMatch) userid = srcMatch[1];
 
@@ -129,7 +133,6 @@ export default async function handler(req, res) {
                 ? `https://www.wikidot.com/avatar.php?userid=${userid}&timestamp=${Math.floor(Date.now()/1000)}`
                 : `https://www.wikidot.com/avatar.php?account=default`;
 
-            // 【XSS 防护】：在存入数据库/返回前端前清洗 HTML
             const rawContentHtml = $el.find('.content').html() || '';
             const contentHtml = sanitizeHtml(rawContentHtml);
 
@@ -147,7 +150,7 @@ export default async function handler(req, res) {
             else rootPosts.push(p);
         });
 
-        const forumData = { threadId, url: forumUrl, total: posts.length, threads: rootPosts };
+        const forumData = { threadId, url: forumUrl, total: posts.length, currentPage: pageNum, threads: rootPosts };
 
         await prisma.setting.upsert({
             where: { key: cacheKey },

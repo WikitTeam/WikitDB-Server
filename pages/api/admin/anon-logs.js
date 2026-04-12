@@ -5,14 +5,24 @@ async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
-        // 检索所有匿名回复类型的交易记录，并包含关联用户信息
+        const { username } = req.query;
+
+        // 如果提供了用户名，则按用户名过滤
+        const whereClause = {
+            data: {
+                path: ['action'],
+                equals: 'anon_reply'
+            }
+        };
+
+        if (username) {
+            whereClause.user = {
+                username: username
+            };
+        }
+
         const logs = await prisma.trade.findMany({
-            where: {
-                data: {
-                    path: ['action'],
-                    equals: 'anon_reply'
-                }
-            },
+            where: whereClause,
             include: {
                 user: {
                     select: {
@@ -26,13 +36,12 @@ async function handler(req, res) {
             take: 100
         });
 
-        // 格式化输出数据，统一结构
         const formattedLogs = logs.map(log => ({
             id: log.id,
             username: log.user?.username || 'System',
             wiki: log.data?.wiki || 'N/A',
             threadId: log.data?.targetThread || 'N/A',
-            content: log.data?.content || '（无历史内容记录）',
+            content: log.data?.content || '（内容已加密或丢失）',
             cost: log.data?.cost || 0,
             time: log.data?.time ? new Date(log.data.time).toLocaleString() : log.createdAt.toLocaleString()
         }));

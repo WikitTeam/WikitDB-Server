@@ -69,12 +69,20 @@ const WikidotDiscussion = ({ wiki, pageId }) => {
         setSubmitMsg('');
 
         try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                setSubmitMsg('未检测到本地登录凭证，请先登录');
+                setIsSubmitting(false);
+                return;
+            }
+
             const res = await fetch('/api/anon-reply', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                    username: username,
                     wiki: wiki,
                     threadId: data.threadId,
                     content: anonContent
@@ -83,7 +91,7 @@ const WikidotDiscussion = ({ wiki, pageId }) => {
 
             const resData = await res.json();
             if (res.ok) {
-                setSubmitMsg('评论投递成功。内容同步至本地库可能需要一定时间。');
+                setSubmitMsg('代理发送成功，内容可能需要等待下次刷新才能在本地看到。');
                 setAnonContent('');
             } else {
                 setSubmitMsg(resData.error || '投递失败');
@@ -116,7 +124,7 @@ const WikidotDiscussion = ({ wiki, pageId }) => {
                 )}
             </div>
 
-            {loading && <div className="text-center py-10 text-gray-500 animate-pulse">正在从本地数据库加载讨论数据...</div>}
+            {loading && <div className="text-center py-10 text-gray-500 animate-pulse">正在加载讨论数据...</div>}
             
             {error && (
                 <div className="text-center py-8 bg-red-900/20 text-red-400 border border-red-900/50 rounded-lg text-sm">
@@ -147,7 +155,7 @@ const WikidotDiscussion = ({ wiki, pageId }) => {
                     <textarea
                         value={anonContent}
                         onChange={(e) => setAnonContent(e.target.value)}
-                        placeholder="想说点什么？所有回复将通过系统账号发送至原站，并打上匿名标记。十分钟内仅限发送一条。"
+                        placeholder="想说点什么？所有回复将通过系统账号发送至原站，并打上匿名标记。"
                         className="w-full bg-gray-800/80 border border-gray-600 text-gray-200 rounded-lg p-3 outline-none focus:border-indigo-500 resize-none h-24 text-sm"
                         disabled={isSubmitting}
                     />
