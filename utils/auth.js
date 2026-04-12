@@ -15,7 +15,7 @@ export function verifyToken(req) {
     const token = cookies.auth_token;
     
     if (!token) {
-        // console.log('[Auth] No auth_token found in cookies');
+        console.warn('[Auth Warning] No auth_token found in request cookies!');
         return null;
     }
     
