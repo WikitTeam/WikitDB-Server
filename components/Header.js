@@ -3,16 +3,12 @@ const config = require('../wikitdb.config.js');
 
 // 高清矢量 Logo 组件
 const HighDefLogoSVG = ({ className }) => (
-    <svg viewBox="0 0 100 100" className={className}>
-        <g transform="translate(10,10)">
-            <path d="M0 0 L 20 0 L 15 25 L 0 20 Z" fill="#34747B" />
-            <path d="M 25 -5 L 45 5 L 40 30 L 25 25 L 20 20 Z" fill="#1C3D6A" />
-            <path d="M 30 35 L 50 45 L 45 70 L 30 65 L 25 60 Z" fill="#E0524F" />
-            <circle cx="65" cy="20" r="3" fill="#9CA3AF" />
-            <circle cx="65" cy="40" r="3" fill="#9CA3AF" />
-            <circle cx="65" cy="60" r="3" fill="#9CA3AF" />
-        </g>
-    </svg>
+    <img 
+        src="/img/logo.svg" 
+        alt="Logo" 
+        className={className}
+        onError={(e) => { e.target.src = '/img/logo.png'; }} // 降级处理
+    />
 );
 
 const Header = () => {

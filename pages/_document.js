@@ -6,7 +6,8 @@ export default function Document() {
     <Html lang="zh-CN">
       <Head>
         <title>{config.SITE_NAME}</title>
-        <link rel="icon" href="/img/logo.png" />
+        <link rel="icon" href="/img/logo.svg" type="image/svg+xml" />
+        <link rel="alternate icon" href="/img/logo.png" type="image/png" />
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" rel="stylesheet"></link>
       </Head>
       <body>
