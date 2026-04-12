@@ -6,6 +6,8 @@ const config = require('../../wikitdb.config.js');
 
 let botCookieCache = null;
 
+const COMMON_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
 async function getBotCookie() {
     if (botCookieCache) return botCookieCache;
     const user = process.env.WIKIDOT_BOT_USER;
@@ -15,7 +17,7 @@ async function getBotCookie() {
 
     const payload = new URLSearchParams({ login: user, password: pass, action: 'Login2Action', event: 'login' });
     const res = await axios.post('https://www.wikidot.com/default--flow/login__LoginPopupScreen', payload.toString(), {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'Mozilla/5.0' },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': COMMON_UA },
         maxRedirects: 0,
         validateStatus: status => status >= 200 && status < 400
     });
@@ -23,7 +25,10 @@ async function getBotCookie() {
     let sessionId = '';
     const cookies = res.headers['set-cookie'] || [];
     for (const c of cookies) {
-        if (c.includes('WIKIDOT_SESSION_ID=')) sessionId = c.split('WIKIDOT_SESSION_ID=')[1].split(';')[0];
+        if (c.includes('WIKIDOT_SESSION_ID=')) {
+            const match = c.match(/WIKIDOT_SESSION_ID=([^;]+)/);
+            if (match) sessionId = match[1];
+        }
     }
     if (!sessionId) throw new Error('机器人登录失败');
     botCookieCache = `WIKIDOT_SESSION_ID=${sessionId}; wikidot_token7=123456;`;
@@ -71,13 +76,19 @@ async function handler(req, res) {
         const payload = new URLSearchParams({
             action: 'ForumAction',
             event: 'savePost',
+            title: '', 
+            parentId: '', 
             threadId: threadId,
             source: finalContent,
             wikidot_token7: '123456'
         });
 
         const wdRes = await axios.post(`${baseUrl}/ajax-module-connector.php`, payload.toString(), {
-            headers: { 'Cookie': botCookie, 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }
+            headers: { 
+                'Cookie': botCookie, 
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'User-Agent': COMMON_UA
+            }
         });
 
         if (wdRes.data && wdRes.data.status === 'ok') {
