@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import Layout from '../../components/Layout';
 
 export default function TagBingo() {
     const [username, setUsername] = useState(null);
@@ -66,110 +67,146 @@ export default function TagBingo() {
     };
 
     return (
-        // 严格遵循你的全站原版式布局结构
-        <div className="py-8">
+        <Layout>
             <Head><title>标签大乐透 - WikitDB</title></Head>
             
-            <div className="max-w-5xl mx-auto px-4">
-                <div className="mb-8 border-b border-gray-800 pb-4">
-                    <Link href="/tools" className="text-blue-500 hover:text-blue-400 text-sm mb-4 inline-block transition-colors">&larr; 返回工具箱</Link>
-                    <h1 className="text-3xl font-bold text-white">标签大乐透</h1>
-                    <p className="text-gray-400 mt-2 text-sm">消耗扫描凭证，命中特定标签即可赢取最高百倍赔率的奖金。</p>
+            <div className="max-w-4xl mx-auto">
+                <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-800 pb-8">
+                    <div>
+                        <Link href="/tools" className="text-xs font-bold text-blue-500 uppercase tracking-[0.2em] mb-4 inline-block hover:text-blue-400 transition-colors">
+                            <i className="fa-solid fa-arrow-left mr-2"></i> Back to Tools
+                        </Link>
+                        <h1 className="text-4xl font-black text-white tracking-tight">标签大乐透</h1>
+                        <p className="text-gray-500 mt-2 text-sm leading-relaxed max-w-lg">消耗系统扫描凭证，命中特定标签即可赢取最高百倍赔率的奖金。数据直接对接原站最新爬取结果。</p>
+                    </div>
+                    <div className="bg-gray-800/40 border border-gray-700 rounded-2xl p-4 md:p-6 shadow-xl min-w-[200px]">
+                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Available Balance</div>
+                        <div className="text-2xl font-mono text-green-400 font-black">¥ {balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                    </div>
                 </div>
 
-                <div className="max-w-md mx-auto bg-[#121212] border-2 border-teal-900/50 rounded-xl p-5 shadow-[0_0_15px_rgba(20,184,166,0.15)] select-none">
-                    <div className="text-center mb-6">
-                        <div className="text-gray-500 text-[10px] mb-1 font-mono uppercase tracking-widest">Verified Balance</div>
-                        <div className="text-2xl font-mono text-green-400 font-bold">¥ {balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
-                    </div>
-
-                    {/* 标签选号区域 */}
-                    <div className="mb-6 bg-[#0a0a0a] p-4 rounded-lg border border-gray-800 shadow-inner">
-                        <div className="flex justify-between items-center mb-3 border-b border-gray-800 pb-2">
-                            <span className="text-xs text-gray-400 font-mono">目标标签 ({selectedTags.length}/3)</span>
-                            <span className="text-xs text-teal-500 font-bold font-mono">Cost: ¥{scanCost}</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2 justify-center">
-                            {availableTags.length === 0 && <span className="text-xs text-gray-700 font-mono animate-pulse">Loading...</span>}
-                            {availableTags.map(tag => (
-                                <button
-                                    key={tag}
-                                    onClick={() => toggleTag(tag)}
-                                    className={`px-3 py-1.5 rounded text-xs font-bold transition-all border font-mono ${
-                                        selectedTags.includes(tag) 
-                                        ? 'bg-teal-900/30 text-teal-400 border-teal-700 shadow-[0_0_8px_rgba(20,184,166,0.3)]' 
-                                        : 'bg-gray-900 text-gray-500 border-gray-800 hover:border-gray-600'
-                                    }`}
-                                >
-                                    {tag}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <button 
-                        onClick={handleScan} 
-                        disabled={isScanning || selectedTags.length !== 3}
-                        className="w-full py-4 bg-gray-800 hover:bg-gray-700 disabled:bg-[#0a0a0a] disabled:text-gray-700 border border-gray-700 disabled:border-gray-900 rounded-lg text-white font-bold text-sm tracking-widest transition-colors mb-6 shadow-md uppercase"
-                    >
-                        {isScanning ? '[Scanning Data...]' : `生成凭证并扫描 (¥${scanCost})`}
-                    </button>
-
-                    {/* 刮刮乐核心区域 */}
-                    <div className="border border-gray-700 rounded-lg p-4 bg-[#050505] relative min-h-[160px] flex flex-col justify-center shadow-inner">
-                        <div className="text-[10px] text-gray-600 mb-2 font-mono absolute top-3 left-4 uppercase tracking-widest">Revealed Result:</div>
-                        
-                        {!result && !isScanning && <div className="text-center text-gray-700 font-mono text-sm mt-4">[Waiting for Input]</div>}
-                        {isScanning && <div className="text-center text-teal-600 font-mono text-xs mt-4 animate-pulse tracking-widest">EXTRACTING...</div>}
-
-                        {result && (
-                            <div className="relative mt-4 z-10 w-full">
-                                <div className="space-y-3">
-                                    <div className="text-white font-bold text-sm border-b border-gray-800 pb-2 leading-tight">{result.page.title}</div>
-                                    <div className="text-[10px] text-gray-500 font-mono">Author: {result.page.author}</div>
-                                    
-                                    <div className="bg-gray-900 border border-gray-800 p-2 rounded">
-                                        <div className="text-[10px] text-gray-600 uppercase mb-1 font-mono">Tags Detected:</div>
-                                        <div className="flex flex-wrap gap-1">
-                                            {result.page.tags?.length ? result.page.tags.map(t => (
-                                                <span key={t} className={`px-1.5 py-0.5 rounded-[3px] text-[10px] font-bold font-mono ${
-                                                    result.matchedTags.includes(t) ? 'bg-teal-900/50 text-teal-400 border border-teal-800' : 'bg-black text-gray-600'
-                                                }`}>
-                                                    {t}
-                                                </span>
-                                            )) : <span className="text-gray-700 text-[10px] font-mono">NULL</span>}
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="pt-2 flex items-center justify-between border-t border-gray-800">
-                                        <div className="font-mono text-xs text-gray-500">Match: <span className="text-white font-bold">{result.matchCount}/3</span></div>
-                                        <div className="font-bold text-sm font-mono">
-                                            {result.matchCount === 0 && <span className="text-gray-600">FAILED</span>}
-                                            {result.matchCount === 1 && <span className="text-blue-500">+ ¥{scanCost}</span>}
-                                            {result.matchCount === 2 && <span className="text-orange-500">+ ¥{scanCost * 10}</span>}
-                                            {result.matchCount === 3 && <span className="text-red-500 animate-pulse">+ ¥{scanCost * 100}</span>}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* 灰色拟真刮刮乐涂层 */}
-                                {!isScratched && (
-                                    <div 
-                                        onClick={() => setIsScratched(true)}
-                                        className="absolute -inset-2 bg-[#444] cursor-pointer flex items-center justify-center rounded border border-gray-500 shadow-lg"
-                                        style={{ backgroundImage: 'repeating-linear-gradient(45deg, #444, #444 10px, #3a3a3a 10px, #3a3a3a 20px)' }}
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                    {/* 左侧选择区 */}
+                    <div className="lg:col-span-3 space-y-6">
+                        <div className="bg-gray-800/20 border border-gray-800 rounded-2xl p-6 md:p-8">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <i className="fa-solid fa-tags text-teal-500"></i> 选择目标标签
+                                </h3>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${selectedTags.length === 3 ? 'bg-green-900/20 text-green-500 border-green-800/30' : 'bg-gray-900 text-gray-600 border-gray-800'}`}>
+                                    {selectedTags.length} / 3
+                                </span>
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-2">
+                                {availableTags.map(tag => (
+                                    <button
+                                        key={tag}
+                                        onClick={() => toggleTag(tag)}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border font-mono ${
+                                            selectedTags.includes(tag) 
+                                            ? 'bg-teal-600 text-white border-teal-500 shadow-[0_0_15px_rgba(20,184,166,0.4)]' 
+                                            : 'bg-gray-900 text-gray-500 border-gray-800 hover:border-gray-600 hover:text-gray-300'
+                                        }`}
                                     >
-                                        <div className="bg-black/90 px-5 py-2.5 rounded text-gray-300 font-bold text-xs tracking-widest border border-gray-600 uppercase flex items-center gap-2">
-                                            <i className="fa-solid fa-hand-pointer text-teal-500 animate-pulse"></i>
-                                            Scratch to Verify
+                                        {tag}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="mt-8 pt-8 border-t border-gray-800/50">
+                                <div className="flex justify-between items-center mb-4">
+                                    <span className="text-xs text-gray-500 font-bold uppercase">Scanning Fee</span>
+                                    <span className="font-mono text-white font-bold">¥ {scanCost.toFixed(2)}</span>
+                                </div>
+                                <button 
+                                    onClick={handleScan} 
+                                    disabled={isScanning || selectedTags.length !== 3}
+                                    className="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white font-black text-sm tracking-[0.2em] rounded-xl transition-all shadow-lg shadow-blue-900/20 uppercase"
+                                >
+                                    {isScanning ? 'Data Syncing...' : 'Execute Data Scan'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 右侧结果区 */}
+                    <div className="lg:col-span-2">
+                        <div className="bg-gray-950 border border-gray-800 rounded-2xl p-6 h-full flex flex-col relative overflow-hidden shadow-inner">
+                            <div className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.2em] mb-6">Scan Result Buffer</div>
+                            
+                            <div className="flex-1 flex flex-col justify-center">
+                                {!result && !isScanning && (
+                                    <div className="text-center space-y-4 py-12">
+                                        <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center mx-auto border border-gray-800">
+                                            <i className="fa-solid fa-radar text-gray-700 text-xl"></i>
                                         </div>
+                                        <p className="text-xs text-gray-600 font-mono italic">Waiting for Scanner input...</p>
+                                    </div>
+                                )}
+
+                                {isScanning && (
+                                    <div className="text-center space-y-4 py-12 animate-pulse">
+                                        <div className="w-16 h-16 bg-teal-900/10 rounded-full flex items-center justify-center mx-auto border border-teal-900/20">
+                                            <i className="fa-solid fa-spinner fa-spin text-teal-500 text-xl"></i>
+                                        </div>
+                                        <p className="text-[10px] text-teal-600 font-bold uppercase tracking-widest">Accessing Wikidot API...</p>
+                                    </div>
+                                )}
+
+                                {result && (
+                                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        <div>
+                                            <h4 className="text-xs text-gray-500 font-bold uppercase mb-2 tracking-widest">Matched Document</h4>
+                                            <div className="text-lg font-bold text-white leading-tight mb-2">{result.page.title}</div>
+                                            <div className="text-[10px] text-gray-600 font-mono italic">ID: {result.page.id} / BY {result.page.author}</div>
+                                        </div>
+
+                                        <div className="bg-gray-900/50 border border-gray-800 p-4 rounded-xl shadow-inner">
+                                            <div className="text-[10px] text-gray-600 font-bold uppercase mb-3 tracking-widest">Metadata Tags</div>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {result.page.tags?.map(t => (
+                                                    <span key={t} className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono border ${
+                                                        result.matchedTags.includes(t) 
+                                                        ? 'bg-teal-900/40 text-teal-400 border-teal-700/50' 
+                                                        : 'bg-black text-gray-700 border-gray-900'
+                                                    }`}>
+                                                        {t}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 flex items-center justify-between border-t border-gray-800">
+                                            <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Match <span className="text-white ml-2">{result.matchCount} / 3</span></div>
+                                            <div className="text-xl font-black font-mono">
+                                                {result.matchCount === 0 && <span className="text-gray-700 uppercase italic">Lost</span>}
+                                                {result.matchCount === 1 && <span className="text-blue-500">+ ¥{scanCost.toFixed(2)}</span>}
+                                                {result.matchCount === 2 && <span className="text-orange-500">+ ¥{(scanCost * 10).toFixed(2)}</span>}
+                                                {result.matchCount === 3 && <span className="text-red-500 animate-pulse">+ ¥{(scanCost * 100).toFixed(2)}</span>}
+                                            </div>
+                                        </div>
+
+                                        {/* 拟真涂层 */}
+                                        {!isScratched && (
+                                            <div 
+                                                onClick={() => setIsScratched(true)}
+                                                className="absolute inset-0 bg-[#222] cursor-pointer flex items-center justify-center rounded-2xl border border-gray-700 shadow-2xl z-20"
+                                                style={{ backgroundImage: 'repeating-linear-gradient(45deg, #1a1a1a, #1a1a1a 10px, #222 10px, #222 20px)' }}
+                                            >
+                                                <div className="bg-black/80 px-6 py-3 rounded-full text-white font-black text-xs tracking-[0.3em] border border-gray-800 uppercase flex items-center gap-3 shadow-2xl scale-90 hover:scale-100 transition-transform">
+                                                    <i className="fa-solid fa-hand-pointer text-teal-500 animate-bounce"></i>
+                                                    Click to Reveal
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </Layout>
     );
 }

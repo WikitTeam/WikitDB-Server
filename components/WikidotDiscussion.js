@@ -150,13 +150,13 @@ const WikidotDiscussion = ({ wiki, pageId }) => {
             {data && data.threadId && (
                 <div className="bg-gray-900/50 p-5 rounded-xl border border-gray-700 mt-6">
                     <h4 className="text-sm font-bold text-gray-300 mb-3 flex items-center gap-2">
-                        发送匿名回复
+                        发送代理回复
                         <span className="text-xs font-normal text-gray-500 bg-gray-800 px-2 py-0.5 rounded">消耗 100 余额</span>
                     </h4>
                     <textarea
                         value={anonContent}
                         onChange={(e) => setAnonContent(e.target.value)}
-                        placeholder="想说点什么？所有回复将通过系统账号发送至原站，并打上匿名标记。"
+                        placeholder="想说点什么？所有回复将通过系统账号发送至原站，并附带您的实名标记以确保合规。"
                         className="w-full bg-gray-800/80 border border-gray-600 text-gray-200 rounded-lg p-3 outline-none focus:border-indigo-500 resize-none h-24 text-sm"
                         disabled={isSubmitting}
                     />

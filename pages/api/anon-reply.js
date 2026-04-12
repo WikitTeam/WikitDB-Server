@@ -71,7 +71,10 @@ async function handler(req, res) {
         
         const baseUrl = siteConfig.URL.replace(/\/$/, '');
         const botCookie = await getBotCookie();
-        const finalContent = `**[WikitDB 匿名留言]**\n\n${content.trim()}`;
+        
+        // 拼接实名信息：WikitDB 用户名 + 绑定的 Wikidot 账号
+        const linkedWd = user.wikidotAccount || '未绑定';
+        const finalContent = `**[WikitDB 代理留言]**\n本消息由 WikitDB 用户 **${user.username}** 发送，其 Wikidot 账号为：**${linkedWd}**\n\n---\n\n${content.trim()}`;
         
         const payload = new URLSearchParams({
             action: 'ForumAction',
