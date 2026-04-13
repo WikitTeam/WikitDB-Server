@@ -18,10 +18,6 @@ export default function AdminDashboard() {
     const [broadcastMsg, setBroadcastMsg] = useState('');
     const [airdropAmount, setAirdropAmount] = useState(1000);
     const [taxRate, setTaxRate] = useState(5);
-    
-    // 裸键终端状态
-    const [redisKey, setRedisKey] = useState('');
-    const [redisValue, setRedisValue] = useState('');
 
     // 娱乐模块配置状态
     const [bingoTagsInput, setBingoTagsInput] = useState('');
@@ -169,21 +165,6 @@ export default function AdminDashboard() {
         } catch (e) {}
     };
 
-    const queryRedis = async (action) => {
-        if (!redisKey) return alert('请输入键名');
-        try {
-            const res = await fetch('/api/admin/redis', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action, key: redisKey, value: redisValue })
-            });
-            const data = await res.json();
-            if (!res.ok) return alert(data.error);
-            if (action === 'get') setRedisValue(typeof data.data === 'object' ? JSON.stringify(data.data, null, 2) : String(data.data || ''));
-            else alert('写入成功');
-        } catch (e) {}
-    };
-
     const fetchSettings = async () => {
         try {
             const resBingo = await fetch('/api/tools/bingo');
@@ -274,8 +255,7 @@ export default function AdminDashboard() {
         { id: 'logs', label: '交易审计', icon: 'fa-list-check' },
         { id: 'broadcast', label: '全站广播', icon: 'fa-bullhorn' },
         { id: 'macro', label: '宏观经济', icon: 'fa-money-bill-trend-up' },
-        { id: 'settings', label: '系统设置', icon: 'fa-sliders' },
-        { id: 'redis', label: '内存终端', icon: 'fa-terminal' }
+        { id: 'settings', label: '系统设置', icon: 'fa-sliders' }
     ];
 
     if (!currentUser) return (
@@ -587,36 +567,6 @@ export default function AdminDashboard() {
                                         </div>
                                     </div>
                                     <button onClick={saveBountySettings} className="mt-8 w-full py-3 bg-orange-700/80 hover:bg-orange-600 text-white rounded-xl font-black transition-all shadow-lg text-xs uppercase tracking-widest">更新悬赏规则</button>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'redis' && (
-                            <div className="max-w-4xl mx-auto">
-                                <div className="bg-gray-950 border border-red-900/30 rounded-2xl shadow-2xl overflow-hidden">
-                                    <div className="bg-red-900/20 px-6 py-3 flex items-center justify-between border-b border-red-900/20">
-                                        <div className="flex gap-2">
-                                            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                                            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                                        </div>
-                                        <span className="text-[10px] text-red-400 font-black tracking-[0.2em] uppercase">核心底层访问 / 内存数据库终端</span>
-                                    </div>
-                                    <div className="p-8 space-y-6">
-                                        <div className="flex flex-col md:flex-row gap-4">
-                                            <div className="flex-1 relative group">
-                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-red-900 font-mono text-xs uppercase font-black transition-colors group-focus-within:text-red-500">键名 &gt;</span>
-                                                <input type="text" value={redisKey} onChange={e => setRedisKey(e.target.value)} placeholder="user:xxx" className="w-full bg-black border border-gray-900 rounded-xl pl-16 pr-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-red-900 transition-all shadow-inner uppercase"/>
-                                            </div>
-                                            <button onClick={() => queryRedis('get')} className="px-8 py-3 bg-gray-900 hover:bg-gray-800 text-white font-black rounded-xl transition-all border border-gray-800 text-xs uppercase tracking-widest">读取数据</button>
-                                        </div>
-                                        <textarea value={redisValue} onChange={e => setRedisValue(e.target.value)} className="w-full h-80 bg-black border border-gray-900 rounded-xl p-5 text-green-500 font-mono text-xs focus:outline-none focus:border-red-900 shadow-inner custom-scrollbar" placeholder="等待数据缓冲区载入..." />
-                                        <div className="flex items-center gap-4">
-                                            <button onClick={() => queryRedis('set')} className="flex-1 py-4 bg-red-800 hover:bg-red-700 text-white font-black rounded-xl shadow-lg transition-all text-xs uppercase tracking-widest border border-red-600">
-                                                强制覆盖原始内存数据
-                                            </button>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         )}
