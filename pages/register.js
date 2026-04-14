@@ -157,12 +157,12 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
             <Head>
                 <title>注册 - {config.SITE_NAME}</title>
             </Head>
 
-            <div className="w-full max-w-md bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 rounded-2xl p-8 shadow-xl dark:shadow-2xl relative overflow-hidden transition-all">
+            <div className="w-full max-w-md bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 rounded-2xl p-8 shadow-xl dark:shadow-2xl relative overflow-hidden transition-all duration-300">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
                 <div className="text-center mb-8 relative z-10">

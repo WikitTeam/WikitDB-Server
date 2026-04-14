@@ -55,40 +55,40 @@ if (res.ok) {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
             <Head>
                 <title>登录</title>
             </Head>
             
-            <div className="bg-gray-800 p-8 rounded-xl border border-gray-700 w-full max-w-md">
-                <h1 className="text-2xl font-bold text-white mb-6 text-center">登录账号</h1>
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-xl border border-gray-200 dark:border-gray-700 w-full max-w-md shadow-xl transition-colors duration-300">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">登录账号</h1>
                 
                 {message && (
-                    <div className="mb-4 p-3 rounded bg-gray-700/50 text-gray-300 text-sm text-center border border-gray-600">
+                    <div className="mb-4 p-3 rounded bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 text-sm text-center border border-gray-200 dark:border-gray-600">
                         {message}
                     </div>
                 )}
                 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">用户名或邮箱</label>
+                        <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">用户名或邮箱</label>
                         <input 
                             type="text"
                             name="username"
                             value={formData.username}
                             onChange={handleChange}
-                            className="w-full bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-colors"
+                            className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-colors"
                         />
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">密码</label>
+                        <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">密码</label>
                         <input 
                             type="password"
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
-                            className="w-full bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-colors"
+                            className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-colors"
                         />
                     </div>
                     

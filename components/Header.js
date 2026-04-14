@@ -15,23 +15,16 @@ const Header = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [username, setUsername] = useState(null);
     const [broadcastMsg, setBroadcastMsg] = useState('');
-    const [isDark, setIsDark] = useState(true);
 
-    // 页面加载时从本地存储读取用户名、全站广播以及主题设置
+    // 页面加载时从本地存储读取用户名、全站广播以及强制深色模式
     useEffect(() => {
         const storedUsername = localStorage.getItem('username');
         if (storedUsername) {
             setUsername(storedUsername);
         }
 
-        const storedTheme = localStorage.getItem('theme');
-        const initialDark = storedTheme === 'light' ? false : true;
-        setIsDark(initialDark);
-        if (initialDark) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+        // 强制深色模式
+        document.documentElement.classList.add('dark');
 
         fetch('/api/admin/broadcast')
             .then(res => res.json())
@@ -49,19 +42,6 @@ const Header = () => {
         localStorage.removeItem('token');
         setUsername(null);
         window.location.reload();
-    };
-
-    // 切换主题逻辑
-    const toggleTheme = () => {
-        const newDark = !isDark;
-        setIsDark(newDark);
-        if (newDark) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
     };
 
     return (
@@ -121,23 +101,6 @@ const Header = () => {
                         </div>
 
                         <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
-                            {/* 主题切换按钮 */}
-                            <button
-                                onClick={toggleTheme}
-                                className="rounded-md p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition-all duration-300"
-                                title={isDark ? "切换至浅色模式" : "切换至深色模式"}
-                            >
-                                {isDark ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M3 12h2.25m.386-6.364l1.591-1.591M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
-                                    </svg>
-                                ) : (
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-                                    </svg>
-                                )}
-                            </button>
-
                             {username ? (
                                 <>
                                     <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{username}</span>
