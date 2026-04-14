@@ -9,8 +9,17 @@ export default async function handler(req, res) {
 
     if (!username) return res.status(400).json({ error: '用户显示名称不能为空' });
 
+    // 用户名校验：2-20 字符，只允许字母、数字、下划线、中文、连字符
+    if (username.length < 2 || username.length > 20) {
+        return res.status(400).json({ error: '用户名长度必须在 2-20 个字符之间' });
+    }
+    if (!/^[\w\u4e00-\u9fff-]+$/.test(username)) {
+        return res.status(400).json({ error: '用户名只能包含字母、数字、下划线、中文和连字符' });
+    }
+
     if (action === 'start') {
         if (!password) return res.status(400).json({ error: '密码不能为空' });
+        if (password.length < 6) return res.status(400).json({ error: '密码长度不能少于 6 位' });
 
         const exists = await prisma.user.findUnique({ where: { username } });
         if (exists) return res.status(400).json({ error: '该用户名已被注册' });

@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 const config = require('../../wikitdb.config.js');
+import { sanitizeGraphQL } from '../../utils/security';
 
 export default async function handler(req, res) {
     const { site } = req.query;
@@ -12,9 +13,9 @@ export default async function handler(req, res) {
     let actualWikiName = '';
     try {
         const urlObj = new URL(wikiConfig.URL);
-        actualWikiName = urlObj.hostname.replace(/^www\./i, '').split('.')[0];
+        actualWikiName = sanitizeGraphQL(urlObj.hostname.replace(/^www\./i, '').split('.')[0]);
     } catch (e) {
-        actualWikiName = wikiConfig.URL.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('.')[0];
+        actualWikiName = sanitizeGraphQL(wikiConfig.URL.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('.')[0]);
     }
 
     const baseUrl = wikiConfig.URL.replace(/\/$/, '');

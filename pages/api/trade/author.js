@@ -1,5 +1,6 @@
 import prisma from '../../../lib/prisma';
-import { verifyToken } from '../../../utils/auth';
+import { withAuth } from '../../../utils/withAuth';
+import { validateNumberRange } from '../../../utils/security';
 
 async function getAuthorPrice(authorName) {
     const cacheKey = `author_price_cache:${authorName}`;
@@ -50,26 +51,22 @@ async function getAuthorPrice(authorName) {
     }
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: '仅支持 POST 请求' });
 
-    const decoded = verifyToken(req);
-    if (!decoded || !decoded.username) return res.status(401).json({ error: '未经授权访问' });
-    const username = decoded.username; 
+    const user = req.user;
+    const username = user.username;
 
     const { authorName, action, amount = 1 } = req.body;
-    const tradeAmount = Number(amount);
+    const tradeAmount = validateNumberRange(amount, 1, 10000);
 
-    if (!authorName || !action || isNaN(tradeAmount) || tradeAmount <= 0) {
-        return res.status(400).json({ error: '参数错误' });
+    if (!authorName || !action || tradeAmount === null) {
+        return res.status(400).json({ error: '参数错误（交易数量范围 1-10000）' });
     }
 
     const SELL_LOSS_RATE = 0.05;
 
     try {
-        const user = await prisma.user.findUnique({ where: { username } });
-        if (!user) return res.status(404).json({ error: '用户不存在' });
-
         const portfolioKey = `portfolio:${username}`;
 
         if (action === 'query') {
@@ -201,3 +198,5 @@ export default async function handler(req, res) {
         res.status(error.message === '余额不足' || error.message === '未知指令' ? 400 : 500).json({ error: error.message || '服务器异常' });
     }
 }
+
+export default withAuth(handler);

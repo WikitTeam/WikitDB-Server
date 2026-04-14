@@ -1,21 +1,15 @@
 import prisma from '../../../lib/prisma';
-import { verifyToken } from '../../../utils/auth';
+import { withAuth } from '../../../utils/withAuth';
 
 const GRAPHQL_ENDPOINT = 'https://wikit.unitreaty.org/apiv1/graphql';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    // 验证身份
-    const decoded = verifyToken(req);
-    if (!decoded || !decoded.username) return res.status(401).json({ error: '未授权的访问' });
-    const username = decoded.username; 
+    const user = req.user;
 
     try {
-        const user = await prisma.user.findUnique({ where: { username } });
-        if (!user) return res.status(404).json({ error: '用户不存在' });
-
-        if ((user.balance || 0) < 200) {
+        if (Number(user.balance || 0) < 200) {
             return res.status(400).json({ error: '余额不足，每次抽取需要 ¥200' });
         }
 
@@ -41,7 +35,6 @@ export default async function handler(req, res) {
 
         if (!article) return res.status(500).json({ error: '节点数据抓取失败' });
 
-        let newBalance = user.balance - 200;
         let reward = 0, rarity = 'N';
         const r = article.rating || 0;
 
@@ -114,3 +107,5 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: e.message || '服务器内部错误' });
     }
 }
+
+export default withAuth(handler);

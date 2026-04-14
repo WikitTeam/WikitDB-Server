@@ -1,5 +1,6 @@
 import prisma from '../../../lib/prisma';
 import { verifyToken } from '../../../utils/auth';
+import { sanitizeGraphQL } from '../../../utils/security';
 
 const generateBounties = (config) => {
     const tagPool = config?.tags?.length > 0 ? config.tags : ['原创', '精品', 'scp', 'tale', 'goi-format', '微恐', '搞笑', '科幻', 'keter', '安全'];
@@ -66,6 +67,10 @@ export default async function handler(req, res) {
         const { action, bountyId, wiki, page } = req.body;
 
         if (action === 'refresh') {
+            // refresh 需要登录鉴权
+            const refreshDecoded = verifyToken(req);
+            if (!refreshDecoded || !refreshDecoded.username) return res.status(401).json({ error: '未授权的访问' });
+
             const configRecord = await prisma.setting.findUnique({ where: { key: 'config:bounty' } });
             let config = {};
             if (configRecord && configRecord.value) {
@@ -105,7 +110,9 @@ export default async function handler(req, res) {
 
             if (bounty.status !== 'active') return res.status(400).json({ error: '这笔悬赏已经被领走了' });
 
-            const query = { query: `query { article(wiki: "${wiki}", page: "${page}") { title rating tags author } }` };
+            const safeWiki = sanitizeGraphQL(wiki);
+            const safePage = sanitizeGraphQL(page);
+            const query = { query: `query { article(wiki: "${safeWiki}", page: "${safePage}") { title rating tags author } }` };
             const gqlRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query)
             });

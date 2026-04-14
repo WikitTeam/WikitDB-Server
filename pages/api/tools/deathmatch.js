@@ -1,23 +1,17 @@
 import prisma from '../../../lib/prisma';
-import { verifyToken } from '../../../utils/auth';
+import { withAuth } from '../../../utils/withAuth';
+import { validateNumberRange } from '../../../utils/security';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    // 验证身份
-    const decoded = verifyToken(req);
-    if (!decoded || !decoded.username) return res.status(401).json({ error: '未授权的访问' });
-    const username = decoded.username; 
-
+    const user = req.user;
     const { betAmount, betSide } = req.body;
 
     try {
-        const user = await prisma.user.findUnique({ where: { username } });
-        if (!user) return res.status(404).json({ error: '用户不存在' });
-
-        const amount = Number(betAmount);
-        if (isNaN(amount) || amount <= 0) return res.status(400).json({ error: '下注金额无效' });
-        if ((user.balance || 0) < amount) return res.status(400).json({ error: '账户余额不足' });
+        const amount = validateNumberRange(betAmount, 1, 10000);
+        if (amount === null) return res.status(400).json({ error: '下注金额无效（范围 1-10000）' });
+        if (Number(user.balance || 0) < amount) return res.status(400).json({ error: '账户余额不足' });
 
         const countRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -43,7 +37,6 @@ export default async function handler(req, res) {
         const [leftPage, rightPage] = await Promise.all([fetchPage(), fetchPage()]);
         if (!leftPage || !rightPage) return res.status(500).json({ error: '数据节点抓取失败' });
 
-        let newBalance = user.balance - amount;
         let winner = 'draw';
         const leftRating = leftPage.rating || 0;
         const rightRating = rightPage.rating || 0;
@@ -113,3 +106,5 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: e.message || '服务器内部错误' });
     }
 }
+
+export default withAuth(handler);

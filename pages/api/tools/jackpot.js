@@ -1,5 +1,6 @@
 import prisma from '../../../lib/prisma';
 import { verifyToken } from '../../../utils/auth';
+import crypto from 'crypto';
 
 export default async function handler(req, res) {
     const { action, number } = req.body;
@@ -7,10 +8,10 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
         const poolRecord = await prisma.setting.findUnique({ where: { key: 'jackpot_pool' } });
         const ticketsRecord = await prisma.setting.findUnique({ where: { key: 'jackpot_tickets' } });
-        
+
         const pool = poolRecord ? Number(poolRecord.value) : 0;
         const tickets = ticketsRecord ? JSON.parse(ticketsRecord.value) : {};
-        
+
         return res.status(200).json({ pool, tickets });
     }
 
@@ -18,9 +19,12 @@ export default async function handler(req, res) {
         if (action === 'buy') {
             const decoded = verifyToken(req);
             if (!decoded || !decoded.username) return res.status(401).json({ error: '未授权的访问' });
-            const username = decoded.username; 
+            const username = decoded.username;
 
-            if (!number) return res.status(400).json({ error: '参数不完整' });
+            // 校验号码格式：必须是 00-99 的两位数字符串
+            if (!number || !/^\d{2}$/.test(number)) {
+                return res.status(400).json({ error: '号码格式无效，请输入 00-99 的两位数字' });
+            }
             
             const user = await prisma.user.findUnique({ where: { username } });
             if (!user) return res.status(404).json({ error: '用户不存在' });
@@ -82,13 +86,20 @@ export default async function handler(req, res) {
         }
 
         if (action === 'draw') {
+            // 开奖需要管理员权限
+            const drawDecoded = verifyToken(req);
+            if (!drawDecoded || !drawDecoded.username) return res.status(401).json({ error: '未授权的访问' });
+            const drawUser = await prisma.user.findUnique({ where: { username: drawDecoded.username } });
+            if (!drawUser || !drawUser.isAdmin) return res.status(403).json({ error: '仅管理员可执行开奖' });
+
             const poolRecord = await prisma.setting.findUnique({ where: { key: 'jackpot_pool' } });
             const ticketsRecord = await prisma.setting.findUnique({ where: { key: 'jackpot_tickets' } });
-            
+
             const pool = poolRecord ? Number(poolRecord.value) : 0;
             const tickets = ticketsRecord ? JSON.parse(ticketsRecord.value) : {};
-            
-            const winningNumber = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+
+            // 使用密码学安全的随机数
+            const winningNumber = crypto.randomInt(100).toString().padStart(2, '0');
             const winners = [];
 
             for (const [uname, num] of Object.entries(tickets)) {

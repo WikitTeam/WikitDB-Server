@@ -1,42 +1,40 @@
 import prisma from '../../../lib/prisma';
-import { verifyToken } from '../../../utils/auth';
+import { withAuth } from '../../../utils/withAuth';
 
-export default async function handler(req, res) {
-    if (req.method === 'GET') {
-        try {
-            const configRecord = await prisma.setting.findUnique({ where: { key: 'config:bingo' } });
-            let config = { tags: ['原创', '翻译', '搞笑', '微恐', '设定中心', '人事档案'], cost: 50 };
-            
-            if (configRecord && configRecord.value) {
-                try { config = JSON.parse(configRecord.value); } catch(e) {}
-            }
-            return res.status(200).json(config);
-        } catch (e) { 
-            return res.status(500).json({ error: '配置读取失败' }); 
+async function getHandler(req, res) {
+    try {
+        const configRecord = await prisma.setting.findUnique({ where: { key: 'config:bingo' } });
+        let config = { tags: ['原创', '翻译', '搞笑', '微恐', '设定中心', '人事档案'], cost: 50 };
+
+        if (configRecord && configRecord.value) {
+            try { config = JSON.parse(configRecord.value); } catch(e) {}
         }
+        return res.status(200).json(config);
+    } catch (e) {
+        return res.status(500).json({ error: '配置读取失败' });
     }
+}
 
-    if (req.method === 'POST') {
-        const decoded = verifyToken(req);
-        if (!decoded || !decoded.username) return res.status(401).json({ error: '未授权的访问' });
-        const username = decoded.username; 
+async function postHandler(req, res) {
+    const user = req.user;
+    const { selectedTags } = req.body;
+    if (!selectedTags || selectedTags.length !== 3) return res.status(400).json({ error: '必须选择3个不同的标签' });
 
-        const { selectedTags } = req.body;
-        if (!selectedTags || selectedTags.length !== 3) return res.status(400).json({ error: '必须选择3个不同的标签' });
+    try {
+        const configRecord = await prisma.setting.findUnique({ where: { key: 'config:bingo' } });
+        let config = null;
+        if (configRecord && configRecord.value) {
+            try { config = JSON.parse(configRecord.value); } catch(e) {}
+        }
 
-        try {
-            const configRecord = await prisma.setting.findUnique({ where: { key: 'config:bingo' } });
-            let config = null;
-            if (configRecord && configRecord.value) {
-                try { config = JSON.parse(configRecord.value); } catch(e) {}
-            }
-            
-            const scanCost = config?.cost || 50;
+        const scanCost = config?.cost || 50;
+        const allowedTags = config?.tags || ['原创', '翻译', '搞笑', '微恐', '设定中心', '人事档案'];
 
-            const user = await prisma.user.findUnique({ where: { username } });
-            if (!user) return res.status(404).json({ error: '用户不存在' });
+        // 校验标签必须在允许的标签池内
+        const invalidTag = selectedTags.find(t => !allowedTags.includes(t));
+        if (invalidTag) return res.status(400).json({ error: `无效的标签: ${invalidTag}` });
 
-            if ((user.balance || 0) < scanCost) return res.status(400).json({ error: `余额不足，扫描需要 ¥${scanCost}` });
+        if (Number(user.balance || 0) < scanCost) return res.status(400).json({ error: `余额不足，扫描需要 ¥${scanCost}` });
 
             const countRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -113,9 +111,15 @@ export default async function handler(req, res) {
             });
 
             return res.status(200).json({ success: true, article, hitCount, reward, newBalance: result });
-        } catch (e) { 
+        } catch (e) {
             console.error('Bingo error:', e);
-            return res.status(500).json({ error: e.message || '服务器内部错误' }); 
+            return res.status(500).json({ error: e.message || '服务器内部错误' });
         }
-    }
+}
+
+// GET 不需要鉴权，POST 需要
+export default function handler(req, res) {
+    if (req.method === 'GET') return getHandler(req, res);
+    if (req.method === 'POST') return withAuth(postHandler)(req, res);
+    return res.status(405).json({ error: 'Method not allowed' });
 }

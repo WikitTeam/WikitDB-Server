@@ -1,4 +1,5 @@
 const config = require('../../wikitdb.config.js');
+import { sanitizeGraphQL } from '../../utils/security';
 
 export default async function handler(req, res) {
     const { site, q, p } = req.query;
@@ -16,13 +17,14 @@ export default async function handler(req, res) {
         actualWikiName = wikiConfig.URL.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('.')[0];
     }
 
-    const keyword = q ? q.trim() : '';
+    const keyword = q ? sanitizeGraphQL(q.trim()) : '';
     const currentPage = parseInt(p, 10) || 1;
     const pageSize = 50;
+    const safeWikiName = sanitizeGraphQL(actualWikiName);
 
     try {
         const queryFilter = keyword ? `, title: "%${keyword}%"` : '';
-        const query = `query { articles(wiki: ["${actualWikiName}"]${queryFilter}, page: ${currentPage}, pageSize: ${pageSize}) { nodes { title page wiki rating created_at } pageInfo { total } } }`;
+        const query = `query { articles(wiki: ["${safeWikiName}"]${queryFilter}, page: ${currentPage}, pageSize: ${pageSize}) { nodes { title page wiki rating created_at } pageInfo { total } } }`;
 
         const gqlRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
             method: 'POST',
@@ -55,7 +57,7 @@ export default async function handler(req, res) {
     } catch (error) {
         // 如果 GraphQL 原生检索语法报错，走兜底逻辑：在本地过滤和模拟翻页
         try {
-            const fallbackQuery = `query { articles(wiki: ["${actualWikiName}"], page: 1, pageSize: 2000) { nodes { title page wiki rating created_at } } }`;
+            const fallbackQuery = `query { articles(wiki: ["${safeWikiName}"], page: 1, pageSize: 2000) { nodes { title page wiki rating created_at } } }`;
             const fallbackRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

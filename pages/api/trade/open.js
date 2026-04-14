@@ -1,46 +1,41 @@
 import prisma from '../../../lib/prisma';
-import { verifyToken } from '../../../utils/auth';
+import { withAuth } from '../../../utils/withAuth';
+import { validateNumberRange } from '../../../utils/security';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).end();
 
-    const user = verifyToken(req);
-    if (!user) return res.status(401).json({ error: '未登录' });
+    const user = req.user;
+    const { target, amount, type } = req.body;
 
-    const { target, amount, type } = req.body; // 对应新 Schema 字段
-
-    if (!amount || amount <= 0) return res.status(400).json({ error: '交易金额异常' });
+    const safeAmount = validateNumberRange(amount, 1, 100000);
+    if (safeAmount === null) return res.status(400).json({ error: '交易金额异常（范围 1-100000）' });
 
     try {
-        // 使用 $transaction 确保原子性，防止刷钱
         const result = await prisma.$transaction(async (tx) => {
-            // 1. 扣钱时直接在数据库层做校验，利用 PostgreSQL 的原子性
-            // 注意：这里我们主动查一次并锁住记录（悲观锁或通过条件更新）
             const dbUser = await tx.user.findUnique({
                 where: { id: user.id },
                 select: { balance: true }
             });
 
-            if (dbUser.balance.lt(amount)) {
+            if (dbUser.balance.lt(safeAmount)) {
                 throw new Error('余额不足');
             }
 
-            // 2. 更新余额
             const updatedUser = await tx.user.update({
                 where: { id: user.id },
                 data: {
                     balance: {
-                        decrement: amount // 原子减法，数据库级别防止超支
+                        decrement: safeAmount
                     }
                 }
             });
 
-            // 3. 创建结构化的交易记录（符合新 Schema）
             const trade = await tx.trade.create({
                 data: {
                     userId: user.id,
                     type: type || 'BUY',
-                    amount: amount,
+                    amount: safeAmount,
                     target: target,
                     status: 'COMPLETED',
                     description: `交易目标: ${target}`
@@ -61,3 +56,5 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: error.message || '交易处理失败' });
     }
 }
+
+export default withAuth(handler);

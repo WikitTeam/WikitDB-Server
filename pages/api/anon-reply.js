@@ -46,6 +46,10 @@ async function handler(req, res) {
         return res.status(400).json({ error: '请求参数不完整' });
     }
 
+    if (content.length > 2000) {
+        return res.status(400).json({ error: '内容长度不能超过 2000 个字符' });
+    }
+
     try {
         const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000);
         const recentAnonCount = await prisma.trade.count({

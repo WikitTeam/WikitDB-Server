@@ -1,41 +1,56 @@
 import prisma from '../../../lib/prisma';
-import { verifyToken } from '../../../utils/auth';
+import { withAuth } from '../../../utils/withAuth';
 
-export default async function handler(req, res) {
+const GRAPHQL_ENDPOINT = 'https://wikit.unitreaty.org/apiv1/graphql';
+
+// 服务端获取作者当前分数，防止客户端伪造
+async function fetchAuthorScore(authorName) {
+    const query = {
+        query: `query($author: String!) { articles(author: $author, page: 1, pageSize: 500) { nodes { rating } } }`,
+        variables: { author: authorName }
+    };
+    const res = await fetch(GRAPHQL_ENDPOINT, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query)
+    });
+    if (!res.ok) throw new Error('分数获取失败');
+    const result = await res.json();
+    if (result.errors) throw new Error('分数查询异常');
+    const articles = result.data?.articles?.nodes || [];
+    let totalRating = 0;
+    articles.forEach(a => { totalRating += (a.rating || 0); });
+    return totalRating;
+}
+
+async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const decoded = verifyToken(req);
-    if (!decoded || !decoded.username) return res.status(401).json({ error: '未授权的访问' });
-    const username = decoded.username;
+    const user = req.user;
+    const { tradeId } = req.body;
 
-    const { tradeId, currentScore } = req.body;
-
-    if (!tradeId || currentScore === undefined) {
+    if (!tradeId) {
         return res.status(400).json({ error: '参数不完整' });
     }
 
     try {
-        const user = await prisma.user.findUnique({
-            where: { username }
-        });
-        if (!user) return res.status(404).json({ error: '用户不存在' });
-
         // 在数据库里找到这笔状态为 OPEN 的订单
         const tradeRecord = await prisma.trade.findFirst({
-            where: { 
+            where: {
                 id: Number(tradeId),
                 userId: user.id,
                 status: 'OPEN'
             }
         });
-        
+
         if (!tradeRecord) return res.status(404).json({ error: '找不到该开仓记录或已被平仓' });
 
         const tradeData = JSON.parse(tradeRecord.description || '{}');
         const openScore = Number(tradeData.lockType) || 0;
-        const scoreDiff = Number(currentScore) - openScore;
         const margin = Number(tradeRecord.amount);
-        
+
+        // 服务端获取当前分数，不再信任客户端传入
+        const currentScore = await fetchAuthorScore(tradeRecord.target);
+        const scoreDiff = currentScore - openScore;
+
         // 盈亏计算
         let pnl = 0;
         if (tradeData.direction === 'up') {
@@ -46,7 +61,7 @@ export default async function handler(req, res) {
 
         // 计算最终返还金额（如果亏损超过本金则爆仓归零）
         let finalReturn = margin + pnl;
-        if (finalReturn < 0) finalReturn = 0; 
+        if (finalReturn < 0) finalReturn = 0;
 
         // 执行结算事务
         const result = await prisma.$transaction(async (tx) => {
@@ -57,7 +72,7 @@ export default async function handler(req, res) {
 
             const updatedTrade = await tx.trade.update({
                 where: { id: tradeRecord.id },
-                data: { 
+                data: {
                     status: 'CLOSED',
                     description: JSON.stringify({
                         ...tradeData,
@@ -72,10 +87,10 @@ export default async function handler(req, res) {
             return { newBalance: updatedUser.balance };
         });
 
-        return res.status(200).json({ 
-            success: true, 
+        return res.status(200).json({
+            success: true,
             message: '平仓成功',
-            newBalance: result.newBalance, 
+            newBalance: result.newBalance,
             pnl,
             finalReturn
         });
@@ -85,3 +100,5 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: '平仓结算失败' });
     }
 }
+
+export default withAuth(handler);

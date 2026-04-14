@@ -1,5 +1,6 @@
 import prisma from '../../lib/prisma';
 import nodemailer from 'nodemailer';
+import { rateLimit } from '../../utils/security';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -17,9 +18,13 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: '该邮箱已被注册' });
         }
 
-        // 安全优化：拦截接口狂刷
-        // 数据库里的过期时间是当前时间 + 10分钟。
-        // 如果过期时间距离现在大于 9分钟（即发信时间还在1分钟以内），说明请求太频繁
+        // 每日上限：同一邮箱每天最多 5 次
+        const dailyLimited = await rateLimit(`sendcode_daily:${email}`, 5, 24 * 60 * 60 * 1000);
+        if (dailyLimited) {
+            return res.status(429).json({ error: '该邮箱今日发送次数已达上限，请明天再试' });
+        }
+
+        // 短期限频：1 分钟内不可重复发送
         const existingCode = await prisma.verificationCode.findUnique({ where: { email } });
         if (existingCode) {
             const timeRemaining = new Date(existingCode.expiresAt).getTime() - Date.now();
