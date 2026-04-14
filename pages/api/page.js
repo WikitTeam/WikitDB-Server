@@ -1,8 +1,6 @@
 import * as cheerio from 'cheerio';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../lib/prisma';
 const config = require('../../wikitdb.config.js');
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     const { site, page, hpage = 1 } = req.query;

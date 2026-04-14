@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../lib/prisma';
 import { verifyToken } from '../../utils/auth';
-
-const prisma = new PrismaClient();
 const SUPER_ADMIN = 'Laimu_slime';
 
 export default async function handler(req, res) {

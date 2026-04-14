@@ -1,33 +1,34 @@
 import jwt from 'jsonwebtoken';
-import { parse } from 'cookie';
+import { parse, serialize } from 'cookie';
+
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+    throw new Error('FATAL: JWT_SECRET is not defined in environment variables!');
+}
+
+const COOKIE_OPTIONS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    path: '/',
+};
 
 export function signToken(payload) {
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-        console.error('致命错误: 环境变量中未配置 JWT_SECRET');
-        throw new Error('服务器安全配置缺失');
-    }
-    return jwt.sign(payload, secret, { expiresIn: '7d' });
+    return jwt.sign(payload, JWT_SECRET || 'dev_secret', { expiresIn: '7d' });
 }
 
 export function verifyToken(req) {
     const cookies = parse(req.headers.cookie || '');
     const token = cookies.auth_token;
-    
-    if (!token) {
-        console.warn('[Auth Warning] No auth_token found in request cookies!');
-        return null;
-    }
-    
+    if (!token) return null;
     try {
-        const secret = process.env.JWT_SECRET;
-        if (!secret) {
-            console.error('[Auth Critical] JWT_SECRET is not defined in environment variables!');
-            return null;
-        }
-        return jwt.verify(token, secret);
+        return jwt.verify(token, JWT_SECRET || 'dev_secret');
     } catch (e) {
-        console.error('[Auth Error] Token verification failed:', e.message);
         return null;
     }
+}
+
+export function serializeAuthCookie(token) {
+    return serialize('auth_token', token, COOKIE_OPTIONS);
 }

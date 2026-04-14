@@ -1,9 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../lib/prisma';
 import bcrypt from 'bcryptjs';
-import { signToken } from '../../utils/auth';
-import { serialize } from 'cookie';
-
-const prisma = new PrismaClient();
+import { signToken, serializeAuthCookie } from '../../utils/auth';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -27,16 +24,9 @@ export default async function handler(req, res) {
         
         if (!isMatch) return res.status(400).json({ error: '用户名或密码错误' });
 
-        const token = signToken({ username: user.username });
+        const token = signToken({ username: user.username, id: user.id });
 
-        res.setHeader('Set-Cookie', serialize('auth_token', token, {
-            httpOnly: true,
-            secure: false, 
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24 * 7,
-            path: '/',
-            domain: req.headers.host.split(':')[0] // 动态适配当前域名
-        }));
+        res.setHeader('Set-Cookie', serializeAuthCookie(token));
 
         res.status(200).json({ 
             message: '登录成功',
@@ -44,6 +34,7 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        res.status(500).json({ error: '数据库连接异常' });
+        console.error('Login error:', error);
+        res.status(500).json({ error: '服务器内部错误' });
     }
 }

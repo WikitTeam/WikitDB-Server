@@ -3,10 +3,8 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const http = require('http');
 const https = require('https');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('./lib/prisma');
 const config = require('./wikitdb.config.js');
-
-const prisma = new PrismaClient();
 
 const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 10 });
 const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 10 });
@@ -123,6 +121,6 @@ async function runPageArchiver() {
     }
 }
 
-// 每 12 小时运行一次 (全站备份负载较高)
+// 每 12 小时运行一次 (全站深度存档负载较高)
 cron.schedule('0 */12 * * *', () => runPageArchiver());
 runPageArchiver();

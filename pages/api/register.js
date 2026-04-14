@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../lib/prisma';
 import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
+import crypto from 'crypto';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).end();
@@ -21,7 +20,7 @@ export default async function handler(req, res) {
             if (emailExists) return res.status(400).json({ error: '该电子邮箱已被绑定' });
         }
 
-        const verifyCode = 'WIKIT-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const verifyCode = 'WIKIT-' + crypto.randomBytes(4).toString('hex').toUpperCase();
 
         try {
             const hashedPassword = await bcrypt.hash(password, 10);
@@ -35,7 +34,8 @@ export default async function handler(req, res) {
             
             return res.status(200).json({ verifyUrl: verifyCode }); 
         } catch (err) {
-            return res.status(500).json({ error: '身份验证令牌生成失败' });
+            console.error('Register start error:', err);
+            return res.status(500).json({ error: '注册初始化失败' });
         }
     }
 
@@ -47,7 +47,13 @@ export default async function handler(req, res) {
         }
 
         try {
-            const queryRes = await fetch('https://wikit.unitreaty.org/wikidot/pagehistory?wiki=wikkit&page=https://wikkit.wikidot.com/wikitdb:verify');
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), 5000); // 5秒超时防止挂死
+
+            const queryRes = await fetch('https://wikit.unitreaty.org/wikidot/pagehistory?wiki=wikkit&page=https://wikkit.wikidot.com/wikitdb:verify', { signal: controller.signal });
+            clearTimeout(id);
+            
+            if (!queryRes.ok) throw new Error('External API failure');
             const historyData = await queryRes.json();
             
             let wdid = '';
@@ -81,8 +87,8 @@ export default async function handler(req, res) {
             }
             
         } catch (err) {
-            console.error(err);
-            return res.status(500).json({ error: '外部验证接口同步失败' });
+            console.error('External verification error:', err);
+            return res.status(500).json({ error: '外部验证接口同步失败或超时' });
         }
     }
 

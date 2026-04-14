@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../../lib/prisma';
 import { verifyToken } from '../../../utils/auth';
-
-const prisma = new PrismaClient();
 
 const generateBounties = (config) => {
     const tagPool = config?.tags?.length > 0 ? config.tags : ['原创', '精品', 'scp', 'tale', 'goi-format', '微恐', '搞笑', '科幻', 'keter', '安全'];

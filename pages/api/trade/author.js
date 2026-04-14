@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../../lib/prisma';
 import { verifyToken } from '../../../utils/auth';
-
-const prisma = new PrismaClient();
 
 async function getAuthorPrice(authorName) {
     const cacheKey = `author_price_cache:${authorName}`;

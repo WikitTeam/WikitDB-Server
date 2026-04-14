@@ -1,8 +1,6 @@
 import * as cheerio from 'cheerio';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../lib/prisma';
 import axios from 'axios';
-
-const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
     const { name } = req.query;

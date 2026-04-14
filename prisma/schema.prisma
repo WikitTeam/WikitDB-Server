@@ -12,15 +12,17 @@ model User {
   username       String   @unique
   password       String
   email          String?  @unique
-  wikidotAccount String?
-  balance        Float    @default(10000)
+  wikidotAccount String?  @unique // 必须唯一，防止多号一绑
+  balance        Decimal  @default(10000) @db.Decimal(20, 2) // 明确精度
   createdAt      DateTime @default(now())
   isAdmin        Boolean  @default(false)
-  status         String   @default("active") // 新增此行用于封禁状态管理
+  status         UserStatus @default(ACTIVE)
 
   images         Image[]
   trades         Trade[]
   gachas         Gacha[]
+  
+  @@index([username])
 }
 
 model TempReg {
@@ -41,52 +43,87 @@ model Image {
 
   uploaderId  Int
   uploader    User     @relation(fields: [uploaderId], references: [id])
+
+  @@index([uploaderId])
 }
 
+// 结构化 Trade 表，告别 Json 乱炖
 model Trade {
-  id        Int      @id @default(autoincrement())
-  data      Json
-  createdAt DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  
+  type        TradeType 
+  amount      Decimal  @db.Decimal(20, 2)
+  target      String?  // 交易目标（如作者ID、物品名）
+  description String?
+  status      String   @default("COMPLETED")
+  
+  createdAt   DateTime @default(now())
 
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  @@index([userId])
+  @@index([createdAt])
 }
 
+// 结构化 Gacha 表
 model Gacha {
   id        Int      @id @default(autoincrement())
-  data      Json
-  createdAt DateTime @default(now())
-
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
+  
+  poolId    String   // 抽卡池ID
+  result    String   // 抽卡结果
+  cost      Decimal  @db.Decimal(20, 2)
+  
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Setting {
   key   String @id
-  value String
+  value Json
 }
 
-// 页面备份存档
 model PageArchive {
   id        Int      @id @default(autoincrement())
   wiki      String   // 站点代码 (如 dfc, if, scp)
   slug      String   // 页面路径 (如 page-name)
-  title     String?  // 页面标题
-  content   String?  // 页面正文 HTML
-  author    String?  // 页面作者
-  tags      String?  // 页面标签 (空格分隔)
-  sourceUrl String?  // 原始链接
-  images    Json?    // 页面内的图片资源 (数组)
+  title     String?  
+  content   String?  @db.Text // 明确使用 Text 类型
+  author    String?  
+  sourceUrl String?  
+  images    Json?    
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 
+  tags      Tag[]    // 改为多对多关系
+
   @@unique([wiki, slug])
+  @@index([author])
 }
 
-// 邮箱验证码
+model Tag {
+  id      Int           @id @default(autoincrement())
+  name    String        @unique
+  pages   PageArchive[]
+}
+
 model VerificationCode {
   id        Int      @id @default(autoincrement())
   email     String   @unique
   code      String
   expiresAt DateTime
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+}
+
+enum TradeType {
+  BUY
+  SELL
+  TRANSFER
+  ADJUST
 }

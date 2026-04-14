@@ -3,13 +3,8 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const http = require('http');
 const https = require('https');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('./lib/prisma');
 const config = require('./wikitdb.config.js');
-
-const crawlerDbUrl = process.env.DATABASE_URL + (process.env.DATABASE_URL.includes('?') ? '&' : '?') + 'connection_limit=3&pool_timeout=20';
-const prisma = new PrismaClient({
-    datasources: { db: { url: crawlerDbUrl } },
-});
 
 const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 10 });
 const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 10 });

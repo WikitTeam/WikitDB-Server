@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../../lib/prisma';
 import { verifyToken } from '../../../utils/auth';
 
-const prisma = new PrismaClient();
 const GRAPHQL_ENDPOINT = 'https://wikit.unitreaty.org/apiv1/graphql';
 
 export default async function handler(req, res) {
