@@ -4,7 +4,7 @@ const config = require('../../wikitdb.config.js');
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
-    const { site, p = 1 } = req.query;
+    const { site, p = 1, search = '' } = req.query;
 
     if (!site) return res.status(400).json({ error: '缺少有效的 site 参数' });
 
@@ -12,22 +12,51 @@ export default async function handler(req, res) {
     const PAGE_SIZE = 24; 
 
     try {
-        const dbKey = `gallery_images_${site}`;
-        const record = await prisma.setting.findUnique({ where: { key: dbKey } });
+        // 构建查询条件
+        const where = {
+            wiki: site
+        };
 
-        if (!record || !record.value) {
-            return res.status(200).json({ currentPage: pageNum, totalPages: 1, images: [], message: '暂无缓存' });
+        // 如果有搜索关键词 (支持搜标题、作者或标签)
+        if (search) {
+            where.OR = [
+                { title: { contains: search, mode: 'insensitive' } },
+                { author: { contains: search, mode: 'insensitive' } },
+                { tags: { contains: search, mode: 'insensitive' } }
+            ];
         }
 
-        const allImages = JSON.parse(record.value);
-        const totalPages = Math.ceil(allImages.length / PAGE_SIZE) || 1;
+        // 获取总数
+        const totalCount = await prisma.pageArchive.count({ where });
+        const totalPages = Math.ceil(totalCount / PAGE_SIZE) || 1;
 
-        allImages.reverse();
-        const startIndex = (pageNum - 1) * PAGE_SIZE;
-        const paginatedImages = allImages.slice(startIndex, startIndex + PAGE_SIZE);
+        // 获取分页数据
+        const archives = await prisma.pageArchive.findMany({
+            where,
+            orderBy: { updatedAt: 'desc' },
+            skip: (pageNum - 1) * PAGE_SIZE,
+            take: PAGE_SIZE,
+            select: {
+                id: true,
+                wiki: true,
+                slug: true,
+                title: true,
+                author: true,
+                tags: true,
+                images: true,
+                updatedAt: true,
+                sourceUrl: true
+            }
+        });
 
-        res.status(200).json({ currentPage: pageNum, totalPages: totalPages, images: paginatedImages });
+        res.status(200).json({ 
+            currentPage: pageNum, 
+            totalPages: totalPages, 
+            totalCount: totalCount,
+            archives: archives 
+        });
     } catch (error) {
-        res.status(500).json({ error: '获取画廊数据失败' });
+        console.error('API Error:', error);
+        res.status(500).json({ error: '获取备份档案失败' });
     }
 }

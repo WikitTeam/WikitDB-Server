@@ -66,6 +66,23 @@ model Setting {
   value String
 }
 
+// 页面备份存档
+model PageArchive {
+  id        Int      @id @default(autoincrement())
+  wiki      String   // 站点代码 (如 dfc, if, scp)
+  slug      String   // 页面路径 (如 page-name)
+  title     String?  // 页面标题
+  content   String?  // 页面正文 HTML
+  author    String?  // 页面作者
+  tags      String?  // 页面标签 (空格分隔)
+  sourceUrl String?  // 原始链接
+  images    Json?    // 页面内的图片资源 (数组)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([wiki, slug])
+}
+
 // 邮箱验证码
 model VerificationCode {
   id        Int      @id @default(autoincrement())

@@ -29,7 +29,7 @@ export default function Tools() {
                         { href: '/tools/site-index', icon: 'fa-globe', color: 'teal', title: '站点大盘指数', desc: '各站繁荣度量化为点数走势，可作为长线 ETF 基金大额认购持有。' },
                         { href: '/tools/member-admin', icon: 'fa-users-gear', color: 'blue', title: '成员管理', desc: '在特定站点对指定成员采取封禁、移除等操作。' },
                         { href: '/tools/delete-announcement', icon: 'fa-trash-can', color: 'red', title: '删帖公示', desc: '查看近期已被删除的页面记录与相关公示信息。' },
-                        { href: '/tools/gallery', icon: 'fa-images', color: 'fuchsia', title: '全站图片画廊', desc: '自动扫描并提取全站页面中的图片资源，形成可视化的画廊瀑布流展示。' }
+                        { href: '/tools/gallery', icon: 'fa-box-archive', color: 'indigo', title: '全站页面备份', desc: '实时同步各分站页面数据，提供精细化的多维搜索与离线备份，确保数字资产的安全存档。' }
                     ].map((tool) => (
                         <Link 
                             key={tool.href}
