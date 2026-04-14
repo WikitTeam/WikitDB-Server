@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+const config = require('../wikitdb.config.js');
 
 export default function Register() {
     const router = useRouter();
@@ -158,7 +159,7 @@ export default function Register() {
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
             <Head>
-                <title>注册 - WikitDB</title>
+                <title>注册 - {config.SITE_NAME}</title>
             </Head>
 
             <div className="w-full max-w-md bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 rounded-2xl p-8 shadow-xl dark:shadow-2xl relative overflow-hidden transition-all">
