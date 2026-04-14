@@ -17,38 +17,46 @@ async function handler(req, res) {
     }
 
     const user = await prisma.user.findUnique({
-        where: { username: targetUser }
+        where: { username: targetUser },
+        select: { id: true, balance: true }
     });
     
     if (!user) return res.status(404).json({ error: '目标用户不存在' });
 
-    const oldBalance = user.balance !== null ? Number(user.balance) : 10000;
-    const newBalance = oldBalance + adjustAmount;
-
-    if (newBalance < 0) {
-        return res.status(400).json({ error: `操作失败：用户账户可用余额不足（当前: ${oldBalance.toFixed(2)}）` });
-    }
-
-    await prisma.$transaction([
-        prisma.user.update({
-            where: { id: user.id },
-            data: { balance: newBalance }
-        }),
-        prisma.trade.create({
-            data: {
-                userId: user.id,
-                data: {
-                    time: Date.now(),
-                    operator: operator,
-                    action: 'adjust_balance',
-                    target: targetUser,
-                    details: `系统调账: ${adjustAmount > 0 ? '+' : ''}${adjustAmount.toFixed(2)} (备注: ${note || '无'})`
-                }
+    try {
+        const result = await prisma.$transaction(async (tx) => {
+            const currentBalance = Number(user.balance);
+            if (currentBalance + adjustAmount < 0) {
+                throw new Error(`操作失败：用户账户可用余额不足（当前: ${currentBalance.toFixed(2)}）`);
             }
-        })
-    ]);
 
-    return res.status(200).json({ success: true, newBalance });
+            const updatedUser = await tx.user.update({
+                where: { id: user.id },
+                data: {
+                    balance: {
+                        increment: adjustAmount
+                    }
+                }
+            });
+
+            const trade = await tx.trade.create({
+                data: {
+                    userId: user.id,
+                    type: 'ADJUST',
+                    amount: Math.abs(adjustAmount),
+                    target: targetUser,
+                    description: `系统调账: ${adjustAmount > 0 ? '+' : ''}${adjustAmount.toFixed(2)} (操作人: ${operator}, 备注: ${note || '无'})`,
+                    status: 'COMPLETED'
+                }
+            });
+
+            return { newBalance: updatedUser.balance };
+        });
+
+        return res.status(200).json({ success: true, newBalance: result.newBalance });
+    } catch (error) {
+        return res.status(400).json({ error: error.message || '调账处理失败' });
+    }
 }
 
 export default withAdmin(handler);

@@ -54,21 +54,62 @@ export default async function handler(req, res) {
         let reward = 0;
         if (winner === betSide) {
             reward = amount * 2;
-            newBalance += reward;
         } else if (winner === 'draw') {
             reward = amount;
-            newBalance += reward;
         }
 
-        // 更新余额
-        await prisma.user.update({
-            where: { username },
-            data: { balance: newBalance }
+        const netChange = reward - amount;
+
+        const result = await prisma.$transaction(async (tx) => {
+            const dbUser = await tx.user.findUnique({
+                where: { id: user.id },
+                select: { balance: true }
+            });
+
+            if (dbUser.balance.lt(amount)) {
+                throw new Error('账户余额不足');
+            }
+
+            const updatedUser = await tx.user.update({
+                where: { id: user.id },
+                data: {
+                    balance: {
+                        increment: netChange
+                    }
+                }
+            });
+
+            await tx.trade.create({
+                data: {
+                    userId: user.id,
+                    type: 'BUY',
+                    amount: amount,
+                    target: 'DEATHMATCH',
+                    description: `生死斗下注: ${amount}, 选择: ${betSide}, 结果: ${winner}, 奖励: ${reward}`,
+                    status: 'COMPLETED'
+                }
+            });
+
+            if (reward > 0) {
+                await tx.trade.create({
+                    data: {
+                        userId: user.id,
+                        type: 'SELL',
+                        amount: reward,
+                        target: 'DEATHMATCH_REWARD',
+                        description: `生死斗奖励: ${reward}`,
+                        status: 'COMPLETED'
+                    }
+                });
+            }
+
+            return updatedUser.balance;
         });
 
-        return res.status(200).json({ success: true, leftPage, rightPage, winner, reward, newBalance });
+        return res.status(200).json({ success: true, leftPage, rightPage, winner, reward, newBalance: result });
 
     } catch (e) {
-        return res.status(500).json({ error: '服务器内部错误' });
+        console.error('Deathmatch error:', e);
+        return res.status(500).json({ error: e.message || '服务器内部错误' });
     }
 }

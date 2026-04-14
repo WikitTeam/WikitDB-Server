@@ -64,16 +64,58 @@ export default async function handler(req, res) {
             if (hitCount === 2) reward = scanCost * 10;
             if (hitCount === 3) reward = scanCost * 100;
 
-            const newBalance = user.balance - scanCost + reward;
+            const netChange = reward - scanCost;
 
-            await prisma.user.update({
-                where: { username },
-                data: { balance: newBalance }
+            const result = await prisma.$transaction(async (tx) => {
+                const dbUser = await tx.user.findUnique({
+                    where: { id: user.id },
+                    select: { balance: true }
+                });
+
+                if (dbUser.balance.lt(scanCost)) {
+                    throw new Error(`余额不足，扫描需要 ¥${scanCost}`);
+                }
+
+                const updatedUser = await tx.user.update({
+                    where: { id: user.id },
+                    data: {
+                        balance: {
+                            increment: netChange
+                        }
+                    }
+                });
+
+                await tx.trade.create({
+                    data: {
+                        userId: user.id,
+                        type: 'BUY',
+                        amount: scanCost,
+                        target: 'BINGO',
+                        description: `Bingo扫描消耗: ${scanCost}, 命中数: ${hitCount}, 结果奖励: ${reward}`,
+                        status: 'COMPLETED'
+                    }
+                });
+
+                if (reward > 0) {
+                    await tx.trade.create({
+                        data: {
+                            userId: user.id,
+                            type: 'SELL',
+                            amount: reward,
+                            target: 'BINGO_REWARD',
+                            description: `Bingo奖励: ${reward}`,
+                            status: 'COMPLETED'
+                        }
+                    });
+                }
+
+                return updatedUser.balance;
             });
 
-            return res.status(200).json({ success: true, article, hitCount, reward, newBalance });
+            return res.status(200).json({ success: true, article, hitCount, reward, newBalance: result });
         } catch (e) { 
-            return res.status(500).json({ error: '服务器内部错误' }); 
+            console.error('Bingo error:', e);
+            return res.status(500).json({ error: e.message || '服务器内部错误' }); 
         }
     }
 }

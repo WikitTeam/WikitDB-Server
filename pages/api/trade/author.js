@@ -5,9 +5,8 @@ async function getAuthorPrice(authorName) {
     const cacheKey = `author_price_cache:${authorName}`;
     const cacheRecord = await prisma.setting.findUnique({ where: { key: cacheKey } });
     
-    // 处理缓存判断
     if (cacheRecord && cacheRecord.value) {
-        const cacheData = JSON.parse(cacheRecord.value);
+        const cacheData = typeof cacheRecord.value === 'string' ? JSON.parse(cacheRecord.value) : cacheRecord.value;
         if (Date.now() < cacheData.expires) {
             return Number(cacheData.price);
         }
@@ -30,8 +29,8 @@ async function getAuthorPrice(authorName) {
             const price = 10;
             await prisma.setting.upsert({
                 where: { key: cacheKey },
-                update: { value: JSON.stringify({ price, expires: Date.now() + 60000 }) },
-                create: { key: cacheKey, value: JSON.stringify({ price, expires: Date.now() + 60000 }) }
+                update: { value: { price, expires: Date.now() + 60000 } },
+                create: { key: cacheKey, value: { price, expires: Date.now() + 60000 } }
             });
             return price;
         }
@@ -42,8 +41,8 @@ async function getAuthorPrice(authorName) {
         const price = Math.max(1, 10 + (articles.length * 2.5) + (totalRating * 0.8) + (totalComments * 0.2));
         await prisma.setting.upsert({
             where: { key: cacheKey },
-            update: { value: JSON.stringify({ price, expires: Date.now() + 60000 }) },
-            create: { key: cacheKey, value: JSON.stringify({ price, expires: Date.now() + 60000 }) }
+            update: { value: { price, expires: Date.now() + 60000 } },
+            create: { key: cacheKey, value: { price, expires: Date.now() + 60000 } }
         });
         return price;
     } catch (e) {
@@ -72,14 +71,14 @@ export default async function handler(req, res) {
         if (!user) return res.status(404).json({ error: '用户不存在' });
 
         const portfolioKey = `portfolio:${username}`;
-        const portfolioRecord = await prisma.setting.findUnique({ where: { key: portfolioKey } });
-        const portfolio = portfolioRecord ? JSON.parse(portfolioRecord.value) : {};
 
         if (action === 'query') {
+            const portfolioRecord = await prisma.setting.findUnique({ where: { key: portfolioKey } });
+            const portfolio = portfolioRecord ? (typeof portfolioRecord.value === 'string' ? JSON.parse(portfolioRecord.value) : portfolioRecord.value) : {};
             let pData = portfolio[authorName];
             if (typeof pData === 'string') { try { pData = JSON.parse(pData); } catch(e){} }
             let pos = typeof pData === 'object' && pData !== null ? (pData.shares || 0) : (Number(pData) || 0);
-            return res.status(200).json({ newBalance: user.balance || 10000, newPosition: pos });
+            return res.status(200).json({ newBalance: user.balance, newPosition: pos });
         }
 
         let currentPrice;
@@ -87,97 +86,118 @@ export default async function handler(req, res) {
         catch (e) { return res.status(500).json({ error: '市值读取失败拦截' }); }
 
         const price = Number(currentPrice);
-        let pData = portfolio[authorName];
-        if (typeof pData === 'string') { try { pData = JSON.parse(pData); } catch(e){} }
 
-        let currentShares = 0, avgCost = price;
-        if (typeof pData === 'object' && pData !== null) {
-            currentShares = pData.shares || 0;
-            avgCost = pData.avgCost || price;
-        } else {
-            currentShares = Number(pData) || 0;
-        }
+        const result = await prisma.$transaction(async (tx) => {
+            const dbUser = await tx.user.findUnique({ where: { id: user.id } });
+            if (!dbUser) throw new Error('用户不存在');
 
-        const totalValue = tradeAmount * price;
-        let newBalance = user.balance;
+            const portfolioRecord = await tx.setting.findUnique({ where: { key: portfolioKey } });
+            const portfolio = portfolioRecord ? (typeof portfolioRecord.value === 'string' ? JSON.parse(portfolioRecord.value) : portfolioRecord.value) : {};
+            
+            let pData = portfolio[authorName];
+            if (typeof pData === 'string') { try { pData = JSON.parse(pData); } catch(e){} }
 
-        if (action === 'buy') {
-            if (currentShares >= 0) {
-                if (newBalance < totalValue) return res.status(400).json({ error: '余额不足' });
-                const curVal = currentShares * avgCost;
-                newBalance -= totalValue;
-                currentShares += tradeAmount;
-                avgCost = (curVal + totalValue) / currentShares;
-            } else if (currentShares < 0 && Math.abs(currentShares) < tradeAmount) {
-                const cover = Math.abs(currentShares);
-                const longAmt = tradeAmount - cover;
-                newBalance += (avgCost * cover) + ((avgCost - price) * cover);
-                const longCost = longAmt * price;
-                if (newBalance < longCost) return res.status(400).json({ error: '平空后余额不足开多' });
-                newBalance -= longCost;
-                currentShares = longAmt;
-                avgCost = price;
+            let currentShares = 0, avgCost = price;
+            if (typeof pData === 'object' && pData !== null) {
+                currentShares = pData.shares || 0;
+                avgCost = pData.avgCost || price;
             } else {
-                newBalance += (avgCost * tradeAmount) + ((avgCost - price) * tradeAmount);
-                currentShares += tradeAmount;
-                if (currentShares === 0) avgCost = 0;
+                currentShares = Number(pData) || 0;
             }
-        } else if (action === 'sell') {
-            const lossFee = totalValue * SELL_LOSS_RATE;
-            if (currentShares >= tradeAmount) {
-                newBalance += (totalValue - lossFee);
-                currentShares -= tradeAmount;
-                if (currentShares === 0) avgCost = 0;
-            } else if (currentShares > 0 && currentShares < tradeAmount) {
-                const closeAmt = currentShares;
-                const shortAmt = tradeAmount - currentShares;
-                const closeVal = closeAmt * price;
-                newBalance += (closeVal - (closeVal * SELL_LOSS_RATE));
-                const marginReq = shortAmt * price;
-                const reqTotal = marginReq + (marginReq * SELL_LOSS_RATE);
-                if (newBalance < reqTotal) return res.status(400).json({ error: '余额不足做空' });
-                newBalance -= reqTotal;
-                currentShares = -shortAmt;
-                avgCost = price;
+
+            const totalValue = tradeAmount * price;
+            let balanceChange = 0;
+
+            if (action === 'buy') {
+                if (currentShares >= 0) {
+                    balanceChange = -totalValue;
+                    const curVal = currentShares * avgCost;
+                    currentShares += tradeAmount;
+                    avgCost = (curVal + totalValue) / currentShares;
+                } else if (currentShares < 0 && Math.abs(currentShares) < tradeAmount) {
+                    const cover = Math.abs(currentShares);
+                    const longAmt = tradeAmount - cover;
+                    const coverReturn = (avgCost * cover) + ((avgCost - price) * cover);
+                    const longCost = longAmt * price;
+                    balanceChange = coverReturn - longCost;
+                    currentShares = longAmt;
+                    avgCost = price;
+                } else {
+                    balanceChange = (avgCost * tradeAmount) + ((avgCost - price) * tradeAmount);
+                    currentShares += tradeAmount;
+                    if (currentShares === 0) avgCost = 0;
+                }
+            } else if (action === 'sell') {
+                const lossFee = totalValue * SELL_LOSS_RATE;
+                if (currentShares >= tradeAmount) {
+                    balanceChange = totalValue - lossFee;
+                    currentShares -= tradeAmount;
+                    if (currentShares === 0) avgCost = 0;
+                } else if (currentShares > 0 && currentShares < tradeAmount) {
+                    const closeAmt = currentShares;
+                    const shortAmt = tradeAmount - currentShares;
+                    const closeVal = closeAmt * price;
+                    const closeReturn = closeVal - (closeVal * SELL_LOSS_RATE);
+                    const marginReq = shortAmt * price;
+                    const reqTotal = marginReq + (marginReq * SELL_LOSS_RATE);
+                    balanceChange = closeReturn - reqTotal;
+                    currentShares = -shortAmt;
+                    avgCost = price;
+                } else {
+                    const marginReq = tradeAmount * price;
+                    const reqTotal = marginReq + lossFee;
+                    const curShortVal = Math.abs(currentShares) * avgCost;
+                    balanceChange = -reqTotal;
+                    currentShares -= tradeAmount;
+                    avgCost = (curShortVal + marginReq) / Math.abs(currentShares);
+                }
             } else {
-                const marginReq = tradeAmount * price;
-                const reqTotal = marginReq + lossFee;
-                if (newBalance < reqTotal) return res.status(400).json({ error: '余额不足做空' });
-                const curShortVal = Math.abs(currentShares) * avgCost;
-                newBalance -= reqTotal;
-                currentShares -= tradeAmount;
-                avgCost = (curShortVal + marginReq) / Math.abs(currentShares);
+                throw new Error('未知指令');
             }
-        } else {
-            return res.status(400).json({ error: '未知指令' });
-        }
 
-        portfolio[authorName] = { shares: currentShares, avgCost };
+            // Check if balance would go negative
+            if (Number(dbUser.balance) + balanceChange < 0) {
+                throw new Error('余额不足');
+            }
 
-        const log = { id: Date.now().toString(), username, target: authorName, type: 'author_stock', action, price, amount: tradeAmount, time: Date.now() };
+            // Update user balance
+            const updatedUser = await tx.user.update({
+                where: { id: user.id },
+                data: { balance: { increment: balanceChange } }
+            });
 
-        // 统一处理数据更新
-        await prisma.$transaction([
-            prisma.user.update({
-                where: { username },
-                data: { balance: newBalance }
-            }),
-            prisma.setting.upsert({
+            // Update portfolio
+            portfolio[authorName] = { shares: currentShares, avgCost };
+            await tx.setting.upsert({
                 where: { key: portfolioKey },
-                update: { value: JSON.stringify(portfolio) },
-                create: { key: portfolioKey, value: JSON.stringify(portfolio) }
-            }),
-            prisma.trade.create({
+                update: { value: portfolio },
+                create: { key: portfolioKey, value: portfolio }
+            });
+
+            // Create trade record
+            const trade = await tx.trade.create({
                 data: {
                     userId: user.id,
-                    data: log
+                    type: action === 'buy' ? 'BUY' : 'SELL',
+                    amount: Math.abs(balanceChange),
+                    target: authorName,
+                    description: JSON.stringify({ price, shares: tradeAmount, action, avgCost, currentShares }),
+                    status: 'COMPLETED'
                 }
-            })
-        ]);
+            });
 
-        res.status(200).json({ message: 'OK', newBalance, newPosition: currentShares, avgCost, executedPrice: price });
+            return { 
+                newBalance: updatedUser.balance, 
+                newPosition: currentShares, 
+                avgCost, 
+                executedPrice: price 
+            };
+        });
+
+        res.status(200).json({ message: 'OK', ...result });
 
     } catch (error) {
-        res.status(500).json({ error: '服务器异常' });
+        console.error(error);
+        res.status(error.message === '余额不足' || error.message === '未知指令' ? 400 : 500).json({ error: error.message || '服务器异常' });
     }
 }

@@ -119,22 +119,43 @@ export default async function handler(req, res) {
 
             if (!hasAllTags || !meetsRating) return res.status(400).json({ error: `验证不通过。` });
 
-            const newBalance = (user.balance || 0) + bounty.reward;
-            await prisma.user.update({
-                where: { username },
-                data: { balance: newBalance }
+            const result = await prisma.$transaction(async (tx) => {
+                const updatedUser = await tx.user.update({
+                    where: { id: user.id },
+                    data: {
+                        balance: {
+                            increment: bounty.reward
+                        }
+                    }
+                });
+
+                await tx.trade.create({
+                    data: {
+                        userId: user.id,
+                        type: 'SELL',
+                        amount: bounty.reward,
+                        target: `BOUNTY:${bountyId}`,
+                        description: `悬赏奖励: ${bounty.reward}, 页面: ${article.title}, 标识符: ${wiki}/${page}`,
+                        status: 'COMPLETED'
+                    }
+                });
+
+                bounties[bountyIndex].status = 'claimed';
+                bounties[bountyIndex].claimer = username;
+                bounties[bountyIndex].claimedPage = article.title;
+                
+                await tx.setting.update({
+                    where: { key: 'bounties_list' },
+                    data: { value: JSON.stringify(bounties) }
+                });
+
+                return updatedUser.balance;
             });
 
-            bounties[bountyIndex].status = 'claimed';
-            bounties[bountyIndex].claimer = username;
-            bounties[bountyIndex].claimedPage = article.title;
-            
-            await prisma.setting.update({
-                where: { key: 'bounties_list' },
-                data: { value: JSON.stringify(bounties) }
-            });
-
-            return res.status(200).json({ success: true, article, reward: bounty.reward, newBalance, bounties });
-        } catch (e) { return res.status(500).json({ error: '服务器内部错误' }); }
+            return res.status(200).json({ success: true, article, reward: bounty.reward, newBalance: result, bounties });
+        } catch (e) { 
+            console.error('Bounty error:', e);
+            return res.status(500).json({ error: e.message || '服务器内部错误' }); 
+        }
     }
 }

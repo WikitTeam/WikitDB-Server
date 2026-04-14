@@ -16,56 +16,66 @@ export default async function handler(req, res) {
 
     try {
         const user = await prisma.user.findUnique({
-            where: { username },
-            include: { trades: true }
+            where: { username }
         });
         if (!user) return res.status(404).json({ error: '用户不存在' });
 
-        // 在数据库里找到这笔状态为 open 的订单
-        const tradeRecord = user.trades.find(t => t.data && t.data.id === tradeId && t.data.status === 'open');
+        // 在数据库里找到这笔状态为 OPEN 的订单
+        const tradeRecord = await prisma.trade.findFirst({
+            where: { 
+                id: Number(tradeId),
+                userId: user.id,
+                status: 'OPEN'
+            }
+        });
+        
         if (!tradeRecord) return res.status(404).json({ error: '找不到该开仓记录或已被平仓' });
 
-        const tradeData = tradeRecord.data;
+        const tradeData = JSON.parse(tradeRecord.description || '{}');
         const openScore = Number(tradeData.lockType) || 0;
         const scoreDiff = Number(currentScore) - openScore;
+        const margin = Number(tradeRecord.amount);
         
         // 盈亏计算
         let pnl = 0;
         if (tradeData.direction === 'up') {
-            pnl = scoreDiff * (tradeData.margin * 0.1) * tradeData.leverage;
+            pnl = scoreDiff * (margin * 0.1) * tradeData.leverage;
         } else if (tradeData.direction === 'down') {
-            pnl = -scoreDiff * (tradeData.margin * 0.1) * tradeData.leverage;
+            pnl = -scoreDiff * (margin * 0.1) * tradeData.leverage;
         }
 
         // 计算最终返还金额（如果亏损超过本金则爆仓归零）
-        let finalReturn = tradeData.margin + pnl;
+        let finalReturn = margin + pnl;
         if (finalReturn < 0) finalReturn = 0; 
 
-        const newBalance = user.balance + finalReturn;
-
-        // 更新订单状态
-        tradeData.status = 'closed';
-        tradeData.closeTime = Date.now();
-        tradeData.closeScore = currentScore;
-        tradeData.pnl = pnl;
-        tradeData.finalReturn = finalReturn;
-
         // 执行结算事务
-        await prisma.$transaction([
-            prisma.user.update({
+        const result = await prisma.$transaction(async (tx) => {
+            const updatedUser = await tx.user.update({
                 where: { id: user.id },
-                data: { balance: newBalance }
-            }),
-            prisma.trade.update({
+                data: { balance: { increment: finalReturn } }
+            });
+
+            const updatedTrade = await tx.trade.update({
                 where: { id: tradeRecord.id },
-                data: { data: tradeData }
-            })
-        ]);
+                data: { 
+                    status: 'CLOSED',
+                    description: JSON.stringify({
+                        ...tradeData,
+                        closeTime: Date.now(),
+                        closeScore: currentScore,
+                        pnl,
+                        finalReturn
+                    })
+                }
+            });
+
+            return { newBalance: updatedUser.balance };
+        });
 
         return res.status(200).json({ 
             success: true, 
             message: '平仓成功',
-            newBalance, 
+            newBalance: result.newBalance, 
             pnl,
             finalReturn
         });

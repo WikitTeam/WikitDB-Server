@@ -48,20 +48,22 @@ async function handler(req, res) {
 
     try {
         const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000);
-        const recentTrades = await prisma.trade.findMany({
-            where: { userId: user.id, createdAt: { gte: tenMinsAgo } }
+        const recentAnonCount = await prisma.trade.count({
+            where: { 
+                userId: user.id, 
+                createdAt: { gte: tenMinsAgo },
+                target: 'ANON_REPLY'
+            }
         });
 
-        // 允许 10 分钟内发送 5 条
-        const recentAnonCount = recentTrades.filter(t => t.data && t.data.action === 'anon_reply').length;
         if (recentAnonCount >= 5) {
             console.log(`[${new Date().toLocaleString()}] 代理回复拦截：用户 ${displayUser} 处于冷却期`);
             return res.status(429).json({ error: '发送太频繁，十分钟内仅限发送 5 条评论' });
         }
 
         const COST = 100;
-        const currentBalance = Number(user.balance || 0);
-        if (currentBalance < COST) {
+        const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { balance: true } });
+        if (Number(dbUser.balance || 0) < COST) {
             console.log(`[${new Date().toLocaleString()}] 代理回复拦截：用户 ${displayUser} 余额不足`);
             return res.status(400).json({ error: `余额不足，发送需要 ${COST} 积分` });
         }
@@ -72,7 +74,6 @@ async function handler(req, res) {
         const baseUrl = siteConfig.URL.replace(/\/$/, '');
         const botCookie = await getBotCookie();
         
-        // 拼接实名信息：WikitDB 用户名 + 绑定的 Wikidot 账号
         const linkedWd = user.wikidotAccount || '未绑定';
         const finalContent = `**[WikitDB 代理留言]**\n本消息由 WikitDB 用户 **${user.username}** 发送，其 Wikidot 账号为：**${linkedWd}**\n\n---\n\n${content.trim()}`;
         
@@ -95,17 +96,26 @@ async function handler(req, res) {
         });
 
         if (wdRes.data && wdRes.data.status === 'ok') {
-            const newBalance = currentBalance - COST;
-            await prisma.$transaction([
-                prisma.user.update({ where: { id: user.id }, data: { balance: newBalance } }),
-                prisma.trade.create({
+            const result = await prisma.$transaction(async (tx) => {
+                const updatedUser = await tx.user.update({
+                    where: { id: user.id },
+                    data: { balance: { decrement: COST } }
+                });
+
+                await tx.trade.create({
                     data: {
                         userId: user.id,
-                        data: { action: 'anon_reply', targetThread: threadId, cost: COST, wiki, content: content.trim(), time: Date.now() }
+                        type: 'TRANSFER',
+                        amount: COST,
+                        target: 'ANON_REPLY',
+                        description: JSON.stringify({ threadId, wiki, content: content.trim() }),
+                        status: 'COMPLETED'
                     }
-                })
-            ]);
-            return res.status(200).json({ success: true, newBalance });
+                });
+
+                return updatedUser.balance;
+            });
+            return res.status(200).json({ success: true, newBalance: result });
         } else {
             console.error('[Wikidot Error Response]:', JSON.stringify(wdRes.data));
             const errorMsg = wdRes.data && wdRes.data.message ? `原站拒绝: ${wdRes.data.message}` : '原站拒收评论，可能存在权限限制或 Token 失效';
@@ -116,5 +126,6 @@ async function handler(req, res) {
         return res.status(500).json({ error: '系统内部错误' });
     }
 }
+
 
 export default withAuth(handler);
