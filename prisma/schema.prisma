@@ -127,3 +127,18 @@ enum TradeType {
   TRANSFER
   ADJUST
 }
+
+model AccessLog {
+  id        Int      @id @default(autoincrement())
+  method    String
+  path      String
+  status    Int
+  ip        String?
+  userAgent String?
+  username  String?
+  duration  Int?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([path])
+}

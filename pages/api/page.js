@@ -1,8 +1,9 @@
 import * as cheerio from 'cheerio';
 import prisma from '../../lib/prisma';
 const config = require('../../wikitdb.config.js');
+const { withLogging } = require('../../utils/logRequest');
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     const { site, page, hpage = 1 } = req.query;
 
     if (!site || !page || page === 'undefined') {
@@ -468,3 +469,5 @@ export default async function handler(req, res) {
         res.status(500).json({ error: '详情页抓取失败', details: error.message });
     }
 }
+
+export default withLogging(handler);

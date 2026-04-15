@@ -1,6 +1,7 @@
 const config = require('../../wikitdb.config.js');
+const { withLogging } = require('../../utils/logRequest');
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     const { site, q, p } = req.query;
 
     if (!site) return res.status(400).json({ error: '缺少 site 参数' });
@@ -102,3 +103,5 @@ export default async function handler(req, res) {
         }
     }
 }
+
+export default withLogging(handler);

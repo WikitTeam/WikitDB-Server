@@ -1,8 +1,9 @@
 import * as cheerio from 'cheerio';
 import prisma from '../../lib/prisma';
 import axios from 'axios';
+const { withLogging } = require('../../utils/logRequest');
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     const { name } = req.query;
 
     if (!name) {
@@ -156,3 +157,5 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: '获取作者信息失败', details: error.message });
     }
 }
+
+export default withLogging(handler);

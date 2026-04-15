@@ -36,6 +36,10 @@ export default function AdminDashboard() {
     const [adjustNote, setAdjustNote] = useState('');
     const [isAdjusting, setIsAdjusting] = useState(false);
 
+    // 访问日志状态
+    const [accessLogs, setAccessLogs] = useState([]);
+    const [accessLogFilter, setAccessLogFilter] = useState('');
+
     useEffect(() => {
         const storedUsername = localStorage.getItem('username');
         if (storedUsername) setCurrentUser(storedUsername);
@@ -45,6 +49,7 @@ export default function AdminDashboard() {
         if (activeTab === 'broadcast') fetchBroadcast();
         if (activeTab === 'settings') fetchSettings();
         if (activeTab === 'quarantine') fetchQuarantine();
+        if (activeTab === 'access-logs') fetchAccessLogs();
     }, [activeTab]);
 
     const fetchUsers = async () => {
@@ -247,6 +252,17 @@ export default function AdminDashboard() {
         } catch (e) {}
     };
 
+    const fetchAccessLogs = async (pathFilter) => {
+        setIsLoading(true);
+        try {
+            const params = new URLSearchParams();
+            if (pathFilter) params.set('path', pathFilter);
+            const res = await fetch(`/api/admin/access-logs?${params}`);
+            if (res.ok) setAccessLogs((await res.json()).logs || []);
+        } catch (e) {}
+        setIsLoading(false);
+    };
+
     const filteredUsers = users.filter(u => u.username.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const navItems = [
@@ -255,6 +271,7 @@ export default function AdminDashboard() {
         { id: 'logs', label: '交易审计', icon: 'fa-list-check' },
         { id: 'broadcast', label: '全站广播', icon: 'fa-bullhorn' },
         { id: 'macro', label: '宏观经济', icon: 'fa-money-bill-trend-up' },
+        { id: 'access-logs', label: '网络日志', icon: 'fa-globe' },
         { id: 'settings', label: '系统设置', icon: 'fa-sliders' }
     ];
 
@@ -516,6 +533,77 @@ export default function AdminDashboard() {
                                             <input type="number" value={taxRate} onChange={e => setTaxRate(e.target.value)} className="bg-transparent border-none text-right text-white font-black font-mono focus:ring-0 w-16 p-0"/>
                                         </div>
                                         <button onClick={() => executeMacro('tax')} className="w-full py-3 bg-red-700 hover:bg-red-600 text-white rounded-xl font-black transition-all shadow-lg text-xs uppercase tracking-widest">立即执行征税</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'access-logs' && (
+                            <div className="space-y-4">
+                                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                                    <div className="relative flex-1 max-w-xs">
+                                        <i className="fa-solid fa-filter absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
+                                        <input
+                                            type="text"
+                                            placeholder="按路径筛选，如 /api/search"
+                                            value={accessLogFilter}
+                                            onChange={(e) => setAccessLogFilter(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && fetchAccessLogs(accessLogFilter)}
+                                            className="w-full bg-gray-950 border border-gray-800 rounded-lg pl-8 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-all"
+                                        />
+                                    </div>
+                                    <button onClick={() => fetchAccessLogs(accessLogFilter)} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-xs font-medium rounded-lg border border-gray-700 transition-colors">
+                                        筛选
+                                    </button>
+                                    <button onClick={() => { setAccessLogFilter(''); fetchAccessLogs(); }} className="px-4 py-2 text-gray-500 hover:text-white text-xs transition-colors">
+                                        重置
+                                    </button>
+                                    <span className="text-xs text-gray-600 ml-auto">{accessLogs.length} 条记录</span>
+                                </div>
+
+                                <div className="bg-gray-800/20 border border-gray-800 rounded-xl overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-sm">
+                                            <thead className="bg-gray-800/40 text-gray-500 border-b border-gray-800 text-xs">
+                                                <tr>
+                                                    <th className="px-4 py-3 font-medium">时间</th>
+                                                    <th className="px-4 py-3 font-medium w-16">方法</th>
+                                                    <th className="px-4 py-3 font-medium">路径</th>
+                                                    <th className="px-4 py-3 font-medium w-16">状态</th>
+                                                    <th className="px-4 py-3 font-medium">IP</th>
+                                                    <th className="px-4 py-3 font-medium">用户</th>
+                                                    <th className="px-4 py-3 font-medium w-16 text-right">耗时</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-800/30 text-gray-300">
+                                                {isLoading ? (
+                                                    <tr><td colSpan="7" className="px-4 py-12 text-center text-gray-500 animate-pulse">加载中...</td></tr>
+                                                ) : accessLogs.length === 0 ? (
+                                                    <tr><td colSpan="7" className="px-4 py-12 text-center text-gray-600">暂无日志记录</td></tr>
+                                                ) : (
+                                                    accessLogs.map((log) => (
+                                                        <tr key={log.id} className="hover:bg-white/5 transition-colors">
+                                                            <td className="px-4 py-2.5 text-xs text-gray-500 font-mono whitespace-nowrap">{new Date(log.createdAt).toLocaleString('zh-CN')}</td>
+                                                            <td className="px-4 py-2.5">
+                                                                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
+                                                                    log.method === 'GET' ? 'bg-green-500/10 text-green-400' :
+                                                                    log.method === 'POST' ? 'bg-blue-500/10 text-blue-400' :
+                                                                    log.method === 'DELETE' ? 'bg-red-500/10 text-red-400' :
+                                                                    'bg-gray-500/10 text-gray-400'
+                                                                }`}>{log.method}</span>
+                                                            </td>
+                                                            <td className="px-4 py-2.5 text-xs font-mono text-gray-300 truncate max-w-[200px]" title={log.path}>{log.path}</td>
+                                                            <td className="px-4 py-2.5">
+                                                                <span className={`text-xs font-medium ${log.status >= 400 ? 'text-red-400' : log.status >= 300 ? 'text-yellow-400' : 'text-green-400'}`}>{log.status}</span>
+                                                            </td>
+                                                            <td className="px-4 py-2.5 text-xs text-gray-500 font-mono">{log.ip || '-'}</td>
+                                                            <td className="px-4 py-2.5 text-xs">{log.username ? <span className="text-blue-400">{log.username}</span> : <span className="text-gray-600">匿名</span>}</td>
+                                                            <td className="px-4 py-2.5 text-xs text-gray-500 font-mono text-right">{log.duration != null ? `${log.duration}ms` : '-'}</td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>

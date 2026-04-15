@@ -1,6 +1,7 @@
 const config = require('../../wikitdb.config.js');
+const { withLogging } = require('../../utils/logRequest');
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     // 核心改造 1：接收前端传来的特定站点参数，如果没传，默认获取全站(global)
     const { site = 'global' } = req.query;
 
@@ -68,3 +69,5 @@ export default async function handler(req, res) {
         res.status(500).json({ error: '排行榜数据获取失败', details: error.message });
     }
 }
+
+export default withLogging(handler);
