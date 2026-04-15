@@ -1,5 +1,5 @@
 const config = require('../../wikitdb.config.js');
-const { withLogging } = require('../../utils/logRequest');
+import { withLogging } from '../../utils/logRequest';
 
 async function handler(req, res) {
     const { site, q, p } = req.query;

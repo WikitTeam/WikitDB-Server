@@ -1,5 +1,5 @@
 const config = require('../../wikitdb.config.js');
-const { withLogging } = require('../../utils/logRequest');
+import { withLogging } from '../../utils/logRequest';
 
 async function handler(req, res) {
     // 核心改造 1：接收前端传来的特定站点参数，如果没传，默认获取全站(global)

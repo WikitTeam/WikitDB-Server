@@ -1,7 +1,7 @@
-const prisma = require('../lib/prisma');
-const { verifyToken } = require('../utils/auth');
+import prisma from '../lib/prisma';
+import { verifyToken } from './auth';
 
-async function logRequest(req, res, { status } = {}) {
+export async function logRequest(req, res) {
     try {
         const forwarded = req.headers['x-forwarded-for'];
         const ip = forwarded ? String(forwarded).split(',')[0].trim() : req.socket?.remoteAddress || null;
@@ -16,30 +16,28 @@ async function logRequest(req, res, { status } = {}) {
             data: {
                 method: req.method || 'GET',
                 path: req.url?.split('?')[0] || req.url || '',
-                status: status ?? res.statusCode ?? 200,
+                status: res.statusCode ?? 200,
                 ip,
                 userAgent: req.headers['user-agent'] || null,
                 username,
                 duration: req._startTime ? Date.now() - req._startTime : null,
             }
         });
-    } catch (_) {
-        // 日志写入失败不影响业务
+    } catch (e) {
+        console.error('[AccessLog] 写入失败:', e.message);
     }
 }
 
-function withLogging(handler) {
+export function withLogging(handler) {
     return async (req, res) => {
         req._startTime = Date.now();
 
-        const originalEnd = res.end;
-        res.end = function (...args) {
-            originalEnd.apply(res, args);
+        const originalJson = res.json;
+        res.json = function (body) {
             logRequest(req, res).catch(() => {});
+            return originalJson.call(res, body);
         };
 
         return handler(req, res);
     };
 }
-
-module.exports = { logRequest, withLogging };

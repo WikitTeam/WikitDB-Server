@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import prisma from '../../lib/prisma';
 import axios from 'axios';
-const { withLogging } = require('../../utils/logRequest');
+import { withLogging } from '../../utils/logRequest';
 
 async function handler(req, res) {
     const { name } = req.query;

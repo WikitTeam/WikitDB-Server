@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import prisma from '../../lib/prisma';
 const config = require('../../wikitdb.config.js');
-const { withLogging } = require('../../utils/logRequest');
+import { withLogging } from '../../utils/logRequest';
 
 async function handler(req, res) {
     const { site, page, hpage = 1 } = req.query;
