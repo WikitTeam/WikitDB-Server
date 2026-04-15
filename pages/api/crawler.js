@@ -1,6 +1,5 @@
 import * as cheerio from 'cheerio';
 const config = require('../../wikitdb.config.js');
-import { sanitizeGraphQL } from '../../utils/security';
 
 export default async function handler(req, res) {
     const { site } = req.query;
@@ -13,9 +12,9 @@ export default async function handler(req, res) {
     let actualWikiName = '';
     try {
         const urlObj = new URL(wikiConfig.URL);
-        actualWikiName = sanitizeGraphQL(urlObj.hostname.replace(/^www\./i, '').split('.')[0]);
+        actualWikiName = urlObj.hostname.replace(/^www\./i, '').split('.')[0];
     } catch (e) {
-        actualWikiName = sanitizeGraphQL(wikiConfig.URL.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('.')[0]);
+        actualWikiName = wikiConfig.URL.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('.')[0];
     }
 
     const baseUrl = wikiConfig.URL.replace(/\/$/, '');
@@ -34,7 +33,8 @@ export default async function handler(req, res) {
         try {
             const pageSize = 100;
             const buildQuery = (page) => JSON.stringify({
-                query: `query { articles(wiki: ["${actualWikiName}"], page: ${page}, pageSize: ${pageSize}) { nodes { title url page } pageInfo { total hasNextPage } } }`
+                query: `query($wiki: [String!]!, $page: Int, $pageSize: Int) { articles(wiki: $wiki, page: $page, pageSize: $pageSize) { nodes { title url page } pageInfo { total hasNextPage } } }`,
+                variables: { wiki: [actualWikiName], page, pageSize }
             });
 
             const firstRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {

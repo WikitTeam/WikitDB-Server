@@ -44,19 +44,28 @@ async function handler(req, res) {
         if (!tradeRecord) return res.status(404).json({ error: '找不到该开仓记录或已被平仓' });
 
         const tradeData = JSON.parse(tradeRecord.description || '{}');
-        const openScore = Number(tradeData.lockType) || 0;
+        // 优先使用 openScore（新数据），兼容旧数据的 lockType 字段
+        const openScore = Number(tradeData.openScore) || 0;
         const margin = Number(tradeRecord.amount);
+
+        // leverage 兼容处理：新数据存数字，旧数据可能是 "2x" 等字符串
+        let leverage = Number(tradeData.leverage);
+        if (isNaN(leverage)) {
+            leverage = parseInt(String(tradeData.leverage).replace('x', ''), 10) || 1;
+        }
+        if (leverage < 1 || leverage > 10) leverage = 1;
 
         // 服务端获取当前分数，不再信任客户端传入
         const currentScore = await fetchAuthorScore(tradeRecord.target);
         const scoreDiff = currentScore - openScore;
 
-        // 盈亏计算
+        // 盈亏计算 — 兼容 long/short（新）和 up/down（旧）
         let pnl = 0;
-        if (tradeData.direction === 'up') {
-            pnl = scoreDiff * (margin * 0.1) * tradeData.leverage;
-        } else if (tradeData.direction === 'down') {
-            pnl = -scoreDiff * (margin * 0.1) * tradeData.leverage;
+        const direction = tradeData.direction;
+        if (direction === 'up' || direction === 'long') {
+            pnl = scoreDiff * (margin * 0.1) * leverage;
+        } else if (direction === 'down' || direction === 'short') {
+            pnl = -scoreDiff * (margin * 0.1) * leverage;
         }
 
         // 计算最终返还金额（如果亏损超过本金则爆仓归零）

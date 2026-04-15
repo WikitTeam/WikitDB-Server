@@ -5,11 +5,11 @@ export default async function handler(req, res) {
     const { site = 'global' } = req.query;
 
     try {
-        const fetchGraphQL = async (queryStr) => {
+        const fetchGraphQL = async (queryStr, variables) => {
             const gqlRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: queryStr }),
+                body: JSON.stringify({ query: queryStr, variables }),
                 cache: 'no-store'
             });
             
@@ -54,7 +54,10 @@ export default async function handler(req, res) {
                 actualWikiName = wikiConfig.URL.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('.')[0];
             }
 
-            rankingData = await fetchGraphQL(`query { authorRanking(wiki: "${actualWikiName}", by: RATING) { rank name value } }`);
+            rankingData = await fetchGraphQL(
+                `query($wiki: String!) { authorRanking(wiki: $wiki, by: RATING) { rank name value } }`,
+                { wiki: actualWikiName }
+            );
         }
 
         res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate');

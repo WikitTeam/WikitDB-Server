@@ -32,7 +32,8 @@ export default async function handler(req, res) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    query: `query { article(wiki: "${actualWikiName}", page: "${pageName}") { page_id } }`
+                    query: `query($wiki: String!, $page: String!) { article(wiki: $wiki, page: $page) { page_id } }`,
+                    variables: { wiki: actualWikiName, page: pageName }
                 }),
                 cache: 'no-store'
             }),

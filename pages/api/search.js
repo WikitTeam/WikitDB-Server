@@ -1,5 +1,4 @@
 const config = require('../../wikitdb.config.js');
-import { sanitizeGraphQL } from '../../utils/security';
 
 export default async function handler(req, res) {
     const { site, q, p } = req.query;
@@ -17,33 +16,38 @@ export default async function handler(req, res) {
         actualWikiName = wikiConfig.URL.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('.')[0];
     }
 
-    const keyword = q ? sanitizeGraphQL(q.trim()) : '';
+    const keyword = q ? q.trim() : '';
     const currentPage = parseInt(p, 10) || 1;
     const pageSize = 50;
-    const safeWikiName = sanitizeGraphQL(actualWikiName);
 
     try {
-        const queryFilter = keyword ? `, title: "%${keyword}%"` : '';
-        const query = `query { articles(wiki: ["${safeWikiName}"]${queryFilter}, page: ${currentPage}, pageSize: ${pageSize}) { nodes { title page wiki rating created_at } pageInfo { total } } }`;
+        const variables = { wiki: [actualWikiName], page: currentPage, pageSize };
+        let queryStr;
+        if (keyword) {
+            queryStr = `query($wiki: [String!]!, $title: String, $page: Int, $pageSize: Int) { articles(wiki: $wiki, title: $title, page: $page, pageSize: $pageSize) { nodes { title page wiki rating created_at } pageInfo { total } } }`;
+            variables.title = `%${keyword}%`;
+        } else {
+            queryStr = `query($wiki: [String!]!, $page: Int, $pageSize: Int) { articles(wiki: $wiki, page: $page, pageSize: $pageSize) { nodes { title page wiki rating created_at } pageInfo { total } } }`;
+        }
 
         const gqlRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query }),
+            body: JSON.stringify({ query: queryStr, variables }),
             cache: 'no-store'
         });
 
         if (!gqlRes.ok) throw new Error('Wikit API 网络异常');
 
         const gqlJson = await gqlRes.json();
-        
+
         if (gqlJson.errors) {
             throw new Error(gqlJson.errors[0].message);
         }
 
         let nodes = gqlJson.data?.articles?.nodes || [];
         let total = gqlJson.data?.articles?.pageInfo?.total || 0;
-        
+
         nodes.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
         res.status(200).json({
@@ -57,33 +61,35 @@ export default async function handler(req, res) {
     } catch (error) {
         // 如果 GraphQL 原生检索语法报错，走兜底逻辑：在本地过滤和模拟翻页
         try {
-            const fallbackQuery = `query { articles(wiki: ["${safeWikiName}"], page: 1, pageSize: 2000) { nodes { title page wiki rating created_at } } }`;
             const fallbackRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: fallbackQuery }),
+                body: JSON.stringify({
+                    query: `query($wiki: [String!]!) { articles(wiki: $wiki, page: 1, pageSize: 2000) { nodes { title page wiki rating created_at } } }`,
+                    variables: { wiki: [actualWikiName] }
+                }),
                 cache: 'no-store'
             });
-            
+
             const fallbackJson = await fallbackRes.json();
             let nodes = fallbackJson.data?.articles?.nodes || [];
-            
+
             if (keyword) {
                 const lowerQ = keyword.toLowerCase();
-                nodes = nodes.filter(n => 
-                    (n.title && n.title.toLowerCase().includes(lowerQ)) || 
+                nodes = nodes.filter(n =>
+                    (n.title && n.title.toLowerCase().includes(lowerQ)) ||
                     (n.page && n.page.toLowerCase().includes(lowerQ))
                 );
             }
 
             nodes.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-            
+
             const total = nodes.length;
             const totalPages = Math.ceil(total / pageSize);
-            
+
             // 数组切片模拟翻页
             const slicedNodes = nodes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-            
+
             res.status(200).json({
                 siteName: wikiConfig.NAME,
                 results: slicedNodes,
@@ -92,7 +98,7 @@ export default async function handler(req, res) {
                 totalCount: total
             });
         } catch (err) {
-            res.status(500).json({ error: '搜索执行失败', details: err.message });
+            res.status(500).json({ error: '搜索执行失败' });
         }
     }
 }

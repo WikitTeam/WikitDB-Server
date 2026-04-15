@@ -27,7 +27,8 @@ export default async function handler(req, res) {
             const [rankRes, gqlRes] = await Promise.allSettled([
                 request.get(`https://wikit.unitreaty.org/wikidot/rank?user=${encodeURIComponent(queryName)}`),
                 request.post('https://wikit.unitreaty.org/apiv1/graphql', {
-                    query: `query { articles(author: "${queryName}", page: 1, pageSize: 500) { nodes { title wiki page rating created_at author_id } } }`
+                    query: `query($author: String!) { articles(author: $author, page: 1, pageSize: 500) { nodes { title wiki page rating created_at author_id } } }`,
+                    variables: { author: queryName }
                 })
             ]);
 

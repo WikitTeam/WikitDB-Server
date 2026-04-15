@@ -60,5 +60,12 @@ module.exports = {
             PARAM: "wop",
             WIKIT_ID: "write-on-paper"
         },
+        {
+            NAME: "The Backrooms X层群",
+            URL: "https://backrooms-x-cn.wikidot.com/",
+            ImgURL: "http://backrooms-x-cn.wikidot.com/local--files/start/xlogo",
+            PARAM: "x",
+            WIKIT_ID: "backrooms-x-cn"
+        },
     ]
 };
