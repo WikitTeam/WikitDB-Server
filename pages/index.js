@@ -116,7 +116,7 @@ const Home = () => {
         <div className="flex items-end justify-between mb-10">
           <div>
             <h2 className="text-3xl font-bold text-white">收录站点</h2>
-            <p className="text-gray-500 mt-2">点击可以直接跳转到对应的 Wikidot 分站</p>
+            <p className="text-gray-500 mt-2">点击查看各站点的数据概览和最新动态</p>
           </div>
           <span className="hidden sm:block text-sm text-gray-600 tabular-nums">{wikis.length} 个站点</span>
         </div>
@@ -125,9 +125,7 @@ const Home = () => {
           {wikis.map((wiki, i) => (
             <a
               key={wiki.PARAM || wiki.PAEAM}
-              href={wiki.URL}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={`/site/${wiki.PARAM}`}
               className="group relative flex items-center gap-5 rounded-2xl bg-gray-800/30 p-5 border border-gray-700/40 hover:border-gray-600 hover:bg-gray-800/60 transition-all"
             >
               <div className="h-16 w-16 shrink-0 flex items-center justify-center overflow-hidden rounded-2xl bg-gray-900 border border-gray-700/60 group-hover:border-gray-600 transition-colors">
