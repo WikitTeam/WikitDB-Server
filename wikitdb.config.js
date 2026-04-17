@@ -67,5 +67,12 @@ module.exports = {
             PARAM: "x",
             WIKIT_ID: "backrooms-x-cn"
         },
+        {
+            NAME: "世界机构联合体",
+            URL: "https://pin-wiki.wikidot.com/",
+            ImgURL: "https://odilpin.wikidot.com/local--files/system%3Astart/pin-LOGO",
+            PARAM: "pin",
+            WIKIT_ID: "pin-wiki"
+        },
     ]
 };
