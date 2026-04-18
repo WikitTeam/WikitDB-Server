@@ -289,10 +289,10 @@ export default function AdminDashboard() {
             <div className="flex flex-col lg:flex-row gap-8">
                 {/* 侧边导航 */}
                 <aside className="w-full lg:w-64 flex-shrink-0">
-                    <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-2 sticky top-24">
+                    <div className="bg-gray-800/30 border border-gray-700/40 rounded-2xl p-2 sticky top-24">
                         <div className="px-4 py-3 mb-2 border-b border-gray-700/50">
-                            <h1 className="text-sm font-bold text-gray-400 tracking-widest uppercase flex items-center gap-2">
-                                <i className="fa-solid fa-shield-halved text-blue-500"></i> 系统功能模块
+                            <h1 className="text-xs font-medium text-gray-500 tracking-wide uppercase flex items-center gap-2">
+                                <i className="fa-solid fa-shield-halved text-indigo-400"></i> 系统功能模块
                             </h1>
                         </div>
                         <nav className="flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
@@ -304,11 +304,11 @@ export default function AdminDashboard() {
                                         onClick={() => setActiveTab(item.id)} 
                                         className={`flex-shrink-0 flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                                             isActive 
-                                            ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20' 
+                                            ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20' 
                                             : 'text-gray-400 hover:bg-gray-700/50 hover:text-white border border-transparent'
                                         }`}
                                     >
-                                        <i className={`fa-solid ${item.icon} w-5 text-center ${isActive ? 'text-blue-400' : 'text-gray-500'}`}></i>
+                                        <i className={`fa-solid ${item.icon} w-5 text-center ${isActive ? 'text-indigo-400' : 'text-gray-500'}`}></i>
                                         {item.label}
                                     </button>
                                 );
@@ -319,22 +319,18 @@ export default function AdminDashboard() {
 
                 {/* 主内容区 */}
                 <main className="flex-1 min-w-0">
-                    <div className="mb-6 flex justify-between items-end border-b border-gray-800 pb-4">
+                    <div className="mb-6 border-b border-gray-700/40 pb-4">
                         <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                            <i className={`fa-solid ${navItems.find(i => i.id === activeTab)?.icon} text-blue-500`}></i>
+                            <i className={`fa-solid ${navItems.find(i => i.id === activeTab)?.icon} text-indigo-400`}></i>
                             {navItems.find(i => i.id === activeTab)?.label}
                         </h2>
-                        <div className="text-xs text-gray-500 flex items-center gap-2 mb-1">
-                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                            控制台运行正常
-                        </div>
                     </div>
 
                     <div className="transition-all duration-300">
                         {activeTab === 'members' && (
                             <div className="space-y-6">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest">
+                                    <h3 className="text-sm font-medium text-gray-400">
                                         注册会员列表 ({users.length})
                                     </h3>
                                     <div className="relative w-full sm:w-64">
@@ -344,14 +340,14 @@ export default function AdminDashboard() {
                                             placeholder="搜索用户名..." 
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full bg-gray-950 border border-gray-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-all shadow-inner"
+                                            className="w-full bg-gray-900 border border-gray-600 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                                         />
                                     </div>
                                 </div>
                                 
-                                <div className="bg-gray-800/20 border border-gray-800 rounded-xl overflow-x-auto">
+                                <div className="bg-gray-800/30 border border-gray-700/40 rounded-2xl overflow-x-auto">
                                     <table className="w-full text-left text-sm">
-                                        <thead className="bg-gray-800/40 text-gray-500 border-b border-gray-800 text-xs uppercase tracking-wider">
+                                        <thead className="bg-gray-800/50 text-gray-500 border-b border-gray-700/40 text-xs font-medium">
                                             <tr>
                                                 <th className="px-6 py-4 font-semibold w-12 text-center">状态</th>
                                                 <th className="px-6 py-4 font-semibold">用户名</th>
@@ -371,7 +367,7 @@ export default function AdminDashboard() {
                                                             <div className={`inline-flex items-center justify-center w-2 h-2 rounded-full ${user.status === 'banned' ? 'bg-red-500' : 'bg-green-500'}`}></div>
                                                         </td>
                                                         <td className="px-6 py-4 font-medium text-white flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded bg-gray-700 text-gray-300 flex items-center justify-center font-bold text-xs shadow-inner uppercase">{user.username.substring(0,2)}</div>
+                                                            <div className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 flex items-center justify-center font-medium text-xs">{user.username.substring(0,2)}</div>
                                                             {user.username}
                                                         </td>
                                                         <td className="px-6 py-4">
@@ -381,7 +377,7 @@ export default function AdminDashboard() {
                                                         </td>
                                                         <td className="px-6 py-4 text-right">
                                                             <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                                                <button onClick={() => handleInspect(user.username)} className="px-3 py-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 rounded text-[10px] font-bold border border-blue-500/20">查看资产</button>
+                                                                <button onClick={() => handleInspect(user.username)} className="px-3 py-1 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/40 rounded text-[10px] font-bold border border-indigo-500/20">查看资产</button>
                                                                 {user.status === 'banned' ? (
                                                                     <button onClick={() => handleUserAction(user.username, 'unban')} className="w-7 h-7 flex items-center justify-center rounded bg-green-900/20 text-green-500 hover:bg-green-900/40 border border-green-700/20" title="撤销封禁"><i className="fa-solid fa-unlock text-xs"></i></button>
                                                                 ) : (
@@ -401,7 +397,7 @@ export default function AdminDashboard() {
 
                         {activeTab === 'quarantine' && (
                             <div className="space-y-8">
-                                <div className="p-5 bg-orange-900/10 border border-orange-800/30 rounded-xl flex gap-4 items-start shadow-inner">
+                                <div className="p-5 bg-orange-900/10 border border-orange-800/30 rounded-2xl flex gap-4 items-start">
                                     <i className="fa-solid fa-shield-virus text-orange-500 text-2xl mt-1"></i>
                                     <div>
                                         <h4 className="font-bold text-orange-300">数据源隔离协议</h4>
@@ -410,14 +406,14 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     {['wikis', 'tags', 'authors'].map(type => (
-                                        <div key={type} className="bg-gray-800/20 border border-gray-800 rounded-xl p-6 flex flex-col">
-                                            <h4 className="font-bold text-white text-sm uppercase tracking-widest mb-4 flex items-center justify-between">
+                                        <div key={type} className="bg-gray-800/30 border border-gray-700/40 rounded-2xl p-6 flex flex-col hover:border-gray-600 transition-colors">
+                                            <h4 className="font-semibold text-white text-sm mb-4 flex items-center justify-between">
                                                 {type === 'wikis' ? '站点隔离' : type === 'tags' ? '标签隔离' : '作者隔离'}
                                                 <span className="text-[10px] bg-gray-900 px-2 py-0.5 rounded text-gray-500">{quarantineData[type].length}</span>
                                             </h4>
                                             <div className="flex gap-2 mb-4">
-                                                <input type="text" placeholder="输入标识符..." value={qInput[type]} onChange={e => setQInput({...qInput, [type]: e.target.value})} className="flex-1 bg-gray-950 border border-gray-800 rounded p-2 text-xs text-white focus:border-blue-500 outline-none shadow-inner" />
-                                                <button onClick={() => addQuarantine(type)} className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded text-xs transition-colors border border-gray-700">添加</button>
+                                                <input type="text" placeholder="输入标识符..." value={qInput[type]} onChange={e => setQInput({...qInput, [type]: e.target.value})} className="flex-1 bg-gray-900 border border-gray-600 rounded-lg p-2 text-xs text-white focus:border-indigo-500 outline-none" />
+                                                <button onClick={() => addQuarantine(type)} className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs transition-colors border border-gray-700">添加</button>
                                             </div>
                                             <div className="space-y-1.5 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                                                 {quarantineData[type].map(item => (
@@ -434,7 +430,7 @@ export default function AdminDashboard() {
                         )}
 
                         {activeTab === 'logs' && (
-                            <div className="bg-gray-800/20 border border-gray-800 rounded-xl overflow-hidden shadow-inner">
+                            <div className="bg-gray-800/30 border border-gray-700/40 rounded-2xl overflow-hidden">
                                 <ul className="divide-y divide-gray-800/30">
                                     {logs.length === 0 ? (
                                         <li className="p-12 text-center text-gray-600 italic">尚未产生可审计的审计记录</li>
@@ -444,24 +440,24 @@ export default function AdminDashboard() {
                                             return (
                                                 <li key={index} className="p-4 hover:bg-white/5 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                                     <div className="flex items-center gap-4">
-                                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-black text-sm shadow-inner ${
+                                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm ${
                                                             l.action === 'buy' ? 'bg-green-900/20 text-green-500' : l.action === 'sell' ? 'bg-red-900/20 text-red-500' : 'bg-gray-800 text-gray-400'
                                                         }`}>
                                                             {l.action === 'buy' ? '买' : l.action === 'sell' ? '卖' : '令'}
                                                         </div>
                                                         <div>
                                                             <div className="text-sm font-medium text-gray-200">
-                                                                <span className="font-bold text-blue-400 mr-2">{l.username || l.operator}</span>
+                                                                <span className="font-bold text-indigo-400 mr-2">{l.username || l.operator}</span>
                                                                 <span className="opacity-60">{l.action === 'buy' ? '执行买入' : l.action === 'sell' ? '执行卖出' : '执行系统指令'}</span>
                                                                 {l.target && <span className="ml-2 px-2 py-0.5 bg-gray-900 rounded text-[10px] text-gray-500 font-mono uppercase border border-gray-800">{l.target}</span>}
                                                             </div>
-                                                            <div className="text-[10px] text-gray-600 font-mono mt-1 uppercase tracking-tighter">{new Date(l.time).toLocaleString()}</div>
+                                                            <div className="text-xs text-gray-600 font-mono mt-1">{new Date(l.time).toLocaleString()}</div>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        {l.amount && <div className="text-sm font-black text-white font-mono">{l.amount} <span className="text-[10px] text-gray-600 font-normal">份额</span></div>}
-                                                        {l.price && <div className="text-[10px] text-gray-500 font-mono">预估总额 ¥{l.price.toFixed(2)}</div>}
-                                                        {l.details && <div className="text-[10px] text-orange-500/80 mt-1 italic">{l.details}</div>}
+                                                        {l.amount && <div className="text-sm font-bold text-white font-mono">{l.amount} <span className="text-xs text-gray-600 font-normal">份额</span></div>}
+                                                        {l.price && <div className="text-xs text-gray-500 font-mono">预估总额 ¥{l.price.toFixed(2)}</div>}
+                                                        {l.details && <div className="text-xs text-orange-500/80 mt-1 italic">{l.details}</div>}
                                                     </div>
                                                 </li>
                                             );
@@ -473,27 +469,27 @@ export default function AdminDashboard() {
 
                         {activeTab === 'broadcast' && (
                             <div className="max-w-3xl mx-auto py-12">
-                                <div className="bg-gray-800/20 border border-gray-800 p-8 rounded-2xl shadow-xl">
+                                <div className="bg-gray-800/30 border border-gray-700/40 p-8 rounded-2xl shadow-lg">
                                     <div className="flex items-center gap-4 mb-8">
-                                        <div className="w-12 h-12 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-500 text-xl border border-blue-500/20">
+                                        <div className="w-12 h-12 bg-indigo-600/10 rounded-xl flex items-center justify-center text-indigo-400 text-xl border border-indigo-500/20">
                                             <i className="fa-solid fa-bullhorn"></i>
                                         </div>
                                         <div>
                                             <h3 className="font-bold text-white text-lg leading-tight">全站滚动通知广播</h3>
-                                            <p className="text-xs text-gray-500 mt-1 uppercase tracking-widest">系统广播下发系统</p>
+                                            <p className="text-xs text-gray-500 mt-1">系统广播下发系统</p>
                                         </div>
                                     </div>
                                     <textarea 
                                         value={broadcastMsg}
                                         onChange={(e) => setBroadcastMsg(e.target.value)}
                                         placeholder="输入希望在全站顶部滚动显示的通知内容..."
-                                        className="w-full h-40 bg-gray-950 border border-gray-800 rounded-xl p-5 text-white focus:outline-none focus:border-blue-500 transition-all shadow-inner text-sm leading-relaxed custom-scrollbar"
+                                        className="w-full h-40 bg-gray-900 border border-gray-600 rounded-xl p-5 text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm leading-relaxed custom-scrollbar"
                                     />
                                     <div className="mt-6 flex justify-between items-center">
-                                        <span className="text-[10px] text-gray-600 font-mono italic">建议长度在 500 字以内</span>
+                                        <span className="text-xs text-gray-600 font-mono italic">建议长度在 500 字以内</span>
                                         <div className="flex gap-3">
-                                            <button onClick={() => setBroadcastMsg('')} className="px-5 py-2 text-gray-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">清空</button>
-                                            <button onClick={saveBroadcast} className="px-8 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-black transition-all shadow-lg text-xs uppercase tracking-widest">下发通知</button>
+                                            <button onClick={() => setBroadcastMsg('')} className="px-5 py-2 text-gray-500 hover:text-white transition-colors text-xs font-medium">清空</button>
+                                            <button onClick={saveBroadcast} className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-indigo-600/20 text-sm">下发通知</button>
                                         </div>
                                     </div>
                                 </div>
@@ -502,7 +498,7 @@ export default function AdminDashboard() {
 
                         {activeTab === 'macro' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-8">
-                                <div className="bg-gray-800/20 border border-gray-800 p-8 rounded-2xl flex flex-col justify-between">
+                                <div className="bg-gray-800/30 border border-gray-700/40 p-8 rounded-2xl flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                                     <div>
                                         <div className="w-12 h-12 bg-green-900/20 rounded-xl flex items-center justify-center text-green-500 text-xl border border-green-800/30 mb-6">
                                             <i className="fa-solid fa-parachute-box"></i>
@@ -511,15 +507,15 @@ export default function AdminDashboard() {
                                         <p className="text-xs text-gray-500 mt-2 leading-relaxed">为全站所有活跃注册用户发放固定数额的信用点。该操作直接注入基础货币供应，请谨慎执行。</p>
                                     </div>
                                     <div className="mt-10 space-y-4">
-                                        <div className="bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 flex justify-between items-center shadow-inner">
-                                            <span className="text-xs text-gray-500 font-bold uppercase">发放数额</span>
-                                            <input type="number" value={airdropAmount} onChange={e => setAirdropAmount(e.target.value)} className="bg-transparent border-none text-right text-white font-black font-mono focus:ring-0 w-24 p-0"/>
+                                        <div className="bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 flex justify-between items-center">
+                                            <span className="text-xs text-gray-500 font-medium">发放数额</span>
+                                            <input type="number" value={airdropAmount} onChange={e => setAirdropAmount(e.target.value)} className="bg-transparent border-none text-right text-white font-bold font-mono focus:ring-0 w-24 p-0"/>
                                         </div>
-                                        <button onClick={() => executeMacro('airdrop')} className="w-full py-3 bg-green-700 hover:bg-green-600 text-white rounded-xl font-black transition-all shadow-lg text-xs uppercase tracking-widest">立即执行空投</button>
+                                        <button onClick={() => executeMacro('airdrop')} className="w-full py-3 bg-green-700 hover:bg-green-600 text-white rounded-xl font-semibold transition-all shadow-lg text-sm">立即执行空投</button>
                                     </div>
                                 </div>
 
-                                <div className="bg-gray-800/20 border border-gray-800 p-8 rounded-2xl flex flex-col justify-between">
+                                <div className="bg-gray-800/30 border border-gray-700/40 p-8 rounded-2xl flex flex-col justify-between hover:border-indigo-500/30 transition-all">
                                     <div>
                                         <div className="w-12 h-12 bg-red-900/20 rounded-xl flex items-center justify-center text-red-500 text-xl border border-red-800/30 mb-6">
                                             <i className="fa-solid fa-hand-holding-dollar"></i>
@@ -528,11 +524,11 @@ export default function AdminDashboard() {
                                         <p className="text-xs text-gray-500 mt-2 leading-relaxed">按百分比对全站用户当前余额进行回收。通常用于抑制通货膨胀或大型系统维护前的数据清理。</p>
                                     </div>
                                     <div className="mt-10 space-y-4">
-                                        <div className="bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 flex justify-between items-center shadow-inner">
-                                            <span className="text-xs text-gray-500 font-bold uppercase tracking-widest">税率设定 (%)</span>
-                                            <input type="number" value={taxRate} onChange={e => setTaxRate(e.target.value)} className="bg-transparent border-none text-right text-white font-black font-mono focus:ring-0 w-16 p-0"/>
+                                        <div className="bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 flex justify-between items-center">
+                                            <span className="text-xs text-gray-500 font-medium">税率设定 (%)</span>
+                                            <input type="number" value={taxRate} onChange={e => setTaxRate(e.target.value)} className="bg-transparent border-none text-right text-white font-bold font-mono focus:ring-0 w-16 p-0"/>
                                         </div>
-                                        <button onClick={() => executeMacro('tax')} className="w-full py-3 bg-red-700 hover:bg-red-600 text-white rounded-xl font-black transition-all shadow-lg text-xs uppercase tracking-widest">立即执行征税</button>
+                                        <button onClick={() => executeMacro('tax')} className="w-full py-3 bg-red-700 hover:bg-red-600 text-white rounded-xl font-semibold transition-all shadow-lg text-sm">立即执行征税</button>
                                     </div>
                                 </div>
                             </div>
@@ -549,7 +545,7 @@ export default function AdminDashboard() {
                                             value={accessLogFilter}
                                             onChange={(e) => setAccessLogFilter(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && fetchAccessLogs(accessLogFilter)}
-                                            className="w-full bg-gray-950 border border-gray-800 rounded-lg pl-8 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-all"
+                                            className="w-full bg-gray-900 border border-gray-600 rounded-lg pl-8 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                                         />
                                     </div>
                                     <button onClick={() => fetchAccessLogs(accessLogFilter)} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-xs font-medium rounded-lg border border-gray-700 transition-colors">
@@ -561,10 +557,10 @@ export default function AdminDashboard() {
                                     <span className="text-xs text-gray-600 ml-auto">{accessLogs.length} 条记录</span>
                                 </div>
 
-                                <div className="bg-gray-800/20 border border-gray-800 rounded-xl overflow-hidden">
+                                <div className="bg-gray-800/30 border border-gray-700/40 rounded-2xl overflow-hidden">
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-left text-sm">
-                                            <thead className="bg-gray-800/40 text-gray-500 border-b border-gray-800 text-xs">
+                                            <thead className="bg-gray-800/50 text-gray-500 border-b border-gray-700/40 text-xs">
                                                 <tr>
                                                     <th className="px-4 py-3 font-medium">时间</th>
                                                     <th className="px-4 py-3 font-medium w-16">方法</th>
@@ -587,7 +583,7 @@ export default function AdminDashboard() {
                                                             <td className="px-4 py-2.5">
                                                                 <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
                                                                     log.method === 'GET' ? 'bg-green-500/10 text-green-400' :
-                                                                    log.method === 'POST' ? 'bg-blue-500/10 text-blue-400' :
+                                                                    log.method === 'POST' ? 'bg-indigo-500/10 text-indigo-400' :
                                                                     log.method === 'DELETE' ? 'bg-red-500/10 text-red-400' :
                                                                     'bg-gray-500/10 text-gray-400'
                                                                 }`}>{log.method}</span>
@@ -597,7 +593,7 @@ export default function AdminDashboard() {
                                                                 <span className={`text-xs font-medium ${log.status >= 400 ? 'text-red-400' : log.status >= 300 ? 'text-yellow-400' : 'text-green-400'}`}>{log.status}</span>
                                                             </td>
                                                             <td className="px-4 py-2.5 text-xs text-gray-500 font-mono">{log.ip || '-'}</td>
-                                                            <td className="px-4 py-2.5 text-xs">{log.username ? <span className="text-blue-400">{log.username}</span> : <span className="text-gray-600">匿名</span>}</td>
+                                                            <td className="px-4 py-2.5 text-xs">{log.username ? <span className="text-indigo-400">{log.username}</span> : <span className="text-gray-600">匿名</span>}</td>
                                                             <td className="px-4 py-2.5 text-xs text-gray-500 font-mono text-right">{log.duration != null ? `${log.duration}ms` : '-'}</td>
                                                         </tr>
                                                     ))
@@ -611,50 +607,50 @@ export default function AdminDashboard() {
 
                         {activeTab === 'settings' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="bg-gray-800/20 border border-gray-800 rounded-2xl p-8 flex flex-col">
+                                <div className="bg-gray-800/30 border border-gray-700/40 rounded-2xl p-8 flex flex-col">
                                     <div className="flex items-center gap-4 mb-8">
-                                        <div className="w-10 h-10 bg-teal-900/20 rounded-lg flex items-center justify-center text-teal-400 border border-teal-800/30 font-black">乐</div>
-                                        <h3 className="font-bold text-white text-sm uppercase tracking-widest">标签大乐透 规则配置</h3>
+                                        <div className="w-10 h-10 bg-teal-900/20 rounded-lg flex items-center justify-center text-teal-400 border border-teal-800/30 font-bold">乐</div>
+                                        <h3 className="font-semibold text-white text-sm">标签大乐透 规则配置</h3>
                                     </div>
                                     <div className="space-y-6 flex-1">
                                         <div>
-                                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">候选标签池</label>
-                                            <textarea value={bingoTagsInput} onChange={e => setBingoTagsInput(e.target.value)} className="w-full h-24 bg-gray-950 border border-gray-800 rounded-xl p-4 text-xs text-white focus:border-teal-500 transition-all shadow-inner custom-scrollbar" placeholder="原创, scp, 故事..." />
+                                            <label className="block text-xs font-medium text-gray-500 mb-2">候选标签池</label>
+                                            <textarea value={bingoTagsInput} onChange={e => setBingoTagsInput(e.target.value)} className="w-full h-24 bg-gray-900 border border-gray-600 rounded-xl p-4 text-xs text-white focus:border-teal-500 focus:ring-teal-500 transition-all custom-scrollbar" placeholder="原创, scp, 故事..." />
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">单次扫描价格 (¥)</label>
-                                            <input type="number" value={bingoCostInput} onChange={e => setBingoCostInput(e.target.value)} className="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white font-mono text-sm shadow-inner" />
+                                            <label className="block text-xs font-medium text-gray-500 mb-2">单次扫描价格 (¥)</label>
+                                            <input type="number" value={bingoCostInput} onChange={e => setBingoCostInput(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono text-sm" />
                                         </div>
                                     </div>
-                                    <button onClick={saveBingoSettings} className="mt-8 w-full py-3 bg-teal-700/80 hover:bg-teal-600 text-white rounded-xl font-black transition-all shadow-lg text-xs uppercase tracking-widest">保存大乐透配置</button>
+                                    <button onClick={saveBingoSettings} className="mt-8 w-full py-3 bg-teal-700 hover:bg-teal-600 text-white rounded-xl font-semibold transition-all shadow-lg text-sm">保存大乐透配置</button>
                                 </div>
 
-                                <div className="bg-gray-800/20 border border-gray-800 rounded-2xl p-8 flex flex-col">
+                                <div className="bg-gray-800/30 border border-gray-700/40 rounded-2xl p-8 flex flex-col">
                                     <div className="flex items-center gap-4 mb-8">
-                                        <div className="w-10 h-10 bg-orange-900/20 rounded-lg flex items-center justify-center text-orange-400 border border-orange-800/30 font-black">赏</div>
-                                        <h3 className="font-bold text-white text-sm uppercase tracking-widest">悬赏令 核心参数配置</h3>
+                                        <div className="w-10 h-10 bg-orange-900/20 rounded-lg flex items-center justify-center text-orange-400 border border-orange-800/30 font-bold">赏</div>
+                                        <h3 className="font-semibold text-white text-sm">悬赏令 核心参数配置</h3>
                                     </div>
                                     <div className="space-y-4 flex-1">
                                         <div>
-                                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">目标标签过滤</label>
-                                            <textarea value={bountyTagsInput} onChange={e => setBountyTagsInput(e.target.value)} className="w-full h-20 bg-gray-950 border border-gray-800 rounded-xl p-4 text-xs text-white focus:border-orange-500 transition-all shadow-inner custom-scrollbar" placeholder="原创, 精品, 极佳..." />
+                                            <label className="block text-xs font-medium text-gray-500 mb-2">目标标签过滤</label>
+                                            <textarea value={bountyTagsInput} onChange={e => setBountyTagsInput(e.target.value)} className="w-full h-20 bg-gray-900 border border-gray-600 rounded-xl p-4 text-xs text-white focus:border-orange-500 focus:ring-orange-500 transition-all custom-scrollbar" placeholder="原创, 精品, 极佳..." />
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">最低评分</label>
-                                                <input type="number" value={bountyMinRating} onChange={e => setBountyMinRating(e.target.value)} className="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white font-mono text-sm" />
+                                                <label className="block text-xs font-medium text-gray-500 mb-2">最低评分</label>
+                                                <input type="number" value={bountyMinRating} onChange={e => setBountyMinRating(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono text-sm" />
                                             </div>
                                             <div>
-                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">最高评分</label>
-                                                <input type="number" value={bountyMaxRating} onChange={e => setBountyMaxRating(e.target.value)} className="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white font-mono text-sm" />
+                                                <label className="block text-xs font-medium text-gray-500 mb-2">最高评分</label>
+                                                <input type="number" value={bountyMaxRating} onChange={e => setBountyMaxRating(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono text-sm" />
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">基础奖励额度 (¥)</label>
-                                            <input type="number" value={bountyBaseReward} onChange={e => setBountyBaseReward(e.target.value)} className="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white font-mono text-sm shadow-inner" />
+                                            <label className="block text-xs font-medium text-gray-500 mb-2">基础奖励额度 (¥)</label>
+                                            <input type="number" value={bountyBaseReward} onChange={e => setBountyBaseReward(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono text-sm" />
                                         </div>
                                     </div>
-                                    <button onClick={saveBountySettings} className="mt-8 w-full py-3 bg-orange-700/80 hover:bg-orange-600 text-white rounded-xl font-black transition-all shadow-lg text-xs uppercase tracking-widest">更新悬赏规则</button>
+                                    <button onClick={saveBountySettings} className="mt-8 w-full py-3 bg-orange-700 hover:bg-orange-600 text-white rounded-xl font-semibold transition-all shadow-lg text-sm">更新悬赏规则</button>
                                 </div>
                             </div>
                         )}
@@ -664,50 +660,50 @@ export default function AdminDashboard() {
 
             {/* 资产调配弹窗 */}
             {activeTab === 'members' && inspectTarget && inspectData && (
-                <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-[100] backdrop-blur-md">
-                    <div className="bg-gray-950 border border-gray-800 rounded-2xl w-full max-w-xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="px-8 py-5 border-b border-gray-800 flex justify-between items-center bg-gray-900/30">
-                            <h3 className="font-bold text-white flex items-center gap-3"><i className="fa-solid fa-id-card text-blue-500"></i> {inspectTarget} 的核心资产快照</h3>
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100] backdrop-blur-xl">
+                    <div className="bg-gray-900 border border-gray-700/40 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="px-8 py-5 border-b border-gray-700/40 flex justify-between items-center bg-gray-800/30">
+                            <h3 className="font-bold text-white flex items-center gap-3"><i className="fa-solid fa-id-card text-indigo-400"></i> {inspectTarget} 的核心资产快照</h3>
                             <button onClick={() => { setInspectTarget(''); setInspectData(null); }} className="text-gray-600 hover:text-white transition-colors"><i className="fa-solid fa-xmark text-xl"></i></button>
                         </div>
                         <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
-                            <div className="p-6 bg-blue-600/5 rounded-2xl border border-blue-500/10 flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-bold uppercase tracking-widest">账户实时余额</span>
-                                <span className="text-3xl font-mono text-green-400 font-black">¥ {(inspectData?.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                            <div className="p-6 bg-indigo-600/5 rounded-2xl border border-indigo-500/10 flex justify-between items-center">
+                                <span className="text-xs text-gray-500 font-medium">账户实时余额</span>
+                                <span className="text-3xl font-mono text-green-400 font-bold">¥ {(inspectData?.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                             </div>
 
                             <div className="space-y-3">
-                                <h4 className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em] mb-4">持有投资组合细节</h4>
+                                <h4 className="text-xs font-medium text-gray-500 mb-4">持有投资组合细节</h4>
                                 {Object.entries(inspectData).filter(([k]) => k !== 'balance').map(([key, value]) => {
                                     const shares = typeof value === 'object' ? value.shares : Number(value);
                                     const cost = typeof value === 'object' ? value.avgCost : 0;
                                     if (shares === 0) return null;
                                     return (
-                                        <div key={key} className="flex justify-between items-center bg-gray-900/30 border border-gray-800 p-4 rounded-xl">
+                                        <div key={key} className="flex justify-between items-center bg-gray-800/30 border border-gray-700/40 p-4 rounded-xl">
                                             <span className="font-bold text-gray-300 text-sm">{key}</span>
                                             <div className="text-right">
-                                                <span className={`font-mono font-black text-sm ${shares > 0 ? 'text-blue-500' : 'text-orange-500'}`}>{shares > 0 ? '看多' : '看空'} {Math.abs(shares)} 份</span>
-                                                <div className="text-[10px] text-gray-600 font-mono mt-0.5">平均成本 ¥{Number(cost).toFixed(2)}</div>
+                                                <span className={`font-mono font-bold text-sm ${shares > 0 ? 'text-indigo-400' : 'text-orange-500'}`}>{shares > 0 ? '看多' : '看空'} {Math.abs(shares)} 份</span>
+                                                <div className="text-xs text-gray-600 font-mono mt-0.5">平均成本 ¥{Number(cost).toFixed(2)}</div>
                                             </div>
                                         </div>
                                     );
                                 })}
                             </div>
 
-                            <div className="pt-8 border-t border-gray-800">
-                                <h4 className="text-[10px] font-bold text-orange-600 uppercase tracking-[0.2em] mb-4">管理员直接干预调账</h4>
-                                <div className="bg-orange-950/10 p-6 rounded-2xl border border-orange-900/20 space-y-4 shadow-inner">
+                            <div className="pt-8 border-t border-gray-700/40">
+                                <h4 className="text-xs font-medium text-orange-500 mb-4">管理员直接干预调账</h4>
+                                <div className="bg-orange-950/10 p-6 rounded-2xl border border-orange-900/20 space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="text-[10px] text-gray-600 font-bold uppercase mb-2 block tracking-widest">调整数额</label>
-                                            <input type="number" value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} placeholder="正数为加，负数为减" className="w-full bg-black border border-gray-800 rounded-lg p-3 text-white font-mono text-sm focus:border-orange-900 outline-none"/>
+                                            <label className="text-xs text-gray-500 font-medium mb-2 block">调整数额</label>
+                                            <input type="number" value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} placeholder="正数为加，负数为减" className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-mono text-sm focus:border-orange-500 focus:ring-orange-500 outline-none"/>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] text-gray-600 font-bold uppercase mb-2 block tracking-widest">审计备注</label>
-                                            <input type="text" value={adjustNote} onChange={e => setAdjustNote(e.target.value)} placeholder="说明调账原因" className="w-full bg-black border border-gray-800 rounded-lg p-3 text-white text-xs focus:border-orange-900 outline-none"/>
+                                            <label className="text-xs text-gray-500 font-medium mb-2 block">审计备注</label>
+                                            <input type="text" value={adjustNote} onChange={e => setAdjustNote(e.target.value)} placeholder="说明调账原因" className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white text-xs focus:border-orange-500 focus:ring-orange-500 outline-none"/>
                                         </div>
                                     </div>
-                                    <button onClick={handleAdjustBalance} disabled={isAdjusting} className="w-full py-3.5 bg-orange-900/50 hover:bg-orange-800 disabled:bg-gray-900 text-orange-500 font-black rounded-xl transition-all text-xs uppercase tracking-widest border border-orange-800/30">
+                                    <button onClick={handleAdjustBalance} disabled={isAdjusting} className="w-full py-3.5 bg-orange-900/50 hover:bg-orange-800 disabled:bg-gray-900 text-orange-500 font-semibold rounded-xl transition-all text-sm border border-orange-800/30">
                                         {isAdjusting ? '正在处理交易指令...' : '确认执行资金调账'}
                                     </button>
                                 </div>
