@@ -237,17 +237,18 @@ const AuthorProfile = () => {
                                 <h3 className="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">最喜欢的作者</h3>
                                 {data.favoriteAuthors && data.favoriteAuthors.length > 0 ? (
                                     <div className="space-y-3 flex-1">
-                                        {data.favoriteAuthors.map((author, idx) => {
-                                            const maxVotes = data.favoriteAuthors[0].count;
-                                            const percentage = Math.max(5, (author.count / maxVotes) * 100);
+                                        {data.favoriteAuthors.slice(0, 10).map((author, idx) => {
+                                            const maxScore = data.favoriteAuthors[0].positiveVotes;
+                                            const percentage = Math.max(5, (author.positiveVotes / maxScore) * 100);
                                             return (
                                                 <div key={idx} className="flex items-center gap-3">
-                                                    <Link href={`/authors?name=${encodeURIComponent(author.name)}`} className="w-1/3 text-sm font-medium text-indigo-400 hover:text-indigo-300 truncate">
+                                                    <span className="w-6 text-xs text-gray-500 text-right shrink-0">#{author.rank}</span>
+                                                    <Link href={`/authors?name=${encodeURIComponent(author.name)}`} className="w-1/4 text-sm font-medium text-indigo-400 hover:text-indigo-300 truncate">
                                                         {author.name}
                                                     </Link>
                                                     <div className="flex-1 h-6 bg-gray-900 rounded overflow-hidden flex items-center relative">
                                                         <div className="h-full bg-indigo-600/40 border-r border-indigo-500/50 rounded-r transition-all duration-500" style={{ width: `${percentage}%` }}></div>
-                                                        <span className="text-xs text-gray-200 absolute left-2 font-medium">{author.count} 票</span>
+                                                        <span className="text-xs text-gray-200 absolute left-2 font-medium">+{author.positiveVotes} / -{author.negativeVotes}</span>
                                                     </div>
                                                 </div>
                                             );
@@ -265,20 +266,24 @@ const AuthorProfile = () => {
                                 {data.voteRecords && data.voteRecords.length > 0 ? (
                                     <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] pr-2">
                                         {data.voteRecords.map((vote, idx) => {
-                                            const isUp = vote.vote === '+1' || vote.vote === '1';
+                                            const voteLabel = vote.type === 'cancel' ? '撤票' : vote.new === 1 ? '+1' : vote.new === -1 ? '-1' : vote.type;
+                                            const isUp = vote.new === 1;
+                                            const isCancel = vote.type === 'cancel';
+                                            const colorClass = isCancel ? 'bg-gray-500/10 text-gray-400 border border-gray-500/20' : isUp ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20';
+                                            const timeStr = vote.time ? new Date(vote.time).toLocaleDateString('zh-CN') : '';
+                                            const siteConfig = config.SUPPORT_WIKI.find(w => w.WIKIT_ID === vote.wiki);
+                                            const siteParam = siteConfig ? siteConfig.PARAM : vote.wiki;
                                             return (
                                                 <div key={idx} className="flex items-center justify-between gap-3 text-sm bg-gray-900/40 p-2.5 rounded hover:bg-gray-800/80 transition-colors border border-gray-700/30">
                                                     <div className="flex items-center gap-3 overflow-hidden">
-                                                        <span className={`font-bold px-2 py-0.5 rounded text-xs shrink-0 ${isUp ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
-                                                            {isUp ? '+1' : '-1'}
+                                                        <span className={`font-bold px-2 py-0.5 rounded text-xs shrink-0 ${colorClass}`}>
+                                                            {voteLabel}
                                                         </span>
-                                                        <Link href={`/page?site=${vote.wiki}&page=${encodeURIComponent(vote.page)}`} className="text-indigo-400 hover:text-indigo-300 font-medium truncate">
+                                                        <Link href={`/page?site=${siteParam}&page=${encodeURIComponent(vote.page)}`} className="text-indigo-400 hover:text-indigo-300 font-medium truncate">
                                                             {vote.title || vote.page}
                                                         </Link>
                                                     </div>
-                                                    <Link href={`/authors?name=${encodeURIComponent(vote.author)}`} className="text-gray-500 hover:text-gray-300 shrink-0 truncate max-w-[100px] text-xs">
-                                                        {vote.author}
-                                                    </Link>
+                                                    <span className="text-gray-500 shrink-0 text-xs">{timeStr}</span>
                                                 </div>
                                             );
                                         })}

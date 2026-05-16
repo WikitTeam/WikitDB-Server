@@ -1,5 +1,4 @@
 import * as cheerio from 'cheerio';
-import prisma from '../../lib/prisma';
 import axios from 'axios';
 import { withLogging } from '../../utils/logRequest';
 
@@ -80,35 +79,35 @@ async function handler(req, res) {
 
         let voteRecords = [];
         let favoriteAuthors = [];
-        
-        try {
-            const voteKey = `user_votes_${accountName}`;
-            const setting = await prisma.setting.findUnique({ where: { key: voteKey } });
-            
-            if (setting && setting.value) {
-                const allVotes = JSON.parse(setting.value);
-                voteRecords = allVotes;
-                
-                const authorCounts = {};
-                allVotes.forEach(v => {
-                    if (v.vote === '+1' && v.author && v.author !== '未知') {
-                        authorCounts[v.author] = (authorCounts[v.author] || 0) + 1;
-                    }
-                });
-                
-                favoriteAuthors = Object.entries(authorCounts)
-                    .map(([authorName, count]) => ({ name: authorName, count: count }))
-                    .sort((a, b) => b.count - a.count)
-                    .slice(0, 5); 
+
+        if (userid) {
+            try {
+                const [favRes, recentRes] = await Promise.allSettled([
+                    request.post('https://wikit.unitreaty.org/apiv1/graphql', {
+                        query: `query($uid: String!) { userVotedAuthorRank(uid: $uid) { rank name positiveVotes negativeVotes totalScore } }`,
+                        variables: { uid: String(userid) }
+                    }),
+                    request.post('https://wikit.unitreaty.org/apiv1/graphql', {
+                        query: `query($uid: String!) { userRecentVotes(uid: $uid, limit: 50) { wiki page title old new type time } }`,
+                        variables: { uid: String(userid) }
+                    })
+                ]);
+
+                if (favRes.status === 'fulfilled' && favRes.value.data?.data?.userVotedAuthorRank) {
+                    favoriteAuthors = favRes.value.data.data.userVotedAuthorRank;
+                }
+                if (recentRes.status === 'fulfilled' && recentRes.value.data?.data?.userRecentVotes) {
+                    voteRecords = recentRes.value.data.data.userRecentVotes;
+                }
+            } catch (e) {
+                console.error("获取投票数据失败:", e);
             }
-        } catch (e) {
-            console.error("提取投票记录失败:", e);
         }
 
-        if (!parsedFromRankApi && articlesData.length === 0 && voteRecords.length === 0) {
-            return res.status(404).json({ 
-                error: '未查找到该作者', 
-                details: '未能从 Wikit 原站获取数据，且本地数据库无该用户的投票记录。' 
+        if (!parsedFromRankApi && articlesData.length === 0) {
+            return res.status(404).json({
+                error: '未查找到该作者',
+                details: '未能从 Wikit 获取该用户的任何数据。'
             });
         }
 
@@ -143,7 +142,7 @@ async function handler(req, res) {
             averageRating: averageRating,
             siteStats: siteStats,
             pages: articlesData,
-            voteRecords: voteRecords.slice(0, 100),
+            voteRecords: voteRecords,
             favoriteAuthors: favoriteAuthors
         };
 
