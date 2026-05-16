@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import axios from 'axios';
 import { withLogging } from '../../utils/logRequest';
+const { DEFAULT_GQL_ENDPOINT } = require('../../utils/graphql');
 
 async function handler(req, res) {
     const { name } = req.query;
@@ -26,7 +27,7 @@ async function handler(req, res) {
         try {
             const [rankRes, gqlRes] = await Promise.allSettled([
                 request.get(`https://wikit.unitreaty.org/wikidot/rank?user=${encodeURIComponent(queryName)}`),
-                request.post('https://wikit.unitreaty.org/apiv1/graphql', {
+                request.post(DEFAULT_GQL_ENDPOINT, {
                     query: `query($author: String!) { articles(author: $author, page: 1, pageSize: 500) { nodes { title wiki page rating created_at author_id } } }`,
                     variables: { author: queryName }
                 })
@@ -83,11 +84,11 @@ async function handler(req, res) {
         if (userid) {
             try {
                 const [favRes, recentRes] = await Promise.allSettled([
-                    request.post('https://wikit.unitreaty.org/apiv1/graphql', {
+                    request.post(DEFAULT_GQL_ENDPOINT, {
                         query: `query($uid: String!) { userVotedAuthorRank(uid: $uid) { rank name positiveVotes negativeVotes totalScore } }`,
                         variables: { uid: String(userid) }
                     }),
-                    request.post('https://wikit.unitreaty.org/apiv1/graphql', {
+                    request.post(DEFAULT_GQL_ENDPOINT, {
                         query: `query($uid: String!) { userRecentVotes(uid: $uid, limit: 50) { wiki page title old new type time } }`,
                         variables: { uid: String(userid) }
                     })

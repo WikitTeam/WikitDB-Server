@@ -10,7 +10,8 @@ module.exports = {
             URL: "站点链接",
             ImgURL: "Logo链接",
             PARAM: "简写",
-            WIKIT_ID: "Wikit站点里写的站点名称，这里用于筛选作者的站点页面"
+            WIKIT_ID: "Wikit站点里写的站点名称，这里用于筛选作者的站点页面",
+            GQL_API: "可选，自定义GraphQL端点，不填则默认 https://wikit.unitreaty.org/apiv1/graphql"
         },
     */
     {
@@ -73,6 +74,14 @@ module.exports = {
             ImgURL: "https://odilpin.wikidot.com/local--files/system%3Astart/pin-LOGO",
             PARAM: "pin",
             WIKIT_ID: "pin-wiki"
+        },
+                {
+            NAME: "The Bsckrooms中文维基",
+            URL: "https://backrooms-wiki-cn.wikidot.com/",
+            ImgURL: "https://7bye.com/hoah/i/2023/12/31/5hsx3.svg",
+            PARAM: "brcn",
+            WIKIT_ID: "backrooms-wiki-cn",
+            GQL_API: "https://wikit.unitreaty.org/backrooms/apiv1/graphql"
         },
     ]
 };

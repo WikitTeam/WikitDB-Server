@@ -1,4 +1,5 @@
 // pages/api/trade/author-kline.js
+const { DEFAULT_GQL_ENDPOINT } = require('../../../utils/graphql');
 
 export default async function handler(req, res) {
     const { author } = req.query;
@@ -22,7 +23,7 @@ export default async function handler(req, res) {
             variables: { author }
         };
 
-        const response = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+        const response = await fetch(DEFAULT_GQL_ENDPOINT, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

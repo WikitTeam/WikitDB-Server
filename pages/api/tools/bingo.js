@@ -1,5 +1,6 @@
 import prisma from '../../../lib/prisma';
 import { withAuth } from '../../../utils/withAuth';
+const { DEFAULT_GQL_ENDPOINT } = require('../../../utils/graphql');
 
 async function getHandler(req, res) {
     try {
@@ -36,7 +37,7 @@ async function postHandler(req, res) {
 
         if (Number(user.balance || 0) < scanCost) return res.status(400).json({ error: `余额不足，扫描需要 ¥${scanCost}` });
 
-            const countRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+            const countRes = await fetch(DEFAULT_GQL_ENDPOINT, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query: `query { articles(page: 1, pageSize: 1) { pageInfo { total } } }` })
             });
@@ -45,7 +46,7 @@ async function postHandler(req, res) {
             
             const randomPage = Math.floor(Math.random() * countData.data.articles.pageInfo.total) + 1;
 
-            const r = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+            const r = await fetch(DEFAULT_GQL_ENDPOINT, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query: `query { articles(page: ${randomPage}, pageSize: 1) { nodes { title rating tags } } }` })
             });

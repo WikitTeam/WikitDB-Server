@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 const config = require('../../wikitdb.config.js');
+const { getGraphQLEndpoint } = require('../../utils/graphql');
 
 const DeleteAnnouncement = () => {
     const wikis = config.SUPPORT_WIKI || config.SUPPOST_WIKI || [];
@@ -58,7 +59,7 @@ const DeleteAnnouncement = () => {
                     actualWikiName = wikiConfig.URL.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('.')[0];
                 }
 
-                const res = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+                const res = await fetch(getGraphQLEndpoint(wikiConfig), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -128,7 +129,7 @@ const DeleteAnnouncement = () => {
                 }
             }
 
-            const res = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+            const res = await fetch(getGraphQLEndpoint(wikiConfig), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

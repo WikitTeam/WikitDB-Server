@@ -1,4 +1,5 @@
 const config = require('../../wikitdb.config.js');
+const { getGraphQLEndpoint } = require('../../utils/graphql');
 import { withLogging } from '../../utils/logRequest';
 
 async function handler(req, res) {
@@ -31,7 +32,7 @@ async function handler(req, res) {
             queryStr = `query($wiki: [String!]!, $page: Int, $pageSize: Int) { articles(wiki: $wiki, page: $page, pageSize: $pageSize) { nodes { title page wiki rating created_at } pageInfo { total } } }`;
         }
 
-        const gqlRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+        const gqlRes = await fetch(getGraphQLEndpoint(wikiConfig), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query: queryStr, variables }),
@@ -62,7 +63,7 @@ async function handler(req, res) {
     } catch (error) {
         // 如果 GraphQL 原生检索语法报错，走兜底逻辑：在本地过滤和模拟翻页
         try {
-            const fallbackRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+            const fallbackRes = await fetch(getGraphQLEndpoint(wikiConfig), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

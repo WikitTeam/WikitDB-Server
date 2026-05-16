@@ -1,10 +1,11 @@
 // pages/tools/radar.js
 import React, { useState } from 'react';
 import Head from 'next/head';
-import { 
-    Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
-    ResponsiveContainer, Tooltip 
+import {
+    Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+    ResponsiveContainer, Tooltip
 } from 'recharts';
+const { DEFAULT_GQL_ENDPOINT } = require('../../utils/graphql');
 
 // 自定义图表悬浮提示框的样式，使其融入暗色主题
 const CustomTooltip = ({ active, payload }) => {
@@ -61,7 +62,7 @@ export default function AuthorRadar() {
                 variables: { author: authorName }
             };
 
-            const res = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+            const res = await fetch(DEFAULT_GQL_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(graphqlQuery)

@@ -1,6 +1,7 @@
 // pages/tools/quality-judge.js
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
+const { DEFAULT_GQL_ENDPOINT } = require('../../utils/graphql');
 
 const PageTradeCard = ({ pageData, username, onTradeSuccess }) => {
     const [direction, setDirection] = useState('long');
@@ -162,7 +163,7 @@ export default function QualityJudge() {
                         }
                     `
                 };
-                const res = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+                const res = await fetch(DEFAULT_GQL_ENDPOINT, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(query)

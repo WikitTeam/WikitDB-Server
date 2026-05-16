@@ -256,7 +256,7 @@ const AuthorProfile = () => {
                                     </div>
                                 ) : (
                                     <div className="text-sm text-gray-500 py-8 flex-1 flex items-center justify-center bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
-                                        暂无数据或数据未收录
+                                        数据源暂时不可用（Wikit 接口超时或异常）
                                     </div>
                                 )}
                             </div>
@@ -290,7 +290,7 @@ const AuthorProfile = () => {
                                     </div>
                                 ) : (
                                     <div className="text-sm text-gray-500 py-8 flex-1 flex items-center justify-center bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
-                                        暂无近期投票记录
+                                        数据源暂时不可用（Wikit 接口超时或异常）
                                     </div>
                                 )}
                             </div>

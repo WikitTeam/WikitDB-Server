@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import prisma from '../../lib/prisma';
 const config = require('../../wikitdb.config.js');
+const { getGraphQLEndpoint } = require('../../utils/graphql');
 import { withLogging } from '../../utils/logRequest';
 
 async function handler(req, res) {
@@ -30,7 +31,7 @@ async function handler(req, res) {
         };
 
         const [gqlResponse, htmlResponse] = await Promise.allSettled([
-            fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+            fetch(getGraphQLEndpoint(wikiConfig), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

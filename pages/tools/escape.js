@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 const config = require('../../wikitdb.config.js');
+const { getGraphQLEndpoint } = require('../../utils/graphql');
 
 export default function CodeEscape() {
     const [gameState, setGameState] = useState('idle');
@@ -55,7 +56,7 @@ export default function CodeEscape() {
                 `
             };
             
-            const res = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+            const res = await fetch(getGraphQLEndpoint(randomWikiConfig), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(query)

@@ -1,7 +1,8 @@
 import prisma from '../../../lib/prisma';
 import { withAuth } from '../../../utils/withAuth';
+const { DEFAULT_GQL_ENDPOINT } = require('../../../utils/graphql');
 
-const GRAPHQL_ENDPOINT = 'https://wikit.unitreaty.org/apiv1/graphql';
+const GRAPHQL_ENDPOINT = DEFAULT_GQL_ENDPOINT;
 
 // 服务端获取作者当前分数，防止客户端伪造
 async function fetchAuthorScore(authorName) {

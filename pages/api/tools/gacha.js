@@ -1,7 +1,8 @@
 import prisma from '../../../lib/prisma';
 import { withAuth } from '../../../utils/withAuth';
+const { DEFAULT_GQL_ENDPOINT } = require('../../../utils/graphql');
 
-const GRAPHQL_ENDPOINT = 'https://wikit.unitreaty.org/apiv1/graphql';
+const GRAPHQL_ENDPOINT = DEFAULT_GQL_ENDPOINT;
 
 async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });

@@ -1,4 +1,5 @@
 const config = require('../../wikitdb.config.js');
+const { DEFAULT_GQL_ENDPOINT, getGraphQLEndpoint } = require('../../utils/graphql');
 import { withLogging } from '../../utils/logRequest';
 
 async function handler(req, res) {
@@ -6,8 +7,8 @@ async function handler(req, res) {
     const { site = 'global' } = req.query;
 
     try {
-        const fetchGraphQL = async (queryStr, variables) => {
-            const gqlRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+        const fetchGraphQL = async (queryStr, variables, endpoint = DEFAULT_GQL_ENDPOINT) => {
+            const gqlRes = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query: queryStr, variables }),
@@ -57,7 +58,8 @@ async function handler(req, res) {
 
             rankingData = await fetchGraphQL(
                 `query($wiki: String!) { authorRanking(wiki: $wiki, by: RATING) { rank name value } }`,
-                { wiki: actualWikiName }
+                { wiki: actualWikiName },
+                getGraphQLEndpoint(wikiConfig)
             );
         }
 

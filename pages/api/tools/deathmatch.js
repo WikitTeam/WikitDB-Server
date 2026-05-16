@@ -1,6 +1,7 @@
 import prisma from '../../../lib/prisma';
 import { withAuth } from '../../../utils/withAuth';
 import { validateNumberRange } from '../../../utils/security';
+const { DEFAULT_GQL_ENDPOINT } = require('../../../utils/graphql');
 
 async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -13,7 +14,7 @@ async function handler(req, res) {
         if (amount === null) return res.status(400).json({ error: '下注金额无效（范围 1-10000）' });
         if (Number(user.balance || 0) < amount) return res.status(400).json({ error: '账户余额不足' });
 
-        const countRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+        const countRes = await fetch(DEFAULT_GQL_ENDPOINT, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query: `query { articles(page: 1, pageSize: 1) { pageInfo { total } } }` })
         });
@@ -26,7 +27,7 @@ async function handler(req, res) {
 
         const fetchPage = async () => {
             const randomPage = Math.floor(Math.random() * total) + 1;
-            const r = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+            const r = await fetch(DEFAULT_GQL_ENDPOINT, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query: `query { articles(page: ${randomPage}, pageSize: 1) { nodes { wiki title rating author } } }` })
             });

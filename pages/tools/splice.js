@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 const config = require('../../wikitdb.config.js');
+const { getGraphQLEndpoint } = require('../../utils/graphql');
 
 export default function Splice() {
     const [snippets, setSnippets] = useState([]);
@@ -43,7 +44,7 @@ export default function Splice() {
                     `
                 };
                 
-                const res = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+                const res = await fetch(getGraphQLEndpoint(randomWiki), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(query)

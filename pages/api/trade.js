@@ -1,7 +1,8 @@
 import prisma from '../../lib/prisma';
 import { verifyToken } from '../../utils/auth';
+const { DEFAULT_GQL_ENDPOINT } = require('../../utils/graphql');
 
-const GRAPHQL_ENDPOINT = 'https://wikit.unitreaty.org/apiv1/graphql';
+const GRAPHQL_ENDPOINT = DEFAULT_GQL_ENDPOINT;
 
 const VALID_DIRECTIONS = ['long', 'short'];
 const VALID_LOCK_TYPES = ['none', 'T1 (24h)', 'T3 (72h)', 'T7 (168h)'];

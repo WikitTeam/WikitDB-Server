@@ -1,6 +1,7 @@
 import prisma from '../../../lib/prisma';
 import { withAuth } from '../../../utils/withAuth';
 import { validateNumberRange } from '../../../utils/security';
+const { DEFAULT_GQL_ENDPOINT } = require('../../../utils/graphql');
 
 async function getAuthorPrice(authorName) {
     const cacheKey = `author_price_cache:${authorName}`;
@@ -18,7 +19,7 @@ async function getAuthorPrice(authorName) {
             query: `query($author: String!) { articles(author: $author, page: 1, pageSize: 500) { nodes { rating comments } } }`,
             variables: { author: authorName }
         };
-        const res = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+        const res = await fetch(DEFAULT_GQL_ENDPOINT, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query)
         });
         if (!res.ok) throw new Error('网络拒绝');

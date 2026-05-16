@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 const config = require('../../wikitdb.config.js');
+const { getGraphQLEndpoint } = require('../../utils/graphql');
 
 export default async function handler(req, res) {
     const { site } = req.query;
@@ -37,7 +38,7 @@ export default async function handler(req, res) {
                 variables: { wiki: [actualWikiName], page, pageSize }
             });
 
-            const firstRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+            const firstRes = await fetch(getGraphQLEndpoint(wikiConfig), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: buildQuery(1),
@@ -72,7 +73,7 @@ export default async function handler(req, res) {
                     const fetchPromises = [];
                     for (let i = 2; i <= totalPages; i++) {
                         fetchPromises.push(
-                            fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+                            fetch(getGraphQLEndpoint(wikiConfig), {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: buildQuery(i),

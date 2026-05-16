@@ -1,5 +1,6 @@
 import prisma from '../../../lib/prisma';
 import { verifyToken } from '../../../utils/auth';
+const { DEFAULT_GQL_ENDPOINT } = require('../../../utils/graphql');
 
 const generateBounties = (config) => {
     const tagPool = config?.tags?.length > 0 ? config.tags : ['原创', '精品', 'scp', 'tale', 'goi-format', '微恐', '搞笑', '科幻', 'keter', '安全'];
@@ -113,7 +114,7 @@ export default async function handler(req, res) {
                 query: `query($wiki: String!, $page: String!) { article(wiki: $wiki, page: $page) { title rating tags author } }`,
                 variables: { wiki, page }
             };
-            const gqlRes = await fetch('https://wikit.unitreaty.org/apiv1/graphql', {
+            const gqlRes = await fetch(DEFAULT_GQL_ENDPOINT, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query)
             });
             const gqlData = await gqlRes.json();
