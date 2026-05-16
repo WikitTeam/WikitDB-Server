@@ -70,12 +70,12 @@ async function handler(req, res) {
                 await prisma.user.update({ where: { id: user.id }, data: { isAdmin: false } });
                 break;
             case 'delete':
-                await prisma.$transaction([
-                    prisma.trade.deleteMany({ where: { userId: user.id } }),
-                    prisma.gacha.deleteMany({ where: { userId: user.id } }),
-                    prisma.image.deleteMany({ where: { uploaderId: user.id } }),
-                    prisma.user.delete({ where: { id: user.id } })
-                ]);
+                await prisma.$transaction(async (tx) => {
+                    await tx.trade.deleteMany({ where: { userId: user.id } });
+                    await tx.gacha.deleteMany({ where: { userId: user.id } });
+                    await tx.image.deleteMany({ where: { uploaderId: user.id } });
+                    await tx.user.delete({ where: { id: user.id } });
+                });
                 return res.status(200).json({ success: true, message: `用户 ${targetUser} 的所有档案已彻底抹除` });
             
             default:

@@ -26,7 +26,17 @@ async function handler(req, res) {
             const safeRate = validateNumberRange(rate, 0.01, 100);
             if (safeRate === null) return res.status(400).json({ error: '税率无效（范围 0.01-100）' });
 
-            const affected = await prisma.$executeRaw`UPDATE "User" SET balance = balance - (balance * ${safeRate} / 100)`;
+            const allUsers = await prisma.user.findMany({});
+            let affected = 0;
+            for (const u of allUsers) {
+                const currentBalance = Number(u.balance);
+                const taxAmount = parseFloat((currentBalance * safeRate / 100).toFixed(2));
+                await prisma.user.update({
+                    where: { id: u.id },
+                    data: { balance: { decrement: taxAmount } }
+                });
+                affected++;
+            }
             return res.status(200).json({ success: true, affected });
         }
 

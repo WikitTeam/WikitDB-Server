@@ -124,8 +124,8 @@ export default async function handler(req, res) {
         }
 
         try {
-            await prisma.$transaction([
-                prisma.user.create({
+            await prisma.$transaction(async (tx) => {
+                await tx.user.create({
                     data: {
                         username: username,
                         wikidotAccount: tempRecord.wdid,
@@ -133,14 +133,10 @@ export default async function handler(req, res) {
                         email: email,
                         balance: 10000
                     }
-                }),
-                prisma.tempReg.delete({
-                    where: { username }
-                }),
-                prisma.verificationCode.delete({
-                    where: { email }
-                })
-            ]);
+                });
+                await tx.tempReg.delete({ where: { username } });
+                await tx.verificationCode.delete({ where: { email } });
+            });
             return res.status(200).json({ message: '账号注册成功' });
         } catch (e) {
             return res.status(500).json({ error: '用户数据入库失败' });

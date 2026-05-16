@@ -24,8 +24,8 @@ export default async function handler(req, res) {
         }
 
         const balance = user.balance !== null ? Number(user.balance) : 10000;
-        const trades = user.trades.map(t => t.data);
-        const gachas = user.gachas.map(g => g.data);
+        const trades = user.trades || [];
+        const gachas = user.gachas || [];
 
         res.status(200).json({
             balance,
