@@ -2,15 +2,71 @@ import prisma from '../lib/prisma';
 
 /**
  * 转义 GraphQL 字符串参数，防止注入攻击
- * 移除双引号和反斜杠等可能破坏查询结构的字符
  */
 export function sanitizeGraphQL(str) {
     if (typeof str !== 'string') return '';
-    return str.replace(/[\\"]/g, '').replace(/[\n\r\t]/g, ' ').trim();
+    return str
+        .replace(/[\\"]/g, '')
+        .replace(/[\n\r\t]/g, ' ')
+        .replace(/[{}()]/g, '')
+        .trim()
+        .slice(0, 200);
 }
 
 /**
- * 通用速率限制器（基于 Setting 表）
+ * HTML 实体转义，防止 XSS
+ */
+export function escapeHtml(str) {
+    if (typeof str !== 'string') return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
+ * 从请求中提取客户端 IP
+ */
+export function getClientIp(req) {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded) return String(forwarded).split(',')[0].trim();
+    return req.socket?.remoteAddress || 'unknown';
+}
+
+// 内存级 IP 限速器（轻量，不持久化）
+const ipRateLimitStore = new Map();
+
+/**
+ * IP 级别限速（内存存储，进程重启清零）
+ * @returns {boolean} true = 已超限
+ */
+export function ipRateLimit(ip, key, maxAttempts, windowMs) {
+    const now = Date.now();
+    const storeKey = `${key}:${ip}`;
+    let attempts = ipRateLimitStore.get(storeKey) || [];
+    attempts = attempts.filter(ts => now - ts < windowMs);
+
+    if (attempts.length >= maxAttempts) return true;
+
+    attempts.push(now);
+    ipRateLimitStore.set(storeKey, attempts);
+
+    // 定期清理过期条目防止内存泄漏
+    if (ipRateLimitStore.size > 10000) {
+        for (const [k, v] of ipRateLimitStore) {
+            const valid = v.filter(ts => now - ts < windowMs);
+            if (valid.length === 0) ipRateLimitStore.delete(k);
+            else ipRateLimitStore.set(k, valid);
+        }
+    }
+
+    return false;
+}
+
+/**
+ * 通用速率限制器（基于 Setting 表，持久化）
  * @returns {boolean} true = 已超限，应拒绝请求
  */
 export async function rateLimit(key, maxAttempts, windowMs) {

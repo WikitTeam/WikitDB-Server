@@ -72,6 +72,9 @@ async function handler(req, res) {
         // 计算最终返还金额（如果亏损超过本金则爆仓归零）
         let finalReturn = margin + pnl;
         if (finalReturn < 0) finalReturn = 0;
+        // 防止极端收益：上限为保证金的 20 倍
+        const maxReturn = margin * 20;
+        if (finalReturn > maxReturn) finalReturn = maxReturn;
 
         // 执行结算事务
         const result = await prisma.$transaction(async (tx) => {

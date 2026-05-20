@@ -19,7 +19,10 @@ export default async function handler(req, res) {
 
     if (action === 'start') {
         if (!password) return res.status(400).json({ error: '密码不能为空' });
-        if (password.length < 6) return res.status(400).json({ error: '密码长度不能少于 6 位' });
+        if (password.length < 8) return res.status(400).json({ error: '密码长度不能少于 8 位' });
+        if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+            return res.status(400).json({ error: '密码必须同时包含字母和数字' });
+        }
 
         const exists = await prisma.user.findUnique({ where: { username } });
         if (exists) return res.status(400).json({ error: '该用户名已被注册' });

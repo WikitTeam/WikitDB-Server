@@ -1,7 +1,7 @@
 import prisma from '../../lib/prisma';
 import bcrypt from 'bcryptjs';
 import { signToken, serializeAuthCookie } from '../../utils/auth';
-import { rateLimit } from '../../utils/security';
+import { rateLimit, ipRateLimit, getClientIp } from '../../utils/security';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -15,8 +15,15 @@ export default async function handler(req, res) {
     }
 
     try {
-        // 速率限制：同一用户名 5 分钟内最多 5 次失败尝试
-        const limited = await rateLimit(`login:${username}`, 5, 5 * 60 * 1000);
+        const ip = getClientIp(req);
+
+        // IP 级别限速：同一 IP 15 分钟内最多 20 次登录尝试
+        if (ipRateLimit(ip, 'login', 20, 15 * 60 * 1000)) {
+            return res.status(429).json({ error: '当前网络登录尝试过于频繁，请稍后再试' });
+        }
+
+        // 用户级别限速：同一用户名 5 分钟内最多 3 次失败尝试
+        const limited = await rateLimit(`login:${username}`, 3, 5 * 60 * 1000);
         if (limited) {
             return res.status(429).json({ error: '登录尝试过于频繁，请 5 分钟后再试' });
         }

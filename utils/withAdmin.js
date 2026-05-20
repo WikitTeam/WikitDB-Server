@@ -1,7 +1,7 @@
 import { verifyToken } from './auth';
 import prisma from '../lib/prisma';
 
-const SUPER_ADMIN = 'Laimu_slime';
+const SUPER_ADMIN = process.env.SUPER_ADMIN || '';
 
 /**
  * Admin 权限包装器
@@ -23,9 +23,8 @@ export function withAdmin(handler) {
         return res.status(403).json({ error: '权限不足：仅限管理员访问' });
       }
 
-      // 将解析出的管理员信息挂载到 req 上，方便 handler 使用
       req.admin = adminUser;
-      
+
       return await handler(req, res);
     } catch (error) {
       console.error('Admin API Error:', error);

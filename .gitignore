@@ -3,8 +3,28 @@
 # dependencies
 /node_modules
 package-lock.json
+
+# build output
 .next
-.vscode
+
+# local data (用户数据、交易记录等)
+/data
+
+# env & secrets
 .env
+.env.*
+
+# editor / IDE
+.vscode
+.idea
+
+# Claude Code
+.claude
+CLAUDE.md
+
+# misc
 migrate-data.mjs
 wikit-graphql.md
+
+others
+wikidot-ajax.md

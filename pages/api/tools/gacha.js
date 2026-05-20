@@ -29,7 +29,7 @@ async function handler(req, res) {
 
         const dataRes = await fetch(GRAPHQL_ENDPOINT, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: `query { articles(page: ${randomPage}, pageSize: 1) { nodes { wiki title rating author tags } } }` })
+            body: JSON.stringify({ query: `query($page: Int, $pageSize: Int) { articles(page: $page, pageSize: $pageSize) { nodes { wiki title rating author tags } } }`, variables: { page: randomPage, pageSize: 1 } })
         });
         const dataJson = await dataRes.json();
         const article = dataJson.data?.articles?.nodes[0];
