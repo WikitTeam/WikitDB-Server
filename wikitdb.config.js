@@ -76,6 +76,13 @@ module.exports = {
             WIKIT_ID: "pin-wiki"
         },
         {
+            NAME: "SCP基金会Minecraft分部",
+            URL: "https://scp-wiki-mc.wikidot.com/",
+            ImgURL: "https://scp-wiki-mc.wikidot.com/local--files/theme:black-highlighter-theme/mclogo2.svg",
+            PARAM: "scp-wiki-mc",
+            WIKIT_ID: "scp-wiki-mc"
+        },
+        {
             NAME: "The Bsckrooms中文维基",
             URL: "https://backrooms-wiki-cn.wikidot.com/",
             ImgURL: "https://7bye.com/hoah/i/2023/12/31/5hsx3.svg",
