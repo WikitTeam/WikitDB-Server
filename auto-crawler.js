@@ -5,6 +5,7 @@ const http = require('http');
 const https = require('https');
 const prisma = require('./lib/prisma');
 const config = require('./wikitdb.config.js');
+const { fetchCategories, fetchThreads, fetchPosts } = require('./utils/wikidotForum');
 
 const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 10 });
 const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 10 });
@@ -330,3 +331,99 @@ async function runCrawler() {
 
 cron.schedule('0 */3 * * *', () => runCrawler());
 runCrawler();
+
+// --- 论坛同步定时任务 ---
+
+let isForumSyncing = false;
+
+async function runForumSync() {
+    if (isForumSyncing) {
+        console.log(`[${new Date().toLocaleString()}] 论坛同步尚未结束，跳过本次触发。`);
+        return;
+    }
+    isForumSyncing = true;
+
+    const sites = config.SUPPORT_WIKI.filter(w => w.FORUM_SYNC);
+    if (sites.length === 0) { isForumSyncing = false; return; }
+
+    console.log(`\n[${new Date().toLocaleString()}] 开始论坛数据同步 (${sites.length} 个站点)...`);
+
+    for (const wiki of sites) {
+        try {
+            const categories = await fetchCategories(wiki.URL);
+            console.log(`[${wiki.PARAM}] 获取到 ${categories.length} 个分类`);
+
+            for (const cat of categories) {
+                const existing = await prisma.forumCategory.findFirst({
+                    where: { siteParam: wiki.PARAM, categoryId: cat.categoryId }
+                });
+                if (existing) {
+                    await prisma.forumCategory.update({
+                        where: { id: existing.id },
+                        data: { title: cat.title, description: cat.description, threadsCount: cat.threadsCount, postsCount: cat.postsCount, lastSyncedAt: new Date().toISOString() }
+                    });
+                } else {
+                    await prisma.forumCategory.create({
+                        data: { siteParam: wiki.PARAM, categoryId: cat.categoryId, title: cat.title, description: cat.description, threadsCount: cat.threadsCount, postsCount: cat.postsCount, lastSyncedAt: new Date().toISOString() }
+                    });
+                }
+
+                let page = 1, maxPage = 1;
+                do {
+                    const result = await fetchThreads(wiki.URL, cat.categoryId, page);
+                    maxPage = result.maxPage;
+
+                    for (const thread of result.threads) {
+                        const existingThread = await prisma.forumThread.findFirst({
+                            where: { siteParam: wiki.PARAM, threadId: thread.threadId }
+                        });
+                        const needSync = !existingThread || existingThread.postCount !== thread.postCount;
+
+                        if (existingThread) {
+                            await prisma.forumThread.update({
+                                where: { id: existingThread.id },
+                                data: { categoryId: cat.categoryId, title: thread.title, createdBy: thread.createdBy, createdAt: thread.createdAt, postCount: thread.postCount, isSticky: thread.isSticky, isLocked: thread.isLocked, lastSyncedAt: new Date().toISOString() }
+                            });
+                        } else {
+                            await prisma.forumThread.create({
+                                data: { siteParam: wiki.PARAM, threadId: thread.threadId, categoryId: cat.categoryId, title: thread.title, createdBy: thread.createdBy, createdAt: thread.createdAt, postCount: thread.postCount, isSticky: thread.isSticky, isLocked: thread.isLocked, lastSyncedAt: new Date().toISOString() }
+                            });
+                        }
+
+                        if (needSync) {
+                            let postPage = 1, postMaxPage = 1;
+                            do {
+                                const postResult = await fetchPosts(wiki.URL, thread.threadId, postPage);
+                                postMaxPage = postResult.maxPage;
+
+                                for (const post of postResult.posts) {
+                                    const existingPost = await prisma.forumPost.findFirst({
+                                        where: { siteParam: wiki.PARAM, postId: post.postId }
+                                    });
+                                    const postData = { threadId: thread.threadId, parentId: post.parentId || null, title: post.title, contentHtml: post.contentHtml, author: post.author, authorId: post.authorId || null, createdAt: post.createdAt };
+                                    if (existingPost) {
+                                        await prisma.forumPost.update({ where: { id: existingPost.id }, data: postData });
+                                    } else {
+                                        await prisma.forumPost.create({ data: { siteParam: wiki.PARAM, postId: post.postId, ...postData } });
+                                    }
+                                }
+                                postPage++;
+                            } while (postPage <= postMaxPage);
+                            console.log(`  [${wiki.PARAM}] 帖子 t-${thread.threadId} 同步完成`);
+                        }
+                    }
+                    page++;
+                } while (page <= maxPage);
+            }
+            console.log(`[${wiki.PARAM}] 论坛同步完成`);
+        } catch (e) {
+            console.error(`[${wiki.PARAM}] 论坛同步失败: ${e.message}`);
+        }
+    }
+
+    isForumSyncing = false;
+    console.log(`[${new Date().toLocaleString()}] 论坛同步全部结束。`);
+}
+
+// 每天凌晨 4 点执行论坛同步
+cron.schedule('0 4 * * *', () => runForumSync());

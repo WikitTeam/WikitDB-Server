@@ -88,7 +88,8 @@ module.exports = {
             ImgURL: "https://7bye.com/hoah/i/2023/12/31/5hsx3.svg",
             PARAM: "brcn",
             WIKIT_ID: "backrooms-wiki-cn",
-            GQL_API: "https://wikit.unitreaty.org/backrooms/apiv1/graphql"
+            GQL_API: "https://wikit.unitreaty.org/backrooms/apiv1/graphql",
+            FORUM_SYNC: true
         },
     ]
 };

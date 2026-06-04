@@ -1,33 +1,36 @@
 const config = require('../../wikitdb.config.js');
 const { DEFAULT_GQL_ENDPOINT, getGraphQLEndpoint } = require('../../utils/graphql');
+const { cached } = require('../../utils/cache');
+const { singleFlight } = require('../../utils/singleFlight');
+const { wikitLimiter } = require('../../utils/rateLimiter');
 import { withLogging } from '../../utils/logRequest';
 
 async function handler(req, res) {
-    // 核心改造 1：接收前端传来的特定站点参数，如果没传，默认获取全站(global)
     const { site = 'global' } = req.query;
 
     try {
         const fetchGraphQL = async (queryStr, variables, endpoint = DEFAULT_GQL_ENDPOINT) => {
+            await wikitLimiter.wait(8000);
             const gqlRes = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query: queryStr, variables }),
                 cache: 'no-store'
             });
-            
+
             const text = await gqlRes.text();
-            
+
             try {
                 const json = JSON.parse(text);
-                
+
                 if (json.errors) {
                     throw new Error(json.errors[0].message);
                 }
-                
+
                 if (json.data && json.data.authorRanking) {
                     return json.data.authorRanking;
                 }
-                
+
                 return [];
             } catch (e) {
                 if (e.name === 'SyntaxError') {
@@ -37,37 +40,44 @@ async function handler(req, res) {
             }
         };
 
-        let rankingData = [];
+        // 缓存 10 分钟 + 请求去重
+        const cacheKey = `ranking:${site}`;
+        const rankingData = await singleFlight(cacheKey, () =>
+            cached(cacheKey, async () => {
+                if (site === 'global') {
+                    return fetchGraphQL(`query { authorRanking(by: RATING) { rank name value } }`);
+                }
 
-        // 核心改造 2：按需查询逻辑，要什么查什么，绝不多查
-        if (site === 'global') {
-            rankingData = await fetchGraphQL(`query { authorRanking(by: RATING) { rank name value } }`);
-        } else {
-            const wikiConfig = config.SUPPORT_WIKI.find(w => w.PARAM === site);
-            if (!wikiConfig) {
-                return res.status(404).json({ error: '未找到指定的站点配置' });
-            }
+                const wikiConfig = config.SUPPORT_WIKI.find(w => w.PARAM === site);
+                if (!wikiConfig) throw new Error('NOT_FOUND');
 
-            let actualWikiName = '';
-            try {
-                const urlObj = new URL(wikiConfig.URL);
-                actualWikiName = urlObj.hostname.replace(/^www\./i, '').split('.')[0];
-            } catch (e) {
-                actualWikiName = wikiConfig.URL.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('.')[0];
-            }
+                let actualWikiName = '';
+                try {
+                    const urlObj = new URL(wikiConfig.URL);
+                    actualWikiName = urlObj.hostname.replace(/^www\./i, '').split('.')[0];
+                } catch (e) {
+                    actualWikiName = wikiConfig.URL.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('.')[0];
+                }
 
-            rankingData = await fetchGraphQL(
-                `query($wiki: String!) { authorRanking(wiki: $wiki, by: RATING) { rank name value } }`,
-                { wiki: actualWikiName },
-                getGraphQLEndpoint(wikiConfig)
-            );
+                return fetchGraphQL(
+                    `query($wiki: String!) { authorRanking(wiki: $wiki, by: RATING) { rank name value } }`,
+                    { wiki: actualWikiName },
+                    getGraphQLEndpoint(wikiConfig)
+                );
+            }, 10 * 60 * 1000)
+        );
+
+        if (rankingData === 'NOT_FOUND') {
+            return res.status(404).json({ error: '未找到指定的站点配置' });
         }
 
         res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate');
-        // 将查询到的所属站点标识和数组一起返回给前端
         res.status(200).json({ site, ranking: rankingData });
 
     } catch (error) {
+        if (error.message === 'NOT_FOUND') {
+            return res.status(404).json({ error: '未找到指定的站点配置' });
+        }
         res.status(500).json({ error: '排行榜数据获取失败', details: error.message });
     }
 }

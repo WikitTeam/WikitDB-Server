@@ -14,6 +14,21 @@ const Home = () => {
 
       {/* Hero */}
       <section className="relative pt-24 pb-20 overflow-hidden">
+        {/* 竞赛横幅 */}
+        <a href="/contest" className="block max-w-3xl mx-auto mb-8 px-4">
+          <div className="relative rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-900/30 to-purple-900/30 p-4 hover:border-indigo-400/50 transition-all group">
+            <div className="flex items-center gap-4">
+              <div className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                <i className="fa-solid fa-trophy"></i>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-white font-semibold text-sm group-hover:text-indigo-300 transition-colors">2026「寻魍异闻」联动竞赛</div>
+                <div className="text-gray-400 text-xs mt-0.5">规则怪谈档案馆 × 中华异学会 | 06/10 - 07/15 投稿</div>
+              </div>
+              <i className="fa-solid fa-chevron-right text-gray-600 group-hover:text-indigo-400 transition-colors"></i>
+            </div>
+          </div>
+        </a>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[120px]"></div>
           <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-purple-600/8 rounded-full blur-[100px]"></div>

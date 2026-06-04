@@ -1,1 +1,247 @@
-{ "nextId": 1, "records": [] }
+{
+  "nextId": 23,
+  "records": [
+    {
+      "method": "GET",
+      "path": "/api/forum/categories",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": null,
+      "duration": 15,
+      "id": 1,
+      "createdAt": "2026-05-20T10:28:55.042Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/forum/categories",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 1,
+      "id": 2,
+      "createdAt": "2026-05-20T10:32:45.820Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/search",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 6131,
+      "id": 3,
+      "createdAt": "2026-05-20T10:43:18.259Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/page",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 10819,
+      "id": 4,
+      "createdAt": "2026-05-20T10:43:35.156Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/search",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 3871,
+      "id": 5,
+      "createdAt": "2026-05-20T10:50:33.157Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/page",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 10251,
+      "id": 6,
+      "createdAt": "2026-05-20T10:50:48.613Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/search",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 3884,
+      "id": 7,
+      "createdAt": "2026-05-20T10:51:31.211Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/search",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 3818,
+      "id": 8,
+      "createdAt": "2026-05-20T10:51:41.261Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/page",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 12161,
+      "id": 9,
+      "createdAt": "2026-05-20T10:51:54.997Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/page",
+      "status": 200,
+      "ip": "::1",
+      "userAgent": "curl/8.19.0",
+      "username": null,
+      "duration": 11527,
+      "id": 10,
+      "createdAt": "2026-05-20T10:52:23.094Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/page",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 11715,
+      "id": 11,
+      "createdAt": "2026-05-20T10:52:30.815Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/page",
+      "status": 200,
+      "ip": "::1",
+      "userAgent": "curl/8.19.0",
+      "username": null,
+      "duration": 12217,
+      "id": 12,
+      "createdAt": "2026-05-20T10:53:18.952Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/page",
+      "status": 200,
+      "ip": "::1",
+      "userAgent": "curl/8.19.0",
+      "username": null,
+      "duration": 11714,
+      "id": 13,
+      "createdAt": "2026-05-20T10:53:43.700Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/page",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 54499,
+      "id": 14,
+      "createdAt": "2026-05-20T10:56:33.105Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/page",
+      "status": 200,
+      "ip": "::1",
+      "userAgent": "curl/8.19.0",
+      "username": null,
+      "duration": 11510,
+      "id": 15,
+      "createdAt": "2026-05-20T10:59:23.724Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/search",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 3724,
+      "id": 16,
+      "createdAt": "2026-05-20T11:00:32.005Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/page",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 11057,
+      "id": 17,
+      "createdAt": "2026-05-20T11:00:49.300Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/search",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 3828,
+      "id": 18,
+      "createdAt": "2026-05-20T11:01:02.301Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/search",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 3607,
+      "id": 19,
+      "createdAt": "2026-05-20T11:01:11.084Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/page",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 12386,
+      "id": 20,
+      "createdAt": "2026-05-20T11:01:31.439Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/page",
+      "status": 200,
+      "ip": "::ffff:127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": "Laimu_slime",
+      "duration": 12356,
+      "id": 21,
+      "createdAt": "2026-05-20T11:07:30.343Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/search",
+      "status": 200,
+      "ip": "::ffff:192.168.10.6",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0",
+      "username": null,
+      "duration": 1834,
+      "id": 22,
+      "createdAt": "2026-06-02T12:37:32.319Z"
+    }
+  ]
+}

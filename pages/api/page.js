@@ -107,32 +107,55 @@ async function handler(req, res) {
 
         let scoreHistory = [];
         try {
-            const pageKey = `rating_history_${actualWikiName}_${pageName}`;
-            const historyRecord = await prisma.setting.findUnique({ where: { key: pageKey } });
-            
-            let historyData = {};
-            if (historyRecord && historyRecord.value) {
-                try { historyData = JSON.parse(historyRecord.value); } catch(e) {}
-            }
-            
-            const now = new Date();
-            const cstTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
-            const today = cstTime.toISOString().split('T')[0];
-            
-            historyData[today] = currentScoreNum;
-            
-            await prisma.setting.upsert({
-                where: { key: pageKey },
-                update: { value: JSON.stringify(historyData) },
-                create: { key: pageKey, value: JSON.stringify(historyData) }
+            const voteEventsRes = await fetch(getGraphQLEndpoint(wikiConfig), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: `query($wiki: String!, $page: String!) { articleVoteEvents(wiki: $wiki, page: $page) { uid username old new type time } }`,
+                    variables: { wiki: actualWikiName, page: pageName }
+                }),
+                cache: 'no-store'
             });
-            
-            scoreHistory = Object.keys(historyData).sort().map(date => ({
-                date: date,
-                score: historyData[date]
-            }));
+
+            if (voteEventsRes.ok) {
+                const voteJson = await voteEventsRes.json();
+                const events = voteJson.data?.articleVoteEvents || [];
+
+                if (events.length > 0) {
+                    let runningScore = 0;
+
+                    const sorted = events
+                        .filter(e => e.time && e.type !== 'rename')
+                        .sort((a, b) => new Date(a.time) - new Date(b.time));
+
+                    for (const ev of sorted) {
+                        const oldVal = ev.old || 0;
+                        const newVal = ev.new || 0;
+
+                        if (ev.type === 'new') {
+                            runningScore += newVal;
+                        } else if (ev.type === 'cancel') {
+                            runningScore -= oldVal;
+                        } else if (ev.type === 'change') {
+                            runningScore += (newVal - oldVal);
+                        }
+
+                        scoreHistory.push({
+                            time: ev.time,
+                            score: runningScore,
+                            user: ev.username || '(已注销)',
+                            type: ev.type,
+                            vote: newVal
+                        });
+                    }
+                }
+            }
         } catch (e) {
-            console.error('记录评分历史失败:', e);
+            console.error('获取投票事件失败:', e.message);
+        }
+
+        if (scoreHistory.length === 0 && currentScoreNum !== 0) {
+            scoreHistory = [{ time: new Date().toISOString(), score: currentScoreNum, user: '', type: 'current', vote: 0 }];
         }
 
         let lastUpdated = gqlData?.lastmod;

@@ -1,1 +1,32 @@
-{ "nextId": 1, "records": [] }
+{
+  "nextId": 4,
+  "records": [
+    {
+      "username": "Laimu_slime",
+      "wikidotAccount": "Laimu_slime",
+      "password": "$2a$10$PjbufUEj8/1B60At2Omq..Jow/J1ZUaKBF8Pgbge.JzT22ZOrnrSe",
+      "email": "yshi03395@gmail.com",
+      "balance": 10000,
+      "id": 1,
+      "createdAt": "2026-05-16T05:43:26.558Z"
+    },
+    {
+      "username": "leatday233",
+      "wikidotAccount": "lestday233",
+      "password": "$2a$10$T8ugy/MfFiwe/NUqzOQwzOSgBem2E9SgBO.nv/Wx.BThSfVmwOIMy",
+      "email": "976877916@qq.com",
+      "balance": 10000,
+      "id": 2,
+      "createdAt": "2026-05-16T06:14:17.860Z"
+    },
+    {
+      "username": "玄祀",
+      "wikidotAccount": "Lxv37-wttoae",
+      "password": "$2a$10$9Qn8dau00LbRkFJD/iVvieEHl8hqWMZ.f4ik9qSVyOxESBUcjCSPq",
+      "email": "Lizhen663486@outlook.com",
+      "balance": 10000,
+      "id": 3,
+      "createdAt": "2026-05-20T10:04:22.703Z"
+    }
+  ]
+}

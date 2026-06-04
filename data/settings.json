@@ -1,1 +1,10 @@
-{ "nextId": 1, "records": [] }
+{
+  "nextId": 1,
+  "records": [
+    {
+      "key": "ratelimit:login:Laimu_slime",
+      "value": "{\"attempts\":[1779273163228]}",
+      "createdAt": "2026-05-20T10:32:43.229Z"
+    }
+  ]
+}

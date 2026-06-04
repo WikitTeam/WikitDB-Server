@@ -93,6 +93,9 @@ const Header = () => {
                                     <a href="/tools" className="rounded-md px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition-colors">
                                         <i className="fa-solid fa-toolbox"></i> 工具
                                     </a>
+                                    <a href="/forums" className="rounded-md px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition-colors">
+                                        <i className="fa-solid fa-comments"></i> 论坛
+                                    </a>
                                     <a href="/about" className="rounded-md px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition-colors">
                                         <i className="fa-solid fa-circle-info"></i> 关于
                                     </a>
@@ -133,6 +136,9 @@ const Header = () => {
                             </a>
                             <a href="/tools" className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white">
                                 <i className="fa-solid fa-toolbox"></i> 工具
+                            </a>
+                            <a href="/forums" className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white">
+                                <i className="fa-solid fa-comments"></i> 论坛
                             </a>
                             <a href="/about" className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white">
                                 <i className="fa-solid fa-circle-info"></i> 关于

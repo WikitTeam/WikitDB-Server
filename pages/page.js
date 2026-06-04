@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-// 评分线先注释掉，等待 Wikit 数据
-// import TradingChart from '../components/TradingChart';
+import TradingChart from '../components/TradingChart';
 import WikidotDiscussion from '../components/WikidotDiscussion';
 
 const config = require('../wikitdb.config.js');
@@ -189,34 +188,18 @@ const PageDetail = () => {
     let markers = [];
 
     if (data.scoreHistory && data.scoreHistory.length > 0) {
-        chartData = data.scoreHistory.map((item, index, arr) => {
-            let timeValue = item.date;
-            if (timeValue === '初始记录' || timeValue === '开仓') {
-                timeValue = data.scoreHistory[1]?.date || new Date().toISOString().split('T')[0];
+        let lastTs = 0;
+        chartData = data.scoreHistory.map(item => {
+            let ts = Math.floor(new Date(item.time).getTime() / 1000);
+            if (ts <= lastTs) {
+                ts = lastTs + 1;
             }
-
-            const currentScore = 100 + item.score;
-            const prevScore = index === 0 ? 100 : 100 + arr[index - 1].score;
-
+            lastTs = ts;
             return {
-                time: timeValue,
-                value: currentScore, 
-                open: prevScore,     
-                close: currentScore, 
-                high: Math.max(prevScore, currentScore) + 0.5,
-                low: Math.min(prevScore, currentScore) - 0.5,
+                time: ts,
+                value: item.score,
             };
         });
-
-        markers = [
-            {
-                time: chartData[chartData.length - 1].time,
-                position: 'belowBar',
-                color: '#16a34a',
-                shape: 'arrowUp',
-                text: '做多',
-            }
-        ];
     }
 
     const marginAmount = Number(margin) || 0;
@@ -573,20 +556,21 @@ const PageDetail = () => {
                                 <div className="w-full bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
                                     <div className="flex justify-between items-center mb-6">
                                         <div>
-                                            <div className="text-xs text-gray-500 mb-1 tracking-wider uppercase">{data.title} 的股票</div>
+                                            <div className="text-xs text-gray-500 mb-1 tracking-wider">投票历史</div>
                                             <div className="text-4xl font-bold text-gray-900 leading-none">
-                                                {chartData[chartData.length - 1].value.toFixed(4)}
+                                                {data.scoreHistory[data.scoreHistory.length - 1].score}
                                             </div>
+                                            <div className="text-xs text-gray-400 mt-1">{data.scoreHistory.length} 次投票</div>
                                         </div>
-                                        <button 
+                                        <button
                                             onClick={handleOpenTradeModal}
                                             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full text-sm font-bold transition-colors shadow-md"
                                         >
                                             开仓
                                         </button>
                                     </div>
-                                    <div className="w-full h-[320px] relative border border-gray-100 rounded overflow-hidden bg-gray-50 flex items-center justify-center">
-                                        <span className="text-gray-400 text-sm">图表暂时隐藏，等待大盘数据接入...</span>
+                                    <div className="w-full h-[320px] relative border border-gray-100 rounded overflow-hidden bg-gray-50">
+                                        <TradingChart data={chartData} markers={markers} stepLine={true} />
                                     </div>
                                 </div>
                             ) : (

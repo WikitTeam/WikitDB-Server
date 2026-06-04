@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 
+const config = require('../wikitdb.config.js');
+const forumSyncSites = config.SUPPORT_WIKI.filter(w => w.FORUM_SYNC);
+
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState('members');
     const [currentUser, setCurrentUser] = useState(null);
@@ -39,6 +42,11 @@ export default function AdminDashboard() {
     // 访问日志状态
     const [accessLogs, setAccessLogs] = useState([]);
     const [accessLogFilter, setAccessLogFilter] = useState('');
+
+    // 论坛同步状态
+    const [forumSyncSite, setForumSyncSite] = useState('all');
+    const [forumSyncing, setForumSyncing] = useState(false);
+    const [forumSyncResult, setForumSyncResult] = useState(null);
 
     useEffect(() => {
         const storedUsername = localStorage.getItem('username');
@@ -263,6 +271,24 @@ export default function AdminDashboard() {
         setIsLoading(false);
     };
 
+    const handleForumSync = async () => {
+        setForumSyncing(true);
+        setForumSyncResult(null);
+        try {
+            const res = await fetch(`/api/forum/sync?site=${forumSyncSite}`, { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) {
+                setForumSyncResult(data.stats);
+            } else {
+                setForumSyncResult({ error: data.error });
+            }
+        } catch (e) {
+            setForumSyncResult({ error: e.message });
+        } finally {
+            setForumSyncing(false);
+        }
+    };
+
     const filteredUsers = users.filter(u => u.username.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const navItems = [
@@ -271,6 +297,7 @@ export default function AdminDashboard() {
         { id: 'logs', label: '交易审计', icon: 'fa-list-check' },
         { id: 'broadcast', label: '全站广播', icon: 'fa-bullhorn' },
         { id: 'macro', label: '宏观经济', icon: 'fa-money-bill-trend-up' },
+        { id: 'forum-sync', label: '论坛同步', icon: 'fa-comments' },
         { id: 'access-logs', label: '网络日志', icon: 'fa-globe' },
         { id: 'settings', label: '系统设置', icon: 'fa-sliders' }
     ];
@@ -529,6 +556,91 @@ export default function AdminDashboard() {
                                             <input type="number" value={taxRate} onChange={e => setTaxRate(e.target.value)} className="bg-transparent border-none text-right text-white font-bold font-mono focus:ring-0 w-16 p-0"/>
                                         </div>
                                         <button onClick={() => executeMacro('tax')} className="w-full py-3 bg-red-700 hover:bg-red-600 text-white rounded-xl font-semibold transition-all shadow-lg text-sm">立即执行征税</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'forum-sync' && (
+                            <div className="max-w-3xl mx-auto py-8">
+                                <div className="bg-gray-800/30 border border-gray-700/40 p-8 rounded-2xl shadow-lg">
+                                    <div className="flex items-center gap-4 mb-8">
+                                        <div className="w-12 h-12 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-400 text-xl border border-blue-500/20">
+                                            <i className="fa-solid fa-comments"></i>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-white text-lg leading-tight">Wikidot 论坛数据同步</h3>
+                                            <p className="text-xs text-gray-500 mt-1">从 Wikidot 抓取论坛分类、帖子列表和帖子内容到本地数据库</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 mb-2">目标站点</label>
+                                            <select
+                                                value={forumSyncSite}
+                                                onChange={e => setForumSyncSite(e.target.value)}
+                                                className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white text-sm focus:border-blue-500 focus:ring-blue-500 outline-none"
+                                            >
+                                                <option value="all">全部已启用站点</option>
+                                                {forumSyncSites.map(w => (
+                                                    <option key={w.PARAM} value={w.PARAM}>{w.NAME} ({w.PARAM})</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="p-4 bg-yellow-900/10 border border-yellow-800/30 rounded-xl">
+                                            <p className="text-xs text-yellow-400/80 leading-relaxed">
+                                                <i className="fa-solid fa-triangle-exclamation mr-2"></i>
+                                                同步过程受 Wikidot 限速约束（0.5 req/s），大型论坛可能需要较长时间。增量同步只会抓取有新回复的帖子。
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            onClick={handleForumSync}
+                                            disabled={forumSyncing}
+                                            className="w-full py-3.5 bg-blue-700 hover:bg-blue-600 disabled:bg-gray-800 disabled:text-gray-500 text-white rounded-xl font-semibold transition-all shadow-lg text-sm"
+                                        >
+                                            {forumSyncing ? (
+                                                <span className="flex items-center justify-center gap-2">
+                                                    <i className="fa-solid fa-spinner fa-spin"></i> 正在同步中...
+                                                </span>
+                                            ) : '开始同步'}
+                                        </button>
+
+                                        {forumSyncResult && (
+                                            <div className={`p-5 rounded-xl border ${forumSyncResult.error ? 'bg-red-900/10 border-red-800/30' : 'bg-green-900/10 border-green-800/30'}`}>
+                                                {forumSyncResult.error ? (
+                                                    <p className="text-sm text-red-400"><i className="fa-solid fa-xmark mr-2"></i>{forumSyncResult.error}</p>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        <p className="text-sm text-green-400 font-medium"><i className="fa-solid fa-check mr-2"></i>同步完成</p>
+                                                        <div className="grid grid-cols-3 gap-4 mt-3">
+                                                            <div className="text-center">
+                                                                <div className="text-2xl font-bold text-white font-mono">{forumSyncResult.categories}</div>
+                                                                <div className="text-xs text-gray-500">分类</div>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <div className="text-2xl font-bold text-white font-mono">{forumSyncResult.threads}</div>
+                                                                <div className="text-xs text-gray-500">帖子</div>
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <div className="text-2xl font-bold text-white font-mono">{forumSyncResult.posts}</div>
+                                                                <div className="text-xs text-gray-500">回复</div>
+                                                            </div>
+                                                        </div>
+                                                        {forumSyncResult.errors && forumSyncResult.errors.length > 0 && (
+                                                            <div className="mt-3 pt-3 border-t border-gray-700/40">
+                                                                <p className="text-xs text-orange-400 mb-1">部分站点出错：</p>
+                                                                {forumSyncResult.errors.map((e, i) => (
+                                                                    <p key={i} className="text-xs text-gray-500">{e.site}: {e.error}</p>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

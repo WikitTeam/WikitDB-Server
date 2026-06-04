@@ -1,5 +1,8 @@
 const config = require('../../wikitdb.config.js');
 const { getGraphQLEndpoint } = require('../../utils/graphql');
+const { cached } = require('../../utils/cache');
+const { singleFlight } = require('../../utils/singleFlight');
+const { wikitLimiter } = require('../../utils/rateLimiter');
 import { withLogging } from '../../utils/logRequest';
 
 async function handler(req, res) {
@@ -22,47 +25,58 @@ async function handler(req, res) {
     const currentPage = parseInt(p, 10) || 1;
     const pageSize = 50;
 
+    const cacheKey = `search:${site}:${keyword}:${currentPage}`;
+
     try {
-        const variables = { wiki: [actualWikiName], page: currentPage, pageSize };
-        let queryStr;
-        if (keyword) {
-            queryStr = `query($wiki: [String!]!, $title: String, $page: Int, $pageSize: Int) { articles(wiki: $wiki, title: $title, page: $page, pageSize: $pageSize) { nodes { title page wiki rating created_at } pageInfo { total } } }`;
-            variables.title = `%${keyword}%`;
-        } else {
-            queryStr = `query($wiki: [String!]!, $page: Int, $pageSize: Int) { articles(wiki: $wiki, page: $page, pageSize: $pageSize) { nodes { title page wiki rating created_at } pageInfo { total } } }`;
-        }
+        const result = await singleFlight(cacheKey, () =>
+            cached(cacheKey, async () => {
+                await wikitLimiter.wait(8000);
 
-        const gqlRes = await fetch(getGraphQLEndpoint(wikiConfig), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: queryStr, variables }),
-            cache: 'no-store'
-        });
+                const variables = { wiki: [actualWikiName], page: currentPage, pageSize };
+                let queryStr;
+                if (keyword) {
+                    queryStr = `query($wiki: [String!]!, $title: String, $page: Int, $pageSize: Int) { articles(wiki: $wiki, title: $title, page: $page, pageSize: $pageSize) { nodes { title page wiki rating created_at } pageInfo { total } } }`;
+                    variables.title = `%${keyword}%`;
+                } else {
+                    queryStr = `query($wiki: [String!]!, $page: Int, $pageSize: Int) { articles(wiki: $wiki, page: $page, pageSize: $pageSize) { nodes { title page wiki rating created_at } pageInfo { total } } }`;
+                }
 
-        if (!gqlRes.ok) throw new Error('Wikit API 网络异常');
+                const gqlRes = await fetch(getGraphQLEndpoint(wikiConfig), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: queryStr, variables }),
+                    cache: 'no-store'
+                });
 
-        const gqlJson = await gqlRes.json();
+                if (!gqlRes.ok) throw new Error('Wikit API 网络异常');
 
-        if (gqlJson.errors) {
-            throw new Error(gqlJson.errors[0].message);
-        }
+                const gqlJson = await gqlRes.json();
 
-        let nodes = gqlJson.data?.articles?.nodes || [];
-        let total = gqlJson.data?.articles?.pageInfo?.total || 0;
+                if (gqlJson.errors) {
+                    throw new Error(gqlJson.errors[0].message);
+                }
 
-        nodes.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+                let nodes = gqlJson.data?.articles?.nodes || [];
+                let total = gqlJson.data?.articles?.pageInfo?.total || 0;
+
+                nodes.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+                return { nodes, total };
+            }, 3 * 60 * 1000)
+        );
 
         res.status(200).json({
             siteName: wikiConfig.NAME,
-            results: nodes,
+            results: result.nodes,
             currentPage: currentPage,
-            totalPages: Math.ceil(total / pageSize),
-            totalCount: total
+            totalPages: Math.ceil(result.total / pageSize),
+            totalCount: result.total
         });
 
     } catch (error) {
-        // 如果 GraphQL 原生检索语法报错，走兜底逻辑：在本地过滤和模拟翻页
         try {
+            await wikitLimiter.wait(8000);
+
             const fallbackRes = await fetch(getGraphQLEndpoint(wikiConfig), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -89,7 +103,6 @@ async function handler(req, res) {
             const total = nodes.length;
             const totalPages = Math.ceil(total / pageSize);
 
-            // 数组切片模拟翻页
             const slicedNodes = nodes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
             res.status(200).json({
