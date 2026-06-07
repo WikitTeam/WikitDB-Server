@@ -29,6 +29,7 @@ export default function Tools() {
                         { href: '/tools/site-index', icon: 'fa-globe', color: 'teal', title: '站点大盘指数', desc: '各站繁荣度量化为点数走势，可作为长线 ETF 基金大额认购持有。' },
                         { href: '/tools/membership-apply', icon: 'fa-user-check', color: 'green', title: '批量审批申请', desc: '拉取 Wikidot 站点的待审批成员申请列表，支持批量通过或拒绝。' },
                         { href: '/tools/wikidot-register', icon: 'fa-user-plus', color: 'cyan', title: '代注册 Wikidot 账号', desc: '无需翻墙，代为提交 Wikidot 注册请求，只需填写邮箱并完成验证码。' },
+                        { href: '/tools/save-page', icon: 'fa-file-export', color: 'indigo', title: '代发页面', desc: '通过 Wikit API 代为向目标站点发布或编辑 Wikidot 页面。' },
                         { href: '/tools/member-admin', icon: 'fa-users-gear', color: 'blue', title: '成员管理', desc: '在特定站点对指定成员采取封禁、移除等操作。' },
                         { href: '/tools/delete-announcement', icon: 'fa-trash-can', color: 'red', title: '删帖公示', desc: '查看近期已被删除的页面记录与相关公示信息。' },
                         { href: '/tools/gallery', icon: 'fa-box-archive', color: 'indigo', title: '全站页面备份', desc: '实时同步各分站页面数据，提供精细化的多维搜索与离线备份，确保数字资产的安全存档。' }
