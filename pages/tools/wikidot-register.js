@@ -46,8 +46,10 @@ export default function WikidotRegister() {
 
     const handleRegister = async () => {
         if (!name) return setError('请输入用户名');
+        if (name.length > 20) return setError('用户名不能超过 20 个字符');
         if (!email) return setError('请输入邮箱');
         if (!password) return setError('请输入密码');
+        if (password.length < 8) return setError('密码至少 8 个字符');
         if (password !== password2) return setError('两次密码不一致');
         if (!captchaAnswer) return setError('请输入验证码答案');
         if (!session) return setError('请先获取验证码');
@@ -101,9 +103,9 @@ export default function WikidotRegister() {
                 <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10 space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">用户名</label>
-                        <input type="text" value={name} onChange={e => setName(e.target.value)}
+                        <input type="text" value={name} onChange={e => setName(e.target.value)} maxLength={20}
                             className="w-full bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5"
-                            placeholder="你的 Wikidot 昵称" />
+                            placeholder="你的 Wikidot 昵称（最多 20 字符）" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">邮箱</label>
