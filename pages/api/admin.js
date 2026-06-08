@@ -1,6 +1,6 @@
 import prisma from '../../lib/prisma';
 import { verifyToken } from '../../utils/auth';
-const SUPER_ADMIN = 'Laimu_slime';
+const SUPER_ADMIN = process.env.SUPER_ADMIN || 'Laimu_slime';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {

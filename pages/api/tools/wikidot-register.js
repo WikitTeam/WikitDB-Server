@@ -134,6 +134,7 @@ export default async function handler(req, res) {
 
         return res.status(400).json({ error: '未知 action' });
     } catch (error) {
-        return res.status(500).json({ error: error.message || '服务器内部错误' });
+        console.error('Wikidot register error:', error.message);
+        return res.status(500).json({ error: '注册服务异常，请稍后重试' });
     }
 }

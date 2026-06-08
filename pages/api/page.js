@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import prisma from '../../lib/prisma';
+import { escapeHtml } from '../../utils/security';
 const config = require('../../wikitdb.config.js');
 const { getGraphQLEndpoint } = require('../../utils/graphql');
 import { withLogging } from '../../utils/logRequest';
@@ -351,7 +352,7 @@ async function handler(req, res) {
                     let tableHtml = '<table class="page-history"><tbody>';
                     for (const row of rows) {
                         const dateStr = row.changeTime ? new Date(parseInt(row.changeTime) * 1000).toLocaleString('zh-CN', { hour12: false }) : '';
-                        tableHtml += `<tr><td>${row.revRow || ''}.</td><td>${row.flag || ''}</td><td><span class="printuser">${row.username || '未知'}</span></td><td>${dateStr}</td><td>${row.comment || ''}</td></tr>`;
+                        tableHtml += `<tr><td>${escapeHtml(String(row.revRow || ''))}.</td><td>${escapeHtml(row.flag || '')}</td><td><span class="printuser">${escapeHtml(row.username || '未知')}</span></td><td>${escapeHtml(dateStr)}</td><td>${escapeHtml(row.comment || '')}</td></tr>`;
                     }
                     tableHtml += '</tbody></table>';
                     historyHtml = tableHtml;
@@ -490,7 +491,8 @@ async function handler(req, res) {
             scoreHistory: scoreHistory
         });
     } catch (error) {
-        res.status(500).json({ error: '详情页抓取失败', details: error.message });
+        console.error('Page API Error:', error.message);
+        res.status(500).json({ error: '详情页抓取失败' });
     }
 }
 

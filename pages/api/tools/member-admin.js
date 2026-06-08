@@ -41,6 +41,6 @@ export default async function handler(req, res) {
         }
 
     } catch (error) {
-        res.status(500).json({ status: 'error', message: '请求 Wikit 接口异常', details: error.message });
+        res.status(500).json({ status: 'error', message: '请求 Wikit 接口异常' });
     }
 }

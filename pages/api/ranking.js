@@ -78,7 +78,7 @@ async function handler(req, res) {
         if (error.message === 'NOT_FOUND') {
             return res.status(404).json({ error: '未找到指定的站点配置' });
         }
-        res.status(500).json({ error: '排行榜数据获取失败', details: error.message });
+        res.status(500).json({ error: '排行榜数据获取失败' });
     }
 }
 

@@ -50,6 +50,7 @@ export default async function handler(req, res) {
         const errMsg = typeof data === 'string' ? data : JSON.stringify(data);
         return res.status(200).json({ success: false, error: errMsg || '发布失败', statusCode: r.status });
     } catch (error) {
-        return res.status(500).json({ error: error.message || '服务器错误' });
+        console.error('Save page error:', error.message);
+        return res.status(500).json({ error: '发布服务异常，请稍后重试' });
     }
 }

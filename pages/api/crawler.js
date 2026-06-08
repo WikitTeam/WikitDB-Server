@@ -157,6 +157,6 @@ export default async function handler(req, res) {
             links: links
         });
     } catch (error) {
-        res.status(500).json({ error: '全站页面抓取失败', details: error.message });
+        res.status(500).json({ error: '全站页面抓取失败' });
     }
 }

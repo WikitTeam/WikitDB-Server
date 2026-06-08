@@ -5,12 +5,12 @@ export default async function handler(req, res) {
 
     const { qq } = req.query;
 
-    if (!qq) {
-        return res.status(400).json({ error: '缺少 QQ 参数' });
+    if (!qq || !/^\d{5,12}$/.test(qq)) {
+        return res.status(400).json({ error: 'QQ 号格式不合法' });
     }
 
     try {
-        const response = await fetch(`https://wikit.unitreaty.org/module/bind-query?qq=${qq}`);
+        const response = await fetch(`https://wikit.unitreaty.org/module/bind-query?qq=${encodeURIComponent(qq)}`);
         const data = await response.text();
         res.status(200).send(data);
     } catch (error) {

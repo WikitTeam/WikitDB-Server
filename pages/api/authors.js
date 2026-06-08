@@ -174,7 +174,7 @@ async function handler(req, res) {
             });
         }
         console.error('获取作者信息异常:', error);
-        return res.status(500).json({ error: '获取作者信息失败', details: error.message });
+        return res.status(500).json({ error: '获取作者信息失败' });
     }
 }
 

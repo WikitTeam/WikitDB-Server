@@ -21,7 +21,7 @@ async function handler(req, res) {
         actualWikiName = wikiConfig.URL.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('.')[0];
     }
 
-    const keyword = q ? q.trim() : '';
+    const keyword = q ? q.trim().slice(0, 100) : '';
     const currentPage = parseInt(p, 10) || 1;
     const pageSize = 50;
 
