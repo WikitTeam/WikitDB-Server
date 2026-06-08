@@ -23,6 +23,8 @@ const AuthorProfile = () => {
     const [filterSite, setFilterSite] = useState('all');
 
     const [rankingCache, setRankingCache] = useState({});
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 20;
 
     useEffect(() => {
         if (!router.isReady) return;
@@ -106,6 +108,7 @@ const AuthorProfile = () => {
 
     const handleTabClick = (tabParam) => {
         setActiveTab(tabParam);
+        setCurrentPage(1);
     };
 
     const currentRankingList = rankingCache[activeTab] || [];
@@ -113,10 +116,13 @@ const AuthorProfile = () => {
     let displayedRankingList = currentRankingList;
     if (!name && search) {
         const lowerSearch = search.toLowerCase();
-        displayedRankingList = currentRankingList.filter(author => 
+        displayedRankingList = currentRankingList.filter(author =>
             (author.name || '').toLowerCase().includes(lowerSearch)
         );
     }
+
+    const totalPages = Math.ceil(displayedRankingList.length / pageSize);
+    const paginatedList = displayedRankingList.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     const siteCounts = {};
     if (data && data.pages) {
@@ -418,8 +424,8 @@ const AuthorProfile = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {displayedRankingList && displayedRankingList.length > 0 ? (
-                                            displayedRankingList.map((author, index) => (
+                                        {paginatedList && paginatedList.length > 0 ? (
+                                            paginatedList.map((author, index) => (
                                                 <tr key={index} className="border-b border-gray-700/50 hover:bg-gray-700/20 transition-colors">
                                                     <td className="p-4">
                                                         <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
@@ -472,11 +478,33 @@ const AuthorProfile = () => {
                             {search && displayedRankingList.length > 0 && (
                                 <div className="p-4 bg-gray-900/50 border-t border-gray-700 flex flex-col sm:flex-row items-center justify-center gap-3">
                                     <span className="text-sm text-gray-400">以上没有你想找的作者？</span>
-                                    <button 
+                                    <button
                                         onClick={() => router.push(`/authors?name=${encodeURIComponent(search)}`)}
                                         className="text-sm px-4 py-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded hover:bg-indigo-600/30 transition-colors"
                                     >
                                         精确查找作者
+                                    </button>
+                                </div>
+                            )}
+
+                            {totalPages > 1 && (
+                                <div className="p-4 bg-gray-900/50 border-t border-gray-700 flex items-center justify-center gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="px-3 py-1.5 text-sm rounded bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        上一页
+                                    </button>
+                                    <span className="text-sm text-gray-400 px-3">
+                                        第 {currentPage} / {totalPages} 页（共 {displayedRankingList.length} 人）
+                                    </span>
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className="px-3 py-1.5 text-sm rounded bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        下一页
                                     </button>
                                 </div>
                             )}
