@@ -1,65 +1,130 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
-import Link from 'next/link';
 
 const config = require('../wikitdb.config.js');
 const forumSyncSites = config.SUPPORT_WIKI.filter(w => w.FORUM_SYNC);
 
+function StatCard({ icon, label, value, color = 'indigo', sub }) {
+    const colors = {
+        indigo: 'from-indigo-600/20 to-indigo-600/5 border-indigo-500/20 text-indigo-400',
+        green: 'from-green-600/20 to-green-600/5 border-green-500/20 text-green-400',
+        red: 'from-red-600/20 to-red-600/5 border-red-500/20 text-red-400',
+        orange: 'from-orange-600/20 to-orange-600/5 border-orange-500/20 text-orange-400',
+        cyan: 'from-cyan-600/20 to-cyan-600/5 border-cyan-500/20 text-cyan-400',
+    };
+    return (
+        <div className={`bg-gradient-to-br ${colors[color]} border rounded-2xl p-5 flex items-center gap-4`}>
+            <div className="w-11 h-11 rounded-xl bg-black/20 flex items-center justify-center text-lg">
+                <i className={`fa-solid ${icon}`}></i>
+            </div>
+            <div>
+                <div className="text-2xl font-bold text-white font-mono">{value}</div>
+                <div className="text-xs text-gray-400 mt-0.5">{label}</div>
+                {sub && <div className="text-[10px] text-gray-600 mt-0.5">{sub}</div>}
+            </div>
+        </div>
+    );
+}
+
+function SectionHeader({ title, icon, children }) {
+    return (
+        <div className="flex items-center justify-between mb-5">
+            <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                <i className={`fa-solid ${icon} text-gray-500`}></i> {title}
+            </h3>
+            {children}
+        </div>
+    );
+}
+
 export default function AdminDashboard() {
-    const [activeTab, setActiveTab] = useState('members');
+    const [activeTab, setActiveTab] = useState('overview');
     const [currentUser, setCurrentUser] = useState(null);
-    
-    // 成员管理与审计状态
     const [users, setUsers] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [logs, setLogs] = useState([]);
     const [inspectData, setInspectData] = useState(null);
     const [inspectTarget, setInspectTarget] = useState('');
-    
-    // 全站广播与宏观状态
     const [broadcastMsg, setBroadcastMsg] = useState('');
     const [airdropAmount, setAirdropAmount] = useState(1000);
     const [taxRate, setTaxRate] = useState(5);
-
-    // 娱乐模块配置状态
     const [bingoTagsInput, setBingoTagsInput] = useState('');
     const [bingoCostInput, setBingoCostInput] = useState(50);
     const [bountyTagsInput, setBountyTagsInput] = useState('');
     const [bountyMinRating, setBountyMinRating] = useState(10);
     const [bountyMaxRating, setBountyMaxRating] = useState(50);
     const [bountyBaseReward, setBountyBaseReward] = useState(800);
-
-    // 数据隔离网状态
     const [quarantineData, setQuarantineData] = useState({ wikis: [], tags: [], authors: [] });
     const [qInput, setQInput] = useState({ wikis: '', tags: '', authors: '' });
-
-    // 调账工具专属状态
     const [adjustAmount, setAdjustAmount] = useState('');
     const [adjustNote, setAdjustNote] = useState('');
     const [isAdjusting, setIsAdjusting] = useState(false);
-
-    // 访问日志状态
     const [accessLogs, setAccessLogs] = useState([]);
     const [accessLogFilter, setAccessLogFilter] = useState('');
-
-    // 论坛同步状态
     const [forumSyncSite, setForumSyncSite] = useState('all');
     const [forumSyncing, setForumSyncing] = useState(false);
     const [forumSyncResult, setForumSyncResult] = useState(null);
-
+    const [honeypotLogs, setHoneypotLogs] = useState([]);
+    const [overviewStats, setOverviewStats] = useState(null);
     useEffect(() => {
         const storedUsername = localStorage.getItem('username');
         if (storedUsername) setCurrentUser(storedUsername);
+    }, []);
 
+    useEffect(() => {
+        if (!currentUser) return;
+        if (activeTab === 'overview') fetchOverview();
         if (activeTab === 'members') fetchUsers();
         if (activeTab === 'logs') fetchLogs();
         if (activeTab === 'broadcast') fetchBroadcast();
         if (activeTab === 'settings') fetchSettings();
         if (activeTab === 'quarantine') fetchQuarantine();
         if (activeTab === 'access-logs') fetchAccessLogs();
-    }, [activeTab]);
+        if (activeTab === 'honeypot') fetchHoneypotLogs();
+    }, [activeTab, currentUser]);
 
+    const fetchOverview = async () => {
+        try {
+            const [usersRes, logsRes, honeypotRes] = await Promise.all([
+                fetch('/api/admin/users'),
+                fetch('/api/admin/access-logs?limit=500'),
+                fetch('/api/admin/honeypot-logs?limit=100'),
+            ]);
+            const usersData = usersRes.ok ? await usersRes.json() : { users: [] };
+            const logsData = logsRes.ok ? await logsRes.json() : { logs: [] };
+            const honeypotData = honeypotRes.ok ? await honeypotRes.json() : { logs: [] };
+            const hpLogs = honeypotData.logs || [];
+            const uniqueIPs = new Set(hpLogs.map(l => l.ip)).size;
+            const today = new Date().toISOString().slice(0, 10);
+            const todayHits = hpLogs.filter(l => l.createdAt?.startsWith(today)).length;
+            setOverviewStats({
+                totalUsers: usersData.users?.length || 0,
+                bannedUsers: usersData.users?.filter(u => u.status === 'banned').length || 0,
+                totalRequests: logsData.logs?.length || 0,
+                honeypotHits: hpLogs.length,
+                honeypotUniqueIPs: uniqueIPs,
+                honeypotToday: todayHits,
+            });
+        } catch (e) {
+            setOverviewStats({ totalUsers: 0, bannedUsers: 0, totalRequests: 0, honeypotHits: 0, honeypotUniqueIPs: 0, honeypotToday: 0 });
+        }
+    };
+
+    const fetchHoneypotLogs = async () => {
+        setIsLoading(true);
+        try {
+            const res = await fetch('/api/admin/honeypot-logs?limit=200');
+            if (res.ok) setHoneypotLogs((await res.json()).logs || []);
+        } catch (e) {}
+        setIsLoading(false);
+    };
+
+    const clearHoneypotLogs = async () => {
+        if (!confirm('确定清空全部蜜罐日志？此操作不可逆。')) return;
+        await fetch('/api/admin/honeypot-logs', { method: 'DELETE' });
+        setHoneypotLogs([]);
+    };
     const fetchUsers = async () => {
         setIsLoading(true);
         try {
@@ -92,208 +157,82 @@ export default function AdminDashboard() {
         setInspectData(null);
         try {
             const res = await fetch(`/api/admin/user-assets?username=${username}`);
-            if (res.ok) {
-                const data = await res.json();
-                setInspectData(data.portfolio || {});
-            }
+            if (res.ok) setInspectData((await res.json()).portfolio || {});
         } catch (e) {}
     };
 
     const handleAdjustBalance = async () => {
-        if (isAdjusting) return; 
-        if (!adjustAmount || isNaN(Number(adjustAmount))) {
-            return alert('请输入有效的数字');
-        }
-        
-        if (!confirm(`确定要对 ${inspectTarget} 的账户 ${Number(adjustAmount) > 0 ? '增加' : '扣除'} ${Math.abs(adjustAmount)} 吗？`)) {
-            return;
-        }
-
+        if (isAdjusting) return;
+        if (!adjustAmount || isNaN(Number(adjustAmount))) return alert('请输入有效的数字');
+        if (!confirm(`确定要对 ${inspectTarget} 的账户 ${Number(adjustAmount) > 0 ? '增加' : '扣除'} ${Math.abs(adjustAmount)} 吗？`)) return;
         setIsAdjusting(true);
         try {
             const res = await fetch('/api/admin/adjust-balance', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    targetUser: inspectTarget, 
-                    amount: adjustAmount,
-                    note: adjustNote,
-                    operator: currentUser 
-                })
+                body: JSON.stringify({ targetUser: inspectTarget, amount: adjustAmount, note: adjustNote, operator: currentUser })
             });
-            
             const data = await res.json();
-            if (res.ok) {
-                alert('资金调账成功！');
-                setAdjustAmount('');
-                setAdjustNote('');
-                handleInspect(inspectTarget);
-            } else {
-                alert(data.error);
-            }
-        } catch (error) {
-            alert('网络连接错误');
-        } finally {
-            setIsAdjusting(false);
-        }
+            if (res.ok) { alert('资金调账成功！'); setAdjustAmount(''); setAdjustNote(''); handleInspect(inspectTarget); }
+            else alert(data.error);
+        } catch (e) { alert('网络连接错误'); }
+        finally { setIsAdjusting(false); }
     };
 
-    const fetchLogs = async () => {
-        try {
-            const res = await fetch('/api/admin/logs');
-            if (res.ok) setLogs((await res.json()).logs || []);
-        } catch (e) {}
-    };
-
-    const fetchBroadcast = async () => {
-        try {
-            const res = await fetch('/api/admin/broadcast');
-            if (res.ok) setBroadcastMsg((await res.json()).message || '');
-        } catch (e) {}
-    };
-
-    const saveBroadcast = async () => {
-        try {
-            await fetch('/api/admin/broadcast', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: broadcastMsg })
-            });
-            alert('广播设置成功');
-        } catch (e) {}
-    };
+    const fetchLogs = async () => { try { const res = await fetch('/api/admin/logs'); if (res.ok) setLogs((await res.json()).logs || []); } catch (e) {} };
+    const fetchBroadcast = async () => { try { const res = await fetch('/api/admin/broadcast'); if (res.ok) setBroadcastMsg((await res.json()).message || ''); } catch (e) {} };
+    const saveBroadcast = async () => { try { await fetch('/api/admin/broadcast', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: broadcastMsg }) }); alert('广播设置成功'); } catch (e) {} };
 
     const executeMacro = async (action) => {
-        if (!confirm(`警告：该操作将影响全站所有用户，确定执行吗？`)) return;
+        if (!confirm('警告：该操作将影响全站所有用户，确定执行吗？')) return;
         try {
-            const res = await fetch('/api/admin/macro', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action, amount: airdropAmount, rate: taxRate })
-            });
-            if (res.ok) {
-                const data = await res.json();
-                alert(`执行完毕，影响了 ${data.affected} 个账户。`);
-            }
+            const res = await fetch('/api/admin/macro', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, amount: airdropAmount, rate: taxRate }) });
+            if (res.ok) { const data = await res.json(); alert(`执行完毕，影响了 ${data.affected} 个账户。`); }
         } catch (e) {}
     };
 
     const fetchSettings = async () => {
         try {
             const resBingo = await fetch('/api/tools/bingo');
-            if (resBingo.ok) {
-                const data = await resBingo.json();
-                setBingoTagsInput((data.tags || []).join(', '));
-                setBingoCostInput(data.cost || 50);
-            }
+            if (resBingo.ok) { const data = await resBingo.json(); setBingoTagsInput((data.tags || []).join(', ')); setBingoCostInput(data.cost || 50); }
             const resBounty = await fetch('/api/tools/bounty?action=config');
-            if (resBounty.ok) {
-                const data = await resBounty.json();
-                setBountyTagsInput((data.tags || []).join(', '));
-                setBountyMinRating(data.minRating || 10);
-                setBountyMaxRating(data.maxRating || 50);
-                setBountyBaseReward(data.baseReward || 800);
-            }
+            if (resBounty.ok) { const data = await resBounty.json(); setBountyTagsInput((data.tags || []).join(', ')); setBountyMinRating(data.minRating || 10); setBountyMaxRating(data.maxRating || 50); setBountyBaseReward(data.baseReward || 800); }
         } catch (e) {}
     };
 
     const saveBingoSettings = async () => {
         const tagsArray = bingoTagsInput.split(/[,，]/).map(t => t.trim()).filter(t => t);
-        try {
-            const res = await fetch('/api/admin/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ module: 'bingo', data: { tags: tagsArray, cost: Number(bingoCostInput) || 50 } })
-            });
-            if (res.ok) alert('大乐透配置保存成功！'); else alert('保存失败');
-        } catch (e) { alert('网络错误'); }
+        try { const res = await fetch('/api/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ module: 'bingo', data: { tags: tagsArray, cost: Number(bingoCostInput) || 50 } }) }); if (res.ok) alert('大乐透配置保存成功！'); else alert('保存失败'); } catch (e) { alert('网络错误'); }
     };
 
     const saveBountySettings = async () => {
         const tagsArray = bountyTagsInput.split(/[,，]/).map(t => t.trim()).filter(t => t);
-        try {
-            const res = await fetch('/api/admin/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    module: 'bounty',
-                    data: { tags: tagsArray, minRating: Number(bountyMinRating), maxRating: Number(bountyMaxRating), baseReward: Number(bountyBaseReward) }
-                })
-            });
-            if (res.ok) alert('悬赏令配置保存成功！'); else alert('保存失败');
-        } catch (e) { alert('网络错误'); }
+        try { const res = await fetch('/api/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ module: 'bounty', data: { tags: tagsArray, minRating: Number(bountyMinRating), maxRating: Number(bountyMaxRating), baseReward: Number(bountyBaseReward) } }) }); if (res.ok) alert('悬赏令配置保存成功！'); else alert('保存失败'); } catch (e) { alert('网络错误'); }
     };
 
-    const fetchQuarantine = async () => {
-        try {
-            const res = await fetch('/api/admin/quarantine');
-            if (res.ok) {
-                const data = await res.json();
-                setQuarantineData(data);
-            }
-        } catch (e) {}
-    };
-
-    const addQuarantine = async (type) => {
-        const val = qInput[type];
-        if (!val) return;
-        try {
-            await fetch('/api/admin/quarantine', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type, value: val })
-            });
-            setQInput(prev => ({...prev, [type]: ''}));
-            fetchQuarantine();
-        } catch (e) {}
-    };
-
-    const removeQuarantine = async (type, value) => {
-        if (!confirm(`确认解除对 ${value} 的隔离状态？`)) return;
-        try {
-            await fetch('/api/admin/quarantine', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type, value })
-            });
-            fetchQuarantine();
-        } catch (e) {}
-    };
+    const fetchQuarantine = async () => { try { const res = await fetch('/api/admin/quarantine'); if (res.ok) setQuarantineData(await res.json()); } catch (e) {} };
+    const addQuarantine = async (type) => { const val = qInput[type]; if (!val) return; try { await fetch('/api/admin/quarantine', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, value: val }) }); setQInput(prev => ({...prev, [type]: ''})); fetchQuarantine(); } catch (e) {} };
+    const removeQuarantine = async (type, value) => { if (!confirm(`确认解除对 ${value} 的隔离状态？`)) return; try { await fetch('/api/admin/quarantine', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, value }) }); fetchQuarantine(); } catch (e) {} };
 
     const fetchAccessLogs = async (pathFilter) => {
         setIsLoading(true);
-        try {
-            const params = new URLSearchParams();
-            if (pathFilter) params.set('path', pathFilter);
-            const res = await fetch(`/api/admin/access-logs?${params}`);
-            if (res.ok) setAccessLogs((await res.json()).logs || []);
-        } catch (e) {}
+        try { const params = new URLSearchParams(); if (pathFilter) params.set('path', pathFilter); const res = await fetch(`/api/admin/access-logs?${params}`); if (res.ok) setAccessLogs((await res.json()).logs || []); } catch (e) {}
         setIsLoading(false);
     };
 
     const handleForumSync = async () => {
-        setForumSyncing(true);
-        setForumSyncResult(null);
-        try {
-            const res = await fetch(`/api/forum/sync?site=${forumSyncSite}`, { method: 'POST' });
-            const data = await res.json();
-            if (res.ok) {
-                setForumSyncResult(data.stats);
-            } else {
-                setForumSyncResult({ error: data.error });
-            }
-        } catch (e) {
-            setForumSyncResult({ error: e.message });
-        } finally {
-            setForumSyncing(false);
-        }
+        setForumSyncing(true); setForumSyncResult(null);
+        try { const res = await fetch(`/api/forum/sync?site=${forumSyncSite}`, { method: 'POST' }); const data = await res.json(); setForumSyncResult(res.ok ? data.stats : { error: data.error }); }
+        catch (e) { setForumSyncResult({ error: e.message }); }
+        finally { setForumSyncing(false); }
     };
 
     const filteredUsers = users.filter(u => u.username.toLowerCase().includes(searchQuery.toLowerCase()));
-
     const navItems = [
+        { id: 'overview', label: '系统总览', icon: 'fa-chart-pie' },
+        { id: 'honeypot', label: '蜜罐监控', icon: 'fa-skull-crossbones' },
         { id: 'members', label: '成员管理', icon: 'fa-users' },
-        { id: 'quarantine', label: '数据隔离网', icon: 'fa-shield-virus' },
+        { id: 'quarantine', label: '数据隔离', icon: 'fa-shield-virus' },
         { id: 'logs', label: '交易审计', icon: 'fa-list-check' },
         { id: 'broadcast', label: '全站广播', icon: 'fa-bullhorn' },
         { id: 'macro', label: '宏观经济', icon: 'fa-money-bill-trend-up' },
@@ -312,513 +251,400 @@ export default function AdminDashboard() {
     return (
         <>
             <Head><title>中央控制台 - WikitDB</title></Head>
-
-            <div className="flex flex-col lg:flex-row gap-8">
-                {/* 侧边导航 */}
-                <aside className="w-full lg:w-64 flex-shrink-0">
-                    <div className="bg-gray-800/30 border border-gray-700/40 rounded-2xl p-2 sticky top-24">
-                        <div className="px-4 py-3 mb-2 border-b border-gray-700/50">
-                            <h1 className="text-xs font-medium text-gray-500 tracking-wide uppercase flex items-center gap-2">
-                                <i className="fa-solid fa-shield-halved text-indigo-400"></i> 系统功能模块
-                            </h1>
+            <div className="flex flex-col lg:flex-row gap-6">
+                <aside className="w-full lg:w-56 flex-shrink-0">
+                    <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-1.5 sticky top-20">
+                        <div className="px-3 py-2.5 mb-1">
+                            <h1 className="text-[10px] font-bold text-gray-500 tracking-widest uppercase">控制台</h1>
                         </div>
-                        <nav className="flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
-                            {navItems.map(item => {
-                                const isActive = activeTab === item.id;
-                                return (
-                                    <button 
-                                        key={item.id} 
-                                        onClick={() => setActiveTab(item.id)} 
-                                        className={`flex-shrink-0 flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                                            isActive 
-                                            ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20' 
-                                            : 'text-gray-400 hover:bg-gray-700/50 hover:text-white border border-transparent'
-                                        }`}
-                                    >
-                                        <i className={`fa-solid ${item.icon} w-5 text-center ${isActive ? 'text-indigo-400' : 'text-gray-500'}`}></i>
-                                        {item.label}
-                                    </button>
-                                );
-                            })}
+                        <nav className="flex flex-row lg:flex-col gap-0.5 overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0">
+                            {navItems.map(item => (
+                                <button key={item.id} onClick={() => setActiveTab(item.id)}
+                                    className={`flex-shrink-0 flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all whitespace-nowrap ${
+                                        activeTab === item.id
+                                            ? 'bg-indigo-600/15 text-indigo-300 shadow-sm shadow-indigo-500/10'
+                                            : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'
+                                    }`}>
+                                    <i className={`fa-solid ${item.icon} w-4 text-center text-[11px]`}></i>
+                                    {item.label}
+                                </button>
+                            ))}
                         </nav>
                     </div>
                 </aside>
 
-                {/* 主内容区 */}
                 <main className="flex-1 min-w-0">
-                    <div className="mb-6 border-b border-gray-700/40 pb-4">
-                        <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                            <i className={`fa-solid ${navItems.find(i => i.id === activeTab)?.icon} text-indigo-400`}></i>
-                            {navItems.find(i => i.id === activeTab)?.label}
-                        </h2>
+                    <div className="mb-5 flex items-center gap-3">
+                        <i className={`fa-solid ${navItems.find(i => i.id === activeTab)?.icon} text-indigo-400`}></i>
+                        <h2 className="text-xl font-bold text-white">{navItems.find(i => i.id === activeTab)?.label}</h2>
                     </div>
-
-                    <div className="transition-all duration-300">
-                        {activeTab === 'members' && (
-                            <div className="space-y-6">
-                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                    <h3 className="text-sm font-medium text-gray-400">
-                                        注册会员列表 ({users.length})
-                                    </h3>
-                                    <div className="relative w-full sm:w-64">
-                                        <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm"></i>
-                                        <input 
-                                            type="text" 
-                                            placeholder="搜索用户名..." 
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full bg-gray-900 border border-gray-600 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                                        />
-                                    </div>
+                    {activeTab === 'overview' && overviewStats && (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                                <StatCard icon="fa-users" label="注册用户" value={overviewStats.totalUsers} color="indigo" />
+                                <StatCard icon="fa-ban" label="封禁账户" value={overviewStats.bannedUsers} color="red" />
+                                <StatCard icon="fa-server" label="API 日志" value={overviewStats.totalRequests} color="cyan" sub="最近500条" />
+                                <StatCard icon="fa-skull-crossbones" label="蜜罐触发" value={overviewStats.honeypotHits} color="orange" />
+                                <StatCard icon="fa-fingerprint" label="独立攻击IP" value={overviewStats.honeypotUniqueIPs} color="red" />
+                                <StatCard icon="fa-clock" label="今日攻击" value={overviewStats.honeypotToday} color="green" />
+                            </div>
+                            <div className="p-5 bg-gray-900/60 border border-gray-800 rounded-2xl">
+                                <h4 className="text-xs font-medium text-gray-500 mb-3">快速操作</h4>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {[
+                                        { label: '蜜罐监控', tab: 'honeypot', icon: 'fa-skull-crossbones', color: 'text-orange-400' },
+                                        { label: '成员管理', tab: 'members', icon: 'fa-users', color: 'text-indigo-400' },
+                                        { label: '全站广播', tab: 'broadcast', icon: 'fa-bullhorn', color: 'text-cyan-400' },
+                                        { label: '系统设置', tab: 'settings', icon: 'fa-sliders', color: 'text-gray-400' },
+                                    ].map(q => (
+                                        <button key={q.tab} onClick={() => setActiveTab(q.tab)} className="flex items-center gap-2 px-4 py-3 bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700/50 rounded-xl text-xs font-medium text-gray-300 transition-all">
+                                            <i className={`fa-solid ${q.icon} ${q.color}`}></i> {q.label}
+                                        </button>
+                                    ))}
                                 </div>
-                                
-                                <div className="bg-gray-800/30 border border-gray-700/40 rounded-2xl overflow-x-auto">
-                                    <table className="w-full text-left text-sm">
-                                        <thead className="bg-gray-800/50 text-gray-500 border-b border-gray-700/40 text-xs font-medium">
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'honeypot' && (
+                        <div className="space-y-5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-500">{honeypotLogs.length} 条蜜罐记录</span>
+                                <button onClick={clearHoneypotLogs} className="px-3 py-1.5 bg-red-900/20 hover:bg-red-900/40 text-red-400 text-xs font-medium rounded-lg border border-red-800/30 transition-colors">
+                                    <i className="fa-solid fa-trash-can mr-1.5"></i>清空日志
+                                </button>
+                            </div>
+                            <div className="bg-gray-900/60 border border-gray-800 rounded-2xl overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-xs">
+                                        <thead className="bg-gray-800/60 text-gray-500 border-b border-gray-800 text-[10px] uppercase tracking-wider">
                                             <tr>
-                                                <th className="px-6 py-4 font-semibold w-12 text-center">状态</th>
-                                                <th className="px-6 py-4 font-semibold">用户名</th>
-                                                <th className="px-6 py-4 font-semibold">权限级别</th>
-                                                <th className="px-6 py-4 font-semibold text-right">操作管理</th>
+                                                <th className="px-4 py-3">时间</th>
+                                                <th className="px-4 py-3">IP</th>
+                                                <th className="px-4 py-3">方法</th>
+                                                <th className="px-4 py-3">诱饵路径</th>
+                                                <th className="px-4 py-3">User-Agent</th>
+                                                <th className="px-4 py-3">Payload</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-800/30 text-gray-300">
+                                        <tbody className="divide-y divide-gray-800/50">
                                             {isLoading ? (
-                                                <tr><td colSpan="4" className="px-6 py-12 text-center text-gray-500 animate-pulse">正在从数据库检索核心档案...</td></tr>
-                                            ) : filteredUsers.length === 0 ? (
-                                                <tr><td colSpan="4" className="px-6 py-12 text-center text-gray-600">未检索到匹配的记录</td></tr>
-                                            ) : (
-                                                filteredUsers.map((user) => (
-                                                    <tr key={user.username} className="hover:bg-white/5 transition-colors group">
-                                                        <td className="px-6 py-4 text-center">
-                                                            <div className={`inline-flex items-center justify-center w-2 h-2 rounded-full ${user.status === 'banned' ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                                                        </td>
-                                                        <td className="px-6 py-4 font-medium text-white flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-lg bg-gray-700 text-gray-300 flex items-center justify-center font-medium text-xs">{user.username.substring(0,2)}</div>
-                                                            {user.username}
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${user.role === 'admin' ? 'bg-indigo-900/20 text-indigo-400 border-indigo-700/30' : 'bg-gray-900 text-gray-500 border-gray-700'}`}>
-                                                                {user.role === 'admin' ? '管理员' : '普通用户'}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right">
-                                                            <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                                                <button onClick={() => handleInspect(user.username)} className="px-3 py-1 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/40 rounded text-[10px] font-bold border border-indigo-500/20">查看资产</button>
-                                                                {user.status === 'banned' ? (
-                                                                    <button onClick={() => handleUserAction(user.username, 'unban')} className="w-7 h-7 flex items-center justify-center rounded bg-green-900/20 text-green-500 hover:bg-green-900/40 border border-green-700/20" title="撤销封禁"><i className="fa-solid fa-unlock text-xs"></i></button>
-                                                                ) : (
-                                                                    <button onClick={() => handleUserAction(user.username, 'ban')} className="w-7 h-7 flex items-center justify-center rounded bg-yellow-900/20 text-yellow-500 hover:bg-yellow-900/40 border border-yellow-700/20" title="执行封禁"><i className="fa-solid fa-ban text-xs"></i></button>
-                                                                )}
-                                                                <button onClick={() => handleUserAction(user.username, 'delete')} className="w-7 h-7 flex items-center justify-center rounded bg-red-900/20 text-red-500 hover:bg-red-900/40 border border-red-700/20" title="抹除档案"><i className="fa-solid fa-trash-can text-xs"></i></button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
+                                                <tr><td colSpan="6" className="px-4 py-12 text-center text-gray-600 animate-pulse">加载中...</td></tr>
+                                            ) : honeypotLogs.length === 0 ? (
+                                                <tr><td colSpan="6" className="px-4 py-12 text-center text-gray-600">暂无蜜罐触发记录 — 攻击者还没上钩</td></tr>
+                                            ) : honeypotLogs.map((log, i) => (
+                                                <tr key={log.id || i} className="hover:bg-red-900/5 transition-colors">
+                                                    <td className="px-4 py-2.5 text-gray-500 font-mono whitespace-nowrap">{new Date(log.createdAt).toLocaleString('zh-CN')}</td>
+                                                    <td className="px-4 py-2.5 font-mono text-orange-400 font-medium">{log.ip}</td>
+                                                    <td className="px-4 py-2.5"><span className="px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 font-semibold">{log.method}</span></td>
+                                                    <td className="px-4 py-2.5 font-mono text-red-300 max-w-[180px] truncate" title={log.path}>{log.path}</td>
+                                                    <td className="px-4 py-2.5 text-gray-600 max-w-[200px] truncate" title={log.userAgent}>{log.userAgent || '-'}</td>
+                                                    <td className="px-4 py-2.5 text-gray-600 font-mono max-w-[150px] truncate" title={log.payload}>{log.payload || '-'}</td>
+                                                </tr>
+                                            ))}
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
-                        )}
-
-                        {activeTab === 'quarantine' && (
-                            <div className="space-y-8">
-                                <div className="p-5 bg-orange-900/10 border border-orange-800/30 rounded-2xl flex gap-4 items-start">
-                                    <i className="fa-solid fa-shield-virus text-orange-500 text-2xl mt-1"></i>
-                                    <div>
-                                        <h4 className="font-bold text-orange-300">数据源隔离协议</h4>
-                                        <p className="text-sm text-gray-500 leading-relaxed">此处定义的标识符将被全局提取端点忽略。用于封锁违规、极低质量或敏感数据源，防止其干扰全站统计与交易系统。</p>
-                                    </div>
+                        </div>
+                    )}
+                    {activeTab === 'members' && (
+                        <div className="space-y-5">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                <span className="text-xs text-gray-500">共 {users.length} 位用户</span>
+                                <div className="relative w-full sm:w-56">
+                                    <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
+                                    <input type="text" placeholder="搜索用户名..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg pl-8 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all" />
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {['wikis', 'tags', 'authors'].map(type => (
-                                        <div key={type} className="bg-gray-800/30 border border-gray-700/40 rounded-2xl p-6 flex flex-col hover:border-gray-600 transition-colors">
-                                            <h4 className="font-semibold text-white text-sm mb-4 flex items-center justify-between">
-                                                {type === 'wikis' ? '站点隔离' : type === 'tags' ? '标签隔离' : '作者隔离'}
-                                                <span className="text-[10px] bg-gray-900 px-2 py-0.5 rounded text-gray-500">{quarantineData[type].length}</span>
-                                            </h4>
-                                            <div className="flex gap-2 mb-4">
-                                                <input type="text" placeholder="输入标识符..." value={qInput[type]} onChange={e => setQInput({...qInput, [type]: e.target.value})} className="flex-1 bg-gray-900 border border-gray-600 rounded-lg p-2 text-xs text-white focus:border-indigo-500 outline-none" />
-                                                <button onClick={() => addQuarantine(type)} className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs transition-colors border border-gray-700">添加</button>
+                            </div>
+                            <div className="bg-gray-900/60 border border-gray-800 rounded-2xl overflow-x-auto">
+                                <table className="w-full text-left text-xs">
+                                    <thead className="bg-gray-800/60 text-gray-500 border-b border-gray-800 text-[10px] uppercase tracking-wider">
+                                        <tr>
+                                            <th className="px-5 py-3 w-10"></th>
+                                            <th className="px-5 py-3">用户名</th>
+                                            <th className="px-5 py-3">权限</th>
+                                            <th className="px-5 py-3 text-right">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-800/50 text-gray-300">
+                                        {isLoading ? (
+                                            <tr><td colSpan="4" className="px-5 py-12 text-center text-gray-600 animate-pulse">加载中...</td></tr>
+                                        ) : filteredUsers.length === 0 ? (
+                                            <tr><td colSpan="4" className="px-5 py-12 text-center text-gray-600">无结果</td></tr>
+                                        ) : filteredUsers.map(user => (
+                                            <tr key={user.username} className="hover:bg-white/[0.02] transition-colors group">
+                                                <td className="px-5 py-3"><div className={`w-2 h-2 rounded-full ${user.status === 'banned' ? 'bg-red-500' : 'bg-green-500'}`}></div></td>
+                                                <td className="px-5 py-3 font-medium text-white">{user.username}</td>
+                                                <td className="px-5 py-3">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${user.role === 'admin' ? 'bg-indigo-900/30 text-indigo-400' : 'bg-gray-800 text-gray-500'}`}>
+                                                        {user.role === 'admin' ? 'ADMIN' : 'USER'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-5 py-3 text-right">
+                                                    <div className="flex items-center justify-end gap-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
+                                                        <button onClick={() => handleInspect(user.username)} className="px-2 py-1 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/40 rounded text-[10px] font-bold">资产</button>
+                                                        {user.status === 'banned'
+                                                            ? <button onClick={() => handleUserAction(user.username, 'unban')} className="w-6 h-6 flex items-center justify-center rounded bg-green-900/20 text-green-500 hover:bg-green-900/40" title="解封"><i className="fa-solid fa-unlock text-[10px]"></i></button>
+                                                            : <button onClick={() => handleUserAction(user.username, 'ban')} className="w-6 h-6 flex items-center justify-center rounded bg-yellow-900/20 text-yellow-500 hover:bg-yellow-900/40" title="封禁"><i className="fa-solid fa-ban text-[10px]"></i></button>
+                                                        }
+                                                        <button onClick={() => handleUserAction(user.username, 'delete')} className="w-6 h-6 flex items-center justify-center rounded bg-red-900/20 text-red-500 hover:bg-red-900/40" title="删除"><i className="fa-solid fa-trash-can text-[10px]"></i></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'quarantine' && (
+                        <div className="space-y-6">
+                            <div className="p-4 bg-orange-900/10 border border-orange-800/20 rounded-xl text-xs text-orange-400/80 flex gap-3 items-start">
+                                <i className="fa-solid fa-shield-virus mt-0.5"></i>
+                                <span>此处定义的标识符将被全局提取端点忽略，用于封锁违规或低质量数据源。</span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                {['wikis', 'tags', 'authors'].map(type => (
+                                    <div key={type} className="bg-gray-900/60 border border-gray-800 rounded-2xl p-5">
+                                        <h4 className="text-xs font-semibold text-white mb-3 flex items-center justify-between">
+                                            {type === 'wikis' ? '站点' : type === 'tags' ? '标签' : '作者'}
+                                            <span className="text-[10px] bg-gray-800 px-1.5 py-0.5 rounded text-gray-500">{quarantineData[type].length}</span>
+                                        </h4>
+                                        <div className="flex gap-2 mb-3">
+                                            <input type="text" placeholder="输入..." value={qInput[type]} onChange={e => setQInput({...qInput, [type]: e.target.value})} className="flex-1 bg-gray-900 border border-gray-700 rounded-lg p-2 text-xs text-white focus:border-indigo-500 outline-none" />
+                                            <button onClick={() => addQuarantine(type)} className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs border border-gray-700">+</button>
+                                        </div>
+                                        <div className="space-y-1 max-h-48 overflow-y-auto">
+                                            {quarantineData[type].map(item => (
+                                                <div key={item} className="flex justify-between items-center bg-gray-800/50 px-3 py-1.5 rounded group">
+                                                    <span className="text-gray-400 font-mono text-[11px]">{item}</span>
+                                                    <button onClick={() => removeQuarantine(type, item)} className="text-gray-700 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all text-xs"><i className="fa-solid fa-xmark"></i></button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'logs' && (
+                        <div className="bg-gray-900/60 border border-gray-800 rounded-2xl overflow-hidden">
+                            <ul className="divide-y divide-gray-800/50">
+                                {logs.length === 0 ? (
+                                    <li className="p-12 text-center text-gray-600 text-xs">暂无审计记录</li>
+                                ) : logs.map((log, i) => {
+                                    const l = typeof log === 'string' ? JSON.parse(log) : log;
+                                    return (
+                                        <li key={i} className="px-5 py-3.5 hover:bg-white/[0.02] transition-colors flex items-center justify-between gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-[10px] ${l.action === 'buy' ? 'bg-green-900/20 text-green-500' : l.action === 'sell' ? 'bg-red-900/20 text-red-500' : 'bg-gray-800 text-gray-400'}`}>
+                                                    {l.action === 'buy' ? '买' : l.action === 'sell' ? '卖' : '令'}
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs text-gray-300"><span className="font-bold text-indigo-400 mr-1.5">{l.username || l.operator}</span>{l.target && <span className="text-gray-600 font-mono">→ {l.target}</span>}</div>
+                                                    <div className="text-[10px] text-gray-600 font-mono mt-0.5">{new Date(l.time).toLocaleString('zh-CN')}</div>
+                                                </div>
                                             </div>
-                                            <div className="space-y-1.5 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                                                {quarantineData[type].map(item => (
-                                                    <div key={item} className="flex justify-between items-center bg-gray-900/50 border border-gray-800 px-3 py-2 rounded group">
-                                                        <span className="text-gray-400 font-mono text-xs">{item}</span>
-                                                        <button onClick={() => removeQuarantine(type, item)} className="text-gray-700 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><i className="fa-solid fa-xmark"></i></button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'logs' && (
-                            <div className="bg-gray-800/30 border border-gray-700/40 rounded-2xl overflow-hidden">
-                                <ul className="divide-y divide-gray-800/30">
-                                    {logs.length === 0 ? (
-                                        <li className="p-12 text-center text-gray-600 italic">尚未产生可审计的审计记录</li>
-                                    ) : (
-                                        logs.map((log, index) => {
-                                            const l = typeof log === 'string' ? JSON.parse(log) : log;
-                                            return (
-                                                <li key={index} className="p-4 hover:bg-white/5 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm ${
-                                                            l.action === 'buy' ? 'bg-green-900/20 text-green-500' : l.action === 'sell' ? 'bg-red-900/20 text-red-500' : 'bg-gray-800 text-gray-400'
-                                                        }`}>
-                                                            {l.action === 'buy' ? '买' : l.action === 'sell' ? '卖' : '令'}
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-sm font-medium text-gray-200">
-                                                                <span className="font-bold text-indigo-400 mr-2">{l.username || l.operator}</span>
-                                                                <span className="opacity-60">{l.action === 'buy' ? '执行买入' : l.action === 'sell' ? '执行卖出' : '执行系统指令'}</span>
-                                                                {l.target && <span className="ml-2 px-2 py-0.5 bg-gray-900 rounded text-[10px] text-gray-500 font-mono uppercase border border-gray-800">{l.target}</span>}
-                                                            </div>
-                                                            <div className="text-xs text-gray-600 font-mono mt-1">{new Date(l.time).toLocaleString()}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        {l.amount && <div className="text-sm font-bold text-white font-mono">{l.amount} <span className="text-xs text-gray-600 font-normal">份额</span></div>}
-                                                        {l.price && <div className="text-xs text-gray-500 font-mono">预估总额 ¥{l.price.toFixed(2)}</div>}
-                                                        {l.details && <div className="text-xs text-orange-500/80 mt-1 italic">{l.details}</div>}
-                                                    </div>
-                                                </li>
-                                            );
-                                        })
-                                    )}
-                                </ul>
-                            </div>
-                        )}
-
-                        {activeTab === 'broadcast' && (
-                            <div className="max-w-3xl mx-auto py-12">
-                                <div className="bg-gray-800/30 border border-gray-700/40 p-8 rounded-2xl shadow-lg">
-                                    <div className="flex items-center gap-4 mb-8">
-                                        <div className="w-12 h-12 bg-indigo-600/10 rounded-xl flex items-center justify-center text-indigo-400 text-xl border border-indigo-500/20">
-                                            <i className="fa-solid fa-bullhorn"></i>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-white text-lg leading-tight">全站滚动通知广播</h3>
-                                            <p className="text-xs text-gray-500 mt-1">系统广播下发系统</p>
-                                        </div>
-                                    </div>
-                                    <textarea 
-                                        value={broadcastMsg}
-                                        onChange={(e) => setBroadcastMsg(e.target.value)}
-                                        placeholder="输入希望在全站顶部滚动显示的通知内容..."
-                                        className="w-full h-40 bg-gray-900 border border-gray-600 rounded-xl p-5 text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm leading-relaxed custom-scrollbar"
-                                    />
-                                    <div className="mt-6 flex justify-between items-center">
-                                        <span className="text-xs text-gray-600 font-mono italic">建议长度在 500 字以内</span>
-                                        <div className="flex gap-3">
-                                            <button onClick={() => setBroadcastMsg('')} className="px-5 py-2 text-gray-500 hover:text-white transition-colors text-xs font-medium">清空</button>
-                                            <button onClick={saveBroadcast} className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-indigo-600/20 text-sm">下发通知</button>
-                                        </div>
+                                            {l.amount && <div className="text-xs font-bold text-white font-mono">{l.amount}<span className="text-gray-600 ml-1">份</span></div>}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    )}
+                    {activeTab === 'broadcast' && (
+                        <div className="max-w-2xl space-y-5">
+                            <div className="bg-gray-900/60 border border-gray-800 p-6 rounded-2xl space-y-4">
+                                <textarea value={broadcastMsg} onChange={(e) => setBroadcastMsg(e.target.value)} placeholder="输入全站顶部广播内容..."
+                                    className="w-full h-32 bg-gray-900 border border-gray-700 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-indigo-500 transition-all resize-none" />
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] text-gray-600">留空则关闭广播</span>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setBroadcastMsg('')} className="px-4 py-2 text-gray-500 hover:text-white text-xs transition-colors">清空</button>
+                                        <button onClick={saveBroadcast} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium transition-all">下发广播</button>
                                     </div>
                                 </div>
                             </div>
-                        )}
+                        </div>
+                    )}
 
-                        {activeTab === 'macro' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-8">
-                                <div className="bg-gray-800/30 border border-gray-700/40 p-8 rounded-2xl flex flex-col justify-between hover:border-indigo-500/30 transition-all">
-                                    <div>
-                                        <div className="w-12 h-12 bg-green-900/20 rounded-xl flex items-center justify-center text-green-500 text-xl border border-green-800/30 mb-6">
-                                            <i className="fa-solid fa-parachute-box"></i>
-                                        </div>
-                                        <h3 className="font-bold text-white text-lg">全员空投补贴</h3>
-                                        <p className="text-xs text-gray-500 mt-2 leading-relaxed">为全站所有活跃注册用户发放固定数额的信用点。该操作直接注入基础货币供应，请谨慎执行。</p>
-                                    </div>
-                                    <div className="mt-10 space-y-4">
-                                        <div className="bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 flex justify-between items-center">
-                                            <span className="text-xs text-gray-500 font-medium">发放数额</span>
-                                            <input type="number" value={airdropAmount} onChange={e => setAirdropAmount(e.target.value)} className="bg-transparent border-none text-right text-white font-bold font-mono focus:ring-0 w-24 p-0"/>
-                                        </div>
-                                        <button onClick={() => executeMacro('airdrop')} className="w-full py-3 bg-green-700 hover:bg-green-600 text-white rounded-xl font-semibold transition-all shadow-lg text-sm">立即执行空投</button>
-                                    </div>
+                    {activeTab === 'macro' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="bg-gray-900/60 border border-gray-800 p-6 rounded-2xl space-y-5">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 bg-green-900/20 rounded-lg flex items-center justify-center text-green-500"><i className="fa-solid fa-parachute-box"></i></div>
+                                    <div><h3 className="font-bold text-white text-sm">全员空投</h3><p className="text-[10px] text-gray-500">为所有用户发放信用点</p></div>
                                 </div>
-
-                                <div className="bg-gray-800/30 border border-gray-700/40 p-8 rounded-2xl flex flex-col justify-between hover:border-indigo-500/30 transition-all">
-                                    <div>
-                                        <div className="w-12 h-12 bg-red-900/20 rounded-xl flex items-center justify-center text-red-500 text-xl border border-red-800/30 mb-6">
-                                            <i className="fa-solid fa-hand-holding-dollar"></i>
-                                        </div>
-                                        <h3 className="font-bold text-white text-lg">全站余额征税</h3>
-                                        <p className="text-xs text-gray-500 mt-2 leading-relaxed">按百分比对全站用户当前余额进行回收。通常用于抑制通货膨胀或大型系统维护前的数据清理。</p>
-                                    </div>
-                                    <div className="mt-10 space-y-4">
-                                        <div className="bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 flex justify-between items-center">
-                                            <span className="text-xs text-gray-500 font-medium">税率设定 (%)</span>
-                                            <input type="number" value={taxRate} onChange={e => setTaxRate(e.target.value)} className="bg-transparent border-none text-right text-white font-bold font-mono focus:ring-0 w-16 p-0"/>
-                                        </div>
-                                        <button onClick={() => executeMacro('tax')} className="w-full py-3 bg-red-700 hover:bg-red-600 text-white rounded-xl font-semibold transition-all shadow-lg text-sm">立即执行征税</button>
-                                    </div>
+                                <div className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 flex justify-between items-center">
+                                    <span className="text-xs text-gray-500">发放数额</span>
+                                    <input type="number" value={airdropAmount} onChange={e => setAirdropAmount(e.target.value)} className="bg-transparent border-none text-right text-white font-bold font-mono focus:ring-0 w-20 p-0 text-sm" />
                                 </div>
+                                <button onClick={() => executeMacro('airdrop')} className="w-full py-2.5 bg-green-700 hover:bg-green-600 text-white rounded-xl font-medium text-xs transition-all">执行空投</button>
                             </div>
-                        )}
+                            <div className="bg-gray-900/60 border border-gray-800 p-6 rounded-2xl space-y-5">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 bg-red-900/20 rounded-lg flex items-center justify-center text-red-500"><i className="fa-solid fa-hand-holding-dollar"></i></div>
+                                    <div><h3 className="font-bold text-white text-sm">全站征税</h3><p className="text-[10px] text-gray-500">按比例回收余额</p></div>
+                                </div>
+                                <div className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 flex justify-between items-center">
+                                    <span className="text-xs text-gray-500">税率 (%)</span>
+                                    <input type="number" value={taxRate} onChange={e => setTaxRate(e.target.value)} className="bg-transparent border-none text-right text-white font-bold font-mono focus:ring-0 w-16 p-0 text-sm" />
+                                </div>
+                                <button onClick={() => executeMacro('tax')} className="w-full py-2.5 bg-red-700 hover:bg-red-600 text-white rounded-xl font-medium text-xs transition-all">执行征税</button>
+                            </div>
+                        </div>
+                    )}
 
-                        {activeTab === 'forum-sync' && (
-                            <div className="max-w-3xl mx-auto py-8">
-                                <div className="bg-gray-800/30 border border-gray-700/40 p-8 rounded-2xl shadow-lg">
-                                    <div className="flex items-center gap-4 mb-8">
-                                        <div className="w-12 h-12 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-400 text-xl border border-blue-500/20">
-                                            <i className="fa-solid fa-comments"></i>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-white text-lg leading-tight">Wikidot 论坛数据同步</h3>
-                                            <p className="text-xs text-gray-500 mt-1">从 Wikidot 抓取论坛分类、帖子列表和帖子内容到本地数据库</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-6">
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-500 mb-2">目标站点</label>
-                                            <select
-                                                value={forumSyncSite}
-                                                onChange={e => setForumSyncSite(e.target.value)}
-                                                className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white text-sm focus:border-blue-500 focus:ring-blue-500 outline-none"
-                                            >
-                                                <option value="all">全部已启用站点</option>
-                                                {forumSyncSites.map(w => (
-                                                    <option key={w.PARAM} value={w.PARAM}>{w.NAME} ({w.PARAM})</option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="p-4 bg-yellow-900/10 border border-yellow-800/30 rounded-xl">
-                                            <p className="text-xs text-yellow-400/80 leading-relaxed">
-                                                <i className="fa-solid fa-triangle-exclamation mr-2"></i>
-                                                同步过程受 Wikidot 限速约束（0.5 req/s），大型论坛可能需要较长时间。增量同步只会抓取有新回复的帖子。
-                                            </p>
-                                        </div>
-
-                                        <button
-                                            onClick={handleForumSync}
-                                            disabled={forumSyncing}
-                                            className="w-full py-3.5 bg-blue-700 hover:bg-blue-600 disabled:bg-gray-800 disabled:text-gray-500 text-white rounded-xl font-semibold transition-all shadow-lg text-sm"
-                                        >
-                                            {forumSyncing ? (
-                                                <span className="flex items-center justify-center gap-2">
-                                                    <i className="fa-solid fa-spinner fa-spin"></i> 正在同步中...
-                                                </span>
-                                            ) : '开始同步'}
-                                        </button>
-
-                                        {forumSyncResult && (
-                                            <div className={`p-5 rounded-xl border ${forumSyncResult.error ? 'bg-red-900/10 border-red-800/30' : 'bg-green-900/10 border-green-800/30'}`}>
-                                                {forumSyncResult.error ? (
-                                                    <p className="text-sm text-red-400"><i className="fa-solid fa-xmark mr-2"></i>{forumSyncResult.error}</p>
-                                                ) : (
-                                                    <div className="space-y-2">
-                                                        <p className="text-sm text-green-400 font-medium"><i className="fa-solid fa-check mr-2"></i>同步完成</p>
-                                                        <div className="grid grid-cols-3 gap-4 mt-3">
-                                                            <div className="text-center">
-                                                                <div className="text-2xl font-bold text-white font-mono">{forumSyncResult.categories}</div>
-                                                                <div className="text-xs text-gray-500">分类</div>
-                                                            </div>
-                                                            <div className="text-center">
-                                                                <div className="text-2xl font-bold text-white font-mono">{forumSyncResult.threads}</div>
-                                                                <div className="text-xs text-gray-500">帖子</div>
-                                                            </div>
-                                                            <div className="text-center">
-                                                                <div className="text-2xl font-bold text-white font-mono">{forumSyncResult.posts}</div>
-                                                                <div className="text-xs text-gray-500">回复</div>
-                                                            </div>
-                                                        </div>
-                                                        {forumSyncResult.errors && forumSyncResult.errors.length > 0 && (
-                                                            <div className="mt-3 pt-3 border-t border-gray-700/40">
-                                                                <p className="text-xs text-orange-400 mb-1">部分站点出错：</p>
-                                                                {forumSyncResult.errors.map((e, i) => (
-                                                                    <p key={i} className="text-xs text-gray-500">{e.site}: {e.error}</p>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
+                    {activeTab === 'forum-sync' && (
+                        <div className="max-w-2xl space-y-5">
+                            <div className="bg-gray-900/60 border border-gray-800 p-6 rounded-2xl space-y-5">
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-2">目标站点</label>
+                                    <select value={forumSyncSite} onChange={e => setForumSyncSite(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-xs focus:border-indigo-500 outline-none">
+                                        <option value="all">全部已启用站点</option>
+                                        {forumSyncSites.map(w => <option key={w.PARAM} value={w.PARAM}>{w.NAME} ({w.PARAM})</option>)}
+                                    </select>
+                                </div>
+                                <div className="p-3 bg-yellow-900/10 border border-yellow-800/20 rounded-lg text-[10px] text-yellow-400/80">
+                                    <i className="fa-solid fa-triangle-exclamation mr-1.5"></i>受 Wikidot 限速约束，大型论坛可能耗时较长。
+                                </div>
+                                <button onClick={handleForumSync} disabled={forumSyncing} className="w-full py-2.5 bg-blue-700 hover:bg-blue-600 disabled:bg-gray-800 disabled:text-gray-500 text-white rounded-xl font-medium text-xs transition-all">
+                                    {forumSyncing ? <span><i className="fa-solid fa-spinner fa-spin mr-1.5"></i>同步中...</span> : '开始同步'}
+                                </button>
+                                {forumSyncResult && (
+                                    <div className={`p-4 rounded-xl border text-xs ${forumSyncResult.error ? 'bg-red-900/10 border-red-800/20 text-red-400' : 'bg-green-900/10 border-green-800/20 text-green-400'}`}>
+                                        {forumSyncResult.error ? <span><i className="fa-solid fa-xmark mr-1.5"></i>{forumSyncResult.error}</span> : (
+                                            <div className="grid grid-cols-3 gap-4 text-center">
+                                                <div><div className="text-lg font-bold text-white font-mono">{forumSyncResult.categories}</div><div className="text-gray-500">分类</div></div>
+                                                <div><div className="text-lg font-bold text-white font-mono">{forumSyncResult.threads}</div><div className="text-gray-500">帖子</div></div>
+                                                <div><div className="text-lg font-bold text-white font-mono">{forumSyncResult.posts}</div><div className="text-gray-500">回复</div></div>
                                             </div>
                                         )}
                                     </div>
-                                </div>
+                                )}
                             </div>
-                        )}
-
-                        {activeTab === 'access-logs' && (
-                            <div className="space-y-4">
-                                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                                    <div className="relative flex-1 max-w-xs">
-                                        <i className="fa-solid fa-filter absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
-                                        <input
-                                            type="text"
-                                            placeholder="按路径筛选，如 /api/search"
-                                            value={accessLogFilter}
-                                            onChange={(e) => setAccessLogFilter(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && fetchAccessLogs(accessLogFilter)}
-                                            className="w-full bg-gray-900 border border-gray-600 rounded-lg pl-8 pr-4 py-2 text-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                                        />
-                                    </div>
-                                    <button onClick={() => fetchAccessLogs(accessLogFilter)} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-xs font-medium rounded-lg border border-gray-700 transition-colors">
-                                        筛选
-                                    </button>
-                                    <button onClick={() => { setAccessLogFilter(''); fetchAccessLogs(); }} className="px-4 py-2 text-gray-500 hover:text-white text-xs transition-colors">
-                                        重置
-                                    </button>
-                                    <span className="text-xs text-gray-600 ml-auto">{accessLogs.length} 条记录</span>
+                        </div>
+                    )}
+                    {activeTab === 'access-logs' && (
+                        <div className="space-y-4">
+                            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                                <div className="relative flex-1 max-w-xs">
+                                    <i className="fa-solid fa-filter absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-[10px]"></i>
+                                    <input type="text" placeholder="按路径筛选..." value={accessLogFilter} onChange={(e) => setAccessLogFilter(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && fetchAccessLogs(accessLogFilter)}
+                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg pl-7 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all" />
                                 </div>
-
-                                <div className="bg-gray-800/30 border border-gray-700/40 rounded-2xl overflow-hidden">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-sm">
-                                            <thead className="bg-gray-800/50 text-gray-500 border-b border-gray-700/40 text-xs">
-                                                <tr>
-                                                    <th className="px-4 py-3 font-medium">时间</th>
-                                                    <th className="px-4 py-3 font-medium w-16">方法</th>
-                                                    <th className="px-4 py-3 font-medium">路径</th>
-                                                    <th className="px-4 py-3 font-medium w-16">状态</th>
-                                                    <th className="px-4 py-3 font-medium">IP</th>
-                                                    <th className="px-4 py-3 font-medium">用户</th>
-                                                    <th className="px-4 py-3 font-medium w-16 text-right">耗时</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-800/30 text-gray-300">
-                                                {isLoading ? (
-                                                    <tr><td colSpan="7" className="px-4 py-12 text-center text-gray-500 animate-pulse">加载中...</td></tr>
-                                                ) : accessLogs.length === 0 ? (
-                                                    <tr><td colSpan="7" className="px-4 py-12 text-center text-gray-600">暂无日志记录</td></tr>
-                                                ) : (
-                                                    accessLogs.map((log) => (
-                                                        <tr key={log.id} className="hover:bg-white/5 transition-colors">
-                                                            <td className="px-4 py-2.5 text-xs text-gray-500 font-mono whitespace-nowrap">{new Date(log.createdAt).toLocaleString('zh-CN')}</td>
-                                                            <td className="px-4 py-2.5">
-                                                                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
-                                                                    log.method === 'GET' ? 'bg-green-500/10 text-green-400' :
-                                                                    log.method === 'POST' ? 'bg-indigo-500/10 text-indigo-400' :
-                                                                    log.method === 'DELETE' ? 'bg-red-500/10 text-red-400' :
-                                                                    'bg-gray-500/10 text-gray-400'
-                                                                }`}>{log.method}</span>
-                                                            </td>
-                                                            <td className="px-4 py-2.5 text-xs font-mono text-gray-300 truncate max-w-[200px]" title={log.path}>{log.path}</td>
-                                                            <td className="px-4 py-2.5">
-                                                                <span className={`text-xs font-medium ${log.status >= 400 ? 'text-red-400' : log.status >= 300 ? 'text-yellow-400' : 'text-green-400'}`}>{log.status}</span>
-                                                            </td>
-                                                            <td className="px-4 py-2.5 text-xs text-gray-500 font-mono">{log.ip || '-'}</td>
-                                                            <td className="px-4 py-2.5 text-xs">{log.username ? <span className="text-indigo-400">{log.username}</span> : <span className="text-gray-600">匿名</span>}</td>
-                                                            <td className="px-4 py-2.5 text-xs text-gray-500 font-mono text-right">{log.duration != null ? `${log.duration}ms` : '-'}</td>
-                                                        </tr>
-                                                    ))
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+                                <button onClick={() => fetchAccessLogs(accessLogFilter)} className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white text-xs rounded-lg border border-gray-700">筛选</button>
+                                <button onClick={() => { setAccessLogFilter(''); fetchAccessLogs(); }} className="px-3 py-2 text-gray-500 hover:text-white text-xs">重置</button>
+                                <span className="text-[10px] text-gray-600 ml-auto">{accessLogs.length} 条</span>
                             </div>
-                        )}
-
-                        {activeTab === 'settings' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="bg-gray-800/30 border border-gray-700/40 rounded-2xl p-8 flex flex-col">
-                                    <div className="flex items-center gap-4 mb-8">
-                                        <div className="w-10 h-10 bg-teal-900/20 rounded-lg flex items-center justify-center text-teal-400 border border-teal-800/30 font-bold">乐</div>
-                                        <h3 className="font-semibold text-white text-sm">标签大乐透 规则配置</h3>
-                                    </div>
-                                    <div className="space-y-6 flex-1">
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-500 mb-2">候选标签池</label>
-                                            <textarea value={bingoTagsInput} onChange={e => setBingoTagsInput(e.target.value)} className="w-full h-24 bg-gray-900 border border-gray-600 rounded-xl p-4 text-xs text-white focus:border-teal-500 focus:ring-teal-500 transition-all custom-scrollbar" placeholder="原创, scp, 故事..." />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-500 mb-2">单次扫描价格 (¥)</label>
-                                            <input type="number" value={bingoCostInput} onChange={e => setBingoCostInput(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono text-sm" />
-                                        </div>
-                                    </div>
-                                    <button onClick={saveBingoSettings} className="mt-8 w-full py-3 bg-teal-700 hover:bg-teal-600 text-white rounded-xl font-semibold transition-all shadow-lg text-sm">保存大乐透配置</button>
-                                </div>
-
-                                <div className="bg-gray-800/30 border border-gray-700/40 rounded-2xl p-8 flex flex-col">
-                                    <div className="flex items-center gap-4 mb-8">
-                                        <div className="w-10 h-10 bg-orange-900/20 rounded-lg flex items-center justify-center text-orange-400 border border-orange-800/30 font-bold">赏</div>
-                                        <h3 className="font-semibold text-white text-sm">悬赏令 核心参数配置</h3>
-                                    </div>
-                                    <div className="space-y-4 flex-1">
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-500 mb-2">目标标签过滤</label>
-                                            <textarea value={bountyTagsInput} onChange={e => setBountyTagsInput(e.target.value)} className="w-full h-20 bg-gray-900 border border-gray-600 rounded-xl p-4 text-xs text-white focus:border-orange-500 focus:ring-orange-500 transition-all custom-scrollbar" placeholder="原创, 精品, 极佳..." />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-xs font-medium text-gray-500 mb-2">最低评分</label>
-                                                <input type="number" value={bountyMinRating} onChange={e => setBountyMinRating(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono text-sm" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-medium text-gray-500 mb-2">最高评分</label>
-                                                <input type="number" value={bountyMaxRating} onChange={e => setBountyMaxRating(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono text-sm" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-medium text-gray-500 mb-2">基础奖励额度 (¥)</label>
-                                            <input type="number" value={bountyBaseReward} onChange={e => setBountyBaseReward(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono text-sm" />
-                                        </div>
-                                    </div>
-                                    <button onClick={saveBountySettings} className="mt-8 w-full py-3 bg-orange-700 hover:bg-orange-600 text-white rounded-xl font-semibold transition-all shadow-lg text-sm">更新悬赏规则</button>
-                                </div>
+                            <div className="bg-gray-900/60 border border-gray-800 rounded-2xl overflow-x-auto">
+                                <table className="w-full text-left text-xs">
+                                    <thead className="bg-gray-800/60 text-gray-500 border-b border-gray-800 text-[10px] uppercase tracking-wider">
+                                        <tr>
+                                            <th className="px-4 py-3">时间</th>
+                                            <th className="px-4 py-3">方法</th>
+                                            <th className="px-4 py-3">路径</th>
+                                            <th className="px-4 py-3">状态</th>
+                                            <th className="px-4 py-3">IP</th>
+                                            <th className="px-4 py-3">用户</th>
+                                            <th className="px-4 py-3 text-right">耗时</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-800/50 text-gray-300">
+                                        {isLoading ? (
+                                            <tr><td colSpan="7" className="px-4 py-12 text-center text-gray-600 animate-pulse">加载中...</td></tr>
+                                        ) : accessLogs.length === 0 ? (
+                                            <tr><td colSpan="7" className="px-4 py-12 text-center text-gray-600">暂无记录</td></tr>
+                                        ) : accessLogs.map(log => (
+                                            <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
+                                                <td className="px-4 py-2 text-gray-500 font-mono whitespace-nowrap">{new Date(log.createdAt).toLocaleString('zh-CN')}</td>
+                                                <td className="px-4 py-2"><span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${log.method === 'GET' ? 'bg-green-500/10 text-green-400' : log.method === 'POST' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-red-500/10 text-red-400'}`}>{log.method}</span></td>
+                                                <td className="px-4 py-2 font-mono text-gray-300 max-w-[160px] truncate" title={log.path}>{log.path}</td>
+                                                <td className="px-4 py-2"><span className={`text-[10px] font-medium ${log.status >= 400 ? 'text-red-400' : 'text-green-400'}`}>{log.status}</span></td>
+                                                <td className="px-4 py-2 text-gray-500 font-mono">{log.ip || '-'}</td>
+                                                <td className="px-4 py-2">{log.username ? <span className="text-indigo-400">{log.username}</span> : <span className="text-gray-600">-</span>}</td>
+                                                <td className="px-4 py-2 text-gray-500 font-mono text-right">{log.duration != null ? `${log.duration}ms` : '-'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'settings' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 space-y-4">
+                                <h3 className="text-sm font-bold text-white flex items-center gap-2"><span className="text-teal-400">乐</span> 标签大乐透</h3>
+                                <div>
+                                    <label className="block text-[10px] text-gray-500 mb-1.5">候选标签池</label>
+                                    <textarea value={bingoTagsInput} onChange={e => setBingoTagsInput(e.target.value)} className="w-full h-20 bg-gray-900 border border-gray-700 rounded-lg p-3 text-xs text-white focus:border-teal-500 outline-none resize-none" placeholder="原创, scp, 故事..." />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] text-gray-500 mb-1.5">单次价格</label>
+                                    <input type="number" value={bingoCostInput} onChange={e => setBingoCostInput(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white font-mono text-xs" />
+                                </div>
+                                <button onClick={saveBingoSettings} className="w-full py-2.5 bg-teal-700 hover:bg-teal-600 text-white rounded-xl text-xs font-medium transition-all">保存</button>
+                            </div>
+                            <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 space-y-4">
+                                <h3 className="text-sm font-bold text-white flex items-center gap-2"><span className="text-orange-400">赏</span> 悬赏令配置</h3>
+                                <div>
+                                    <label className="block text-[10px] text-gray-500 mb-1.5">目标标签</label>
+                                    <textarea value={bountyTagsInput} onChange={e => setBountyTagsInput(e.target.value)} className="w-full h-16 bg-gray-900 border border-gray-700 rounded-lg p-3 text-xs text-white focus:border-orange-500 outline-none resize-none" placeholder="原创, 精品..." />
+                                </div>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div><label className="block text-[10px] text-gray-500 mb-1.5">最低评分</label><input type="number" value={bountyMinRating} onChange={e => setBountyMinRating(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white font-mono text-xs" /></div>
+                                    <div><label className="block text-[10px] text-gray-500 mb-1.5">最高评分</label><input type="number" value={bountyMaxRating} onChange={e => setBountyMaxRating(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white font-mono text-xs" /></div>
+                                    <div><label className="block text-[10px] text-gray-500 mb-1.5">基础奖励</label><input type="number" value={bountyBaseReward} onChange={e => setBountyBaseReward(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white font-mono text-xs" /></div>
+                                </div>
+                                <button onClick={saveBountySettings} className="w-full py-2.5 bg-orange-700 hover:bg-orange-600 text-white rounded-xl text-xs font-medium transition-all">保存</button>
+                            </div>
+                        </div>
+                    )}
                 </main>
             </div>
 
-            {/* 资产调配弹窗 */}
-            {activeTab === 'members' && inspectTarget && inspectData && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100] backdrop-blur-xl">
-                    <div className="bg-gray-900 border border-gray-700/40 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="px-8 py-5 border-b border-gray-700/40 flex justify-between items-center bg-gray-800/30">
-                            <h3 className="font-bold text-white flex items-center gap-3"><i className="fa-solid fa-id-card text-indigo-400"></i> {inspectTarget} 的核心资产快照</h3>
-                            <button onClick={() => { setInspectTarget(''); setInspectData(null); }} className="text-gray-600 hover:text-white transition-colors"><i className="fa-solid fa-xmark text-xl"></i></button>
+            {inspectTarget && inspectData && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
+                    <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+                        <div className="px-6 py-4 border-b border-gray-800 flex justify-between items-center">
+                            <h3 className="font-bold text-white text-sm flex items-center gap-2"><i className="fa-solid fa-id-card text-indigo-400"></i>{inspectTarget}</h3>
+                            <button onClick={() => { setInspectTarget(''); setInspectData(null); }} className="text-gray-600 hover:text-white transition-colors"><i className="fa-solid fa-xmark"></i></button>
                         </div>
-                        <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
-                            <div className="p-6 bg-indigo-600/5 rounded-2xl border border-indigo-500/10 flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-medium">账户实时余额</span>
-                                <span className="text-3xl font-mono text-green-400 font-bold">¥ {(inspectData?.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        <div className="p-6 overflow-y-auto flex-1 space-y-5">
+                            <div className="p-4 bg-indigo-600/5 rounded-xl border border-indigo-500/10 flex justify-between items-center">
+                                <span className="text-xs text-gray-500">余额</span>
+                                <span className="text-2xl font-mono text-green-400 font-bold">¥{(inspectData?.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                             </div>
-
-                            <div className="space-y-3">
-                                <h4 className="text-xs font-medium text-gray-500 mb-4">持有投资组合细节</h4>
+                            <div className="space-y-2">
                                 {Object.entries(inspectData).filter(([k]) => k !== 'balance').map(([key, value]) => {
                                     const shares = typeof value === 'object' ? value.shares : Number(value);
                                     const cost = typeof value === 'object' ? value.avgCost : 0;
                                     if (shares === 0) return null;
                                     return (
-                                        <div key={key} className="flex justify-between items-center bg-gray-800/30 border border-gray-700/40 p-4 rounded-xl">
-                                            <span className="font-bold text-gray-300 text-sm">{key}</span>
+                                        <div key={key} className="flex justify-between items-center bg-gray-800/50 border border-gray-800 px-4 py-3 rounded-xl">
+                                            <span className="font-medium text-gray-300 text-xs">{key}</span>
                                             <div className="text-right">
-                                                <span className={`font-mono font-bold text-sm ${shares > 0 ? 'text-indigo-400' : 'text-orange-500'}`}>{shares > 0 ? '看多' : '看空'} {Math.abs(shares)} 份</span>
-                                                <div className="text-xs text-gray-600 font-mono mt-0.5">平均成本 ¥{Number(cost).toFixed(2)}</div>
+                                                <span className={`font-mono text-xs font-bold ${shares > 0 ? 'text-indigo-400' : 'text-orange-400'}`}>{shares > 0 ? '+' : ''}{shares}</span>
+                                                <div className="text-[10px] text-gray-600 font-mono">avg ¥{Number(cost).toFixed(2)}</div>
                                             </div>
                                         </div>
                                     );
                                 })}
                             </div>
-
-                            <div className="pt-8 border-t border-gray-700/40">
-                                <h4 className="text-xs font-medium text-orange-500 mb-4">管理员直接干预调账</h4>
-                                <div className="bg-orange-950/10 p-6 rounded-2xl border border-orange-900/20 space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-xs text-gray-500 font-medium mb-2 block">调整数额</label>
-                                            <input type="number" value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} placeholder="正数为加，负数为减" className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white font-mono text-sm focus:border-orange-500 focus:ring-orange-500 outline-none"/>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs text-gray-500 font-medium mb-2 block">审计备注</label>
-                                            <input type="text" value={adjustNote} onChange={e => setAdjustNote(e.target.value)} placeholder="说明调账原因" className="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white text-xs focus:border-orange-500 focus:ring-orange-500 outline-none"/>
-                                        </div>
-                                    </div>
-                                    <button onClick={handleAdjustBalance} disabled={isAdjusting} className="w-full py-3.5 bg-orange-900/50 hover:bg-orange-800 disabled:bg-gray-900 text-orange-500 font-semibold rounded-xl transition-all text-sm border border-orange-800/30">
-                                        {isAdjusting ? '正在处理交易指令...' : '确认执行资金调账'}
-                                    </button>
+                            <div className="pt-4 border-t border-gray-800 space-y-3">
+                                <h4 className="text-[10px] font-medium text-orange-400 uppercase tracking-wider">调账</h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <input type="number" value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} placeholder="金额 (±)" className="bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white font-mono text-xs focus:border-orange-500 outline-none" />
+                                    <input type="text" value={adjustNote} onChange={e => setAdjustNote(e.target.value)} placeholder="备注" className="bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-white text-xs focus:border-orange-500 outline-none" />
                                 </div>
+                                <button onClick={handleAdjustBalance} disabled={isAdjusting} className="w-full py-2.5 bg-orange-900/30 hover:bg-orange-800/50 text-orange-400 font-medium rounded-xl text-xs border border-orange-800/30 transition-all">
+                                    {isAdjusting ? '处理中...' : '执行调账'}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -827,3 +653,4 @@ export default function AdminDashboard() {
         </>
     );
 }
+
