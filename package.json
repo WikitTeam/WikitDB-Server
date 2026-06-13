@@ -28,6 +28,10 @@
     "tailwindcss": "^3.3.5"
   },
   "devDependencies": {},
+  "overrides": {
+    "postcss": "^8.5.15",
+    "follow-redirects": "^1.16.0"
+  },
   "engines": {
     "node": ">=18.0.0"
   }
