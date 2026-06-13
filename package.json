@@ -6,9 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:studio": "prisma studio",
+    "db:migrate": "node scripts/migrate-json-to-postgres.js"
   },
   "dependencies": {
+    "@prisma/client": "^6.9.0",
     "@upstash/redis": "^1.37.0",
     "autoprefixer": "^10.4.16",
     "axios": "^1.17.0",
@@ -27,7 +32,9 @@
     "recharts": "^2.15.4",
     "tailwindcss": "^3.3.5"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "prisma": "^6.9.0"
+  },
   "overrides": {
     "postcss": "^8.5.15",
     "follow-redirects": "^1.16.0"

@@ -1,4 +1,4 @@
-import db from '../../../lib/db';
+import prisma from '../../../lib/prisma';
 
 function getClientIP(req) {
     return req.headers['x-forwarded-for']?.split(',')[0]?.trim()
@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     const ip = getClientIP(req);
     const path = `/api/honeypot/${(req.query.trap || []).join('/')}`;
 
-    await db.accessLog.create({
+    await prisma.accessLog.create({
         data: {
             type: 'honeypot',
             ip,

@@ -4,11 +4,12 @@ const config = require('../../../wikitdb.config.js');
 const { fetchCategories, fetchThreads, fetchPosts } = require('../../../utils/wikidotForum');
 
 async function upsertByField(model, field, siteParam, value, data) {
-    const existing = await model.findFirst({ where: { siteParam, [field]: value } });
-    if (existing) {
-        return model.update({ where: { id: existing.id }, data });
-    }
-    return model.create({ data: { siteParam, [field]: value, ...data } });
+    const compositeKey = `siteParam_${field}`;
+    return model.upsert({
+        where: { [compositeKey]: { siteParam, [field]: value } },
+        update: data,
+        create: { siteParam, [field]: value, ...data }
+    });
 }
 
 async function handler(req, res) {
@@ -47,8 +48,8 @@ async function handler(req, res) {
                     maxPage = result.maxPage;
 
                     for (const thread of result.threads) {
-                        const existing = await prisma.forumThread.findFirst({
-                            where: { siteParam: wiki.PARAM, threadId: thread.threadId }
+                        const existing = await prisma.forumThread.findUnique({
+                            where: { siteParam_threadId: { siteParam: wiki.PARAM, threadId: thread.threadId } }
                         });
 
                         const needSync = !existing || existing.postCount !== thread.postCount;

@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  username       String   @unique @db.VarChar(20)
+  password       String
+  email          String?  @unique
+  balance        Decimal  @default(10000) @db.Decimal(12, 2)
+  wikidotAccount String?
+  isAdmin        Boolean  @default(false)
+  status         String   @default("active") @db.VarChar(10)
+  createdAt      DateTime @default(now())
+
+  trades Trade[]
+  gachas Gacha[]
+  images Image[]
+
+  @@map("users")
+}
+
+model Trade {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  type        String   @db.VarChar(20)
+  amount      Decimal  @db.Decimal(12, 2)
+  target      String
+  status      String   @default("OPEN") @db.VarChar(20)
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("trades")
+}
+
+model Gacha {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  poolId    String   @default("DEFAULT") @db.VarChar(50)
+  result    String
+  cost      Decimal  @db.Decimal(12, 2)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("gachas")
+}
+
+model Image {
+  id         Int      @id @default(autoincrement())
+  uploaderId Int
+  createdAt  DateTime @default(now())
+
+  uploader User @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  @@index([uploaderId])
+  @@map("images")
+}
+
+model Setting {
+  key       String   @id
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@map("settings")
+}
+
+model AccessLog {
+  id        Int      @id @default(autoincrement())
+  method    String   @db.VarChar(10)
+  path      String
+  status    Int?
+  ip        String?
+  userAgent String?  @db.Text
+  username  String?
+  duration  Int?
+  type      String?  @db.VarChar(20)
+  payload   String?  @db.Text
+  headers   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("access_logs")
+}
+
+model ForumCategory {
+  id           Int       @id @default(autoincrement())
+  siteParam    String    @db.VarChar(50)
+  categoryId   String    @db.VarChar(50)
+  title        String
+  description  String    @default("") @db.Text
+  threadsCount Int       @default(0)
+  postsCount   Int       @default(0)
+  lastSyncedAt DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@unique([siteParam, categoryId])
+  @@map("forum_categories")
+}
+
+model ForumThread {
+  id           Int       @id @default(autoincrement())
+  siteParam    String    @db.VarChar(50)
+  threadId     String    @db.VarChar(50)
+  categoryId   String    @db.VarChar(50)
+  title        String
+  createdBy    String
+  postCount    Int       @default(0)
+  isSticky     Boolean   @default(false)
+  isLocked     Boolean   @default(false)
+  lastSyncedAt DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@unique([siteParam, threadId])
+  @@index([siteParam, categoryId])
+  @@map("forum_threads")
+}
+
+model ForumPost {
+  id          Int      @id @default(autoincrement())
+  siteParam   String   @db.VarChar(50)
+  postId      String   @db.VarChar(50)
+  threadId    String   @db.VarChar(50)
+  parentId    String?  @db.VarChar(50)
+  title       String   @default("")
+  contentHtml String   @db.Text
+  author      String
+  authorId    String?
+  createdAt   DateTime @default(now())
+
+  @@unique([siteParam, postId])
+  @@index([siteParam, threadId])
+  @@map("forum_posts")
+}
