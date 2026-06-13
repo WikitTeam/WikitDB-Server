@@ -16,15 +16,11 @@ const Header = () => {
     const [username, setUsername] = useState(null);
     const [broadcastMsg, setBroadcastMsg] = useState('');
 
-    // 页面加载时从本地存储读取用户名、全站广播以及强制深色模式
     useEffect(() => {
         const storedUsername = localStorage.getItem('username');
         if (storedUsername) {
             setUsername(storedUsername);
         }
-
-        // 强制深色模式
-        document.documentElement.classList.add('dark');
 
         fetch('/api/admin/broadcast')
             .then(res => res.json())

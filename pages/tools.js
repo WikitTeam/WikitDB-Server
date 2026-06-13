@@ -3,6 +3,19 @@ import Head from 'next/head';
 import Link from 'next/link';
 const config = require('../wikitdb.config.js');
 
+const colorMap = {
+    purple: 'bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400',
+    green: 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400',
+    teal: 'bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400',
+    yellow: 'bg-yellow-50 dark:bg-yellow-500/10 text-yellow-600 dark:text-yellow-400',
+    cyan: 'bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400',
+    red: 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400',
+    orange: 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400',
+    indigo: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
+    pink: 'bg-pink-50 dark:bg-pink-500/10 text-pink-600 dark:text-pink-400',
+    blue: 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400',
+};
+
 export default function Tools() {
     return (
         <div className="py-8">
@@ -34,13 +47,13 @@ export default function Tools() {
                         { href: '/tools/delete-announcement', icon: 'fa-trash-can', color: 'red', title: '删帖公示', desc: '查看近期已被删除的页面记录与相关公示信息。' },
                         { href: '/tools/gallery', icon: 'fa-box-archive', color: 'indigo', title: '全站页面备份', desc: '实时同步各分站页面数据，提供精细化的多维搜索与离线备份，确保数字资产的安全存档。' }
                     ].map((tool) => (
-                        <Link 
+                        <Link
                             key={tool.href}
-                            href={tool.href} 
+                            href={tool.href}
                             className="bg-white dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-500/10 transition-all group flex flex-col justify-between"
                         >
                             <div className="flex gap-5">
-                                <div className={`shrink-0 w-14 h-14 rounded-2xl bg-${tool.color}-50 dark:bg-${tool.color}-500/10 flex items-center justify-center text-${tool.color}-600 dark:text-${tool.color}-400 text-2xl group-hover:scale-110 transition-transform`}>
+                                <div className={`shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform ${colorMap[tool.color]}`}>
                                     <i className={`fa-solid ${tool.icon}`}></i>
                                 </div>
                                 <div>
