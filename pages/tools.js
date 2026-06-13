@@ -12,7 +12,6 @@ const colorMap = {
     red: 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400',
     orange: 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400',
     indigo: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
-    pink: 'bg-pink-50 dark:bg-pink-500/10 text-pink-600 dark:text-pink-400',
     blue: 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400',
 };
 
@@ -36,16 +35,11 @@ export default function Tools() {
                         { href: '/tools/deathmatch', icon: 'fa-skull-crossbones', color: 'red', title: '收容物斗兽场', desc: '押注两篇随机提取的异常档案，盲猜真实评分高低，赢取双倍返还。' },
                         { href: '/tools/bounty', icon: 'fa-scroll', color: 'orange', title: '异常档案悬赏令', desc: '全服寻宝任务，寻找符合特定标签与评分组合档案拿走高额赏金。' },
                         { href: '/tools/radar', icon: 'fa-crosshairs', color: 'indigo', title: '战力雷达评估', desc: '跨站聚合创作者的历史档案，多维度生成雷达图并推算其危险等级。' },
-                        { href: '/tools/escape', icon: 'fa-triangle-exclamation', color: 'orange', title: '代码修复逃脱', desc: '随机抽取受损的真实页面源码，限时修复排版语法以阻止收容失效。' },
-                        { href: '/tools/splice', icon: 'fa-puzzle-piece', color: 'pink', title: '跨界缝合怪', desc: '抽取多站点的无关联文本碎片，由你来拼接命名属于你的荒诞故事。' },
-                        { href: '/tools/tag-futures', icon: 'fa-tags', color: 'yellow', title: '标签大宗商品', desc: '将常见分类标签视作商品，根据近期该标签页面的综合评分进行看涨跌。' },
-                        { href: '/tools/site-index', icon: 'fa-globe', color: 'teal', title: '站点大盘指数', desc: '各站繁荣度量化为点数走势，可作为长线 ETF 基金大额认购持有。' },
                         { href: '/tools/membership-apply', icon: 'fa-user-check', color: 'green', title: '批量审批申请', desc: '拉取 Wikidot 站点的待审批成员申请列表，支持批量通过或拒绝。' },
                         { href: '/tools/wikidot-register', icon: 'fa-user-plus', color: 'cyan', title: '代注册 Wikidot 账号', desc: '无需翻墙，代为提交 Wikidot 注册请求，只需填写邮箱并完成验证码。' },
                         { href: '/tools/save-page', icon: 'fa-file-export', color: 'indigo', title: '代发页面', desc: '通过 Wikit API 代为向目标站点发布或编辑 Wikidot 页面。' },
                         { href: '/tools/member-admin', icon: 'fa-users-gear', color: 'blue', title: '成员管理', desc: '在特定站点对指定成员采取封禁、移除等操作。' },
-                        { href: '/tools/delete-announcement', icon: 'fa-trash-can', color: 'red', title: '删帖公示', desc: '查看近期已被删除的页面记录与相关公示信息。' },
-                        { href: '/tools/gallery', icon: 'fa-box-archive', color: 'indigo', title: '全站页面备份', desc: '实时同步各分站页面数据，提供精细化的多维搜索与离线备份，确保数字资产的安全存档。' }
+                        { href: '/tools/delete-announcement', icon: 'fa-trash-can', color: 'red', title: '删帖公示', desc: '查看近期已被删除的页面记录与相关公示信息。' }
                     ].map((tool) => (
                         <Link
                             key={tool.href}
