@@ -6,7 +6,8 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { username } = req.query;
+    const decoded = verifyToken(req);
+    const username = req.query.username || decoded?.username;
 
     if (!username) {
         return res.status(400).json({ error: '请求参数不完整：缺少用户名' });
@@ -22,7 +23,6 @@ export default async function handler(req, res) {
         }
 
         // 只有已登录且查询自己时才返回敏感信息
-        const decoded = verifyToken(req);
         const isSelf = decoded && decoded.username === username;
 
         const response = { username: user.username, status: user.status || 'active' };

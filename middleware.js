@@ -16,8 +16,9 @@ function cleanupStore() {
 }
 
 export function middleware(request) {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-        || request.headers.get('x-real-ip')
+    const trustProxy = process.env.TRUST_PROXY === 'true';
+    const ip = (trustProxy && request.headers.get('x-forwarded-for')?.split(',')[0]?.trim())
+        || (trustProxy && request.headers.get('x-real-ip'))
         || 'unknown';
 
     if (request.nextUrl.pathname.startsWith('/api/')) {

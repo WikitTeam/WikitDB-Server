@@ -1,8 +1,9 @@
 import prisma from '../../lib/prisma';
 import nodemailer from 'nodemailer';
-import { rateLimit } from '../../utils/security';
+import { rateLimit, ipRateLimit, getClientIp } from '../../utils/security';
+import { withCsrf } from '../../utils/csrf';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: '请求方法不允许' });
     }
@@ -13,6 +14,11 @@ export default async function handler(req, res) {
     }
 
     try {
+        const ip = getClientIp(req);
+        if (ipRateLimit(ip, 'send-code', 10, 60 * 60 * 1000)) {
+            return res.status(429).json({ error: '当前网络发送验证码过于频繁' });
+        }
+
         const existingUser = await prisma.user.findFirst({ where: { email } });
         if (existingUser) {
             return res.status(400).json({ error: '该邮箱已被注册' });
@@ -71,3 +77,5 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: '发信服务异常，请联系管理员' });
     }
 }
+
+export default withCsrf(handler);

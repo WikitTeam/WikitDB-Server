@@ -2,8 +2,8 @@ import jwt from 'jsonwebtoken';
 import { parse, serialize } from 'cookie';
 
 const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-    throw new Error('FATAL: JWT_SECRET is not defined in environment variables!');
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+    throw new Error('FATAL: JWT_SECRET must contain at least 32 characters.');
 }
 
 const COOKIE_OPTIONS = {
@@ -15,7 +15,10 @@ const COOKIE_OPTIONS = {
 };
 
 export function signToken(payload) {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+    return jwt.sign(payload, JWT_SECRET, {
+        algorithm: 'HS256',
+        expiresIn: '7d'
+    });
 }
 
 export function verifyToken(req) {
@@ -23,7 +26,7 @@ export function verifyToken(req) {
     const token = cookies.auth_token;
     if (!token) return null;
     try {
-        return jwt.verify(token, JWT_SECRET);
+        return jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
     } catch (e) {
         return null;
     }

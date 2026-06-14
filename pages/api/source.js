@@ -95,8 +95,7 @@ export default async function handler(req, res) {
                     const data = await srcRes.json();
                     if (data.status === 'ok') {
                         const $src = cheerio.load(data.body);
-                        let rawHtml = $src('.page-source').html() || data.body || '';
-                        sourceCode = rawHtml.trim();
+                        sourceCode = ($src('.page-source').text() || $src.root().text() || '').trim();
                     } else {
                         sourceCode = `请求源码失败，原站返回: ${data.status}`;
                     }

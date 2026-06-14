@@ -1,6 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const { wikidotLimiter } = require('./rateLimiter');
+const { sanitizeRichHtml } = require('./htmlSanitizer');
 
 let botCookieCache = null;
 let cookieExpiry = 0;
@@ -60,15 +61,6 @@ async function wikidotAjax(siteUrl, params) {
         return res.data.body || '';
     }
     throw new Error(res.data?.message || 'Wikidot AJAX 请求失败');
-}
-
-function sanitizeHtml(html) {
-    if (!html) return '';
-    let s = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    s = s.replace(/\son\w+="[^"]*"/gi, '');
-    s = s.replace(/\son\w+='[^']*'/gi, '');
-    s = s.replace(/href="javascript:[^"]*"/gi, 'href="#"');
-    return s;
 }
 
 async function fetchCategories(siteUrl) {
@@ -166,7 +158,7 @@ async function fetchPosts(siteUrl, threadId, page = 1) {
         if (uidMatch) authorId = uidMatch[1];
 
         const title = $el.find('.title').first().text().trim();
-        const contentHtml = sanitizeHtml($el.find('.content').html() || '');
+        const contentHtml = sanitizeRichHtml($el.find('.content').html() || '');
         const createdAt = $el.find('.odate').first().text().trim();
 
         posts.push({ postId, parentId, title, contentHtml, author, authorId, createdAt });

@@ -9,6 +9,10 @@
 # env & secrets
 .env
 .env.*
+!.env.example
+
+# runtime data and local databases
+/data/*.json
 
 # editor / IDE
 .vscode

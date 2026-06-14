@@ -1,7 +1,5 @@
-import { verifyToken } from './auth';
-import prisma from '../lib/prisma';
-
-const SUPER_ADMIN = process.env.SUPER_ADMIN || '';
+import { getAdminUser } from './adminAuth';
+import { validateOrigin } from './csrf';
 
 /**
  * Admin 权限包装器
@@ -11,16 +9,15 @@ const SUPER_ADMIN = process.env.SUPER_ADMIN || '';
  * 3. 错误处理 (500)
  */
 export function withAdmin(handler) {
-  return async (req, res) => {
-    try {
-      const decoded = verifyToken(req);
-      if (!decoded || !decoded.username) {
-        return res.status(401).json({ error: '未登录，请先登录' });
+    return async (req, res) => {
+      try {
+      if (!validateOrigin(req)) {
+        return res.status(403).json({ error: '请求来源不合法' });
       }
 
-      const adminUser = await prisma.user.findUnique({ where: { username: decoded.username } });
-      if (!adminUser || (!adminUser.isAdmin && adminUser.username !== SUPER_ADMIN)) {
-        return res.status(403).json({ error: '权限不足：仅限管理员访问' });
+      const adminUser = await getAdminUser(req);
+      if (!adminUser) {
+        return res.status(401).json({ error: '未登录，请先登录' });
       }
 
       req.admin = adminUser;

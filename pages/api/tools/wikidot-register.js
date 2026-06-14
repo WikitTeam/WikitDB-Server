@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { withAuth } from '../../../utils/withAuth';
 
 const WIKIDOT_BASE = 'https://www.wikidot.com';
 const REG_URL = `${WIKIDOT_BASE}/default--flow/login__CreateAccountScreen`;
@@ -61,7 +62,7 @@ async function submitRegistration({ name, email, password, language, captchaAnsw
     return res.data;
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: '仅支持 POST' });
     }
@@ -138,3 +139,5 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: '注册服务异常，请稍后重试' });
     }
 }
+
+export default withAuth(handler);

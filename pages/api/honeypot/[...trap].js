@@ -1,14 +1,8 @@
 import prisma from '../../../lib/prisma';
-
-function getClientIP(req) {
-    return req.headers['x-forwarded-for']?.split(',')[0]?.trim()
-        || req.headers['x-real-ip']
-        || req.socket?.remoteAddress
-        || 'unknown';
-}
+import { getClientIp } from '../../../utils/security';
 
 export default async function handler(req, res) {
-    const ip = getClientIP(req);
+    const ip = getClientIp(req);
     const path = `/api/honeypot/${(req.query.trap || []).join('/')}`;
 
     await prisma.accessLog.create({
@@ -18,10 +12,8 @@ export default async function handler(req, res) {
             path,
             method: req.method,
             userAgent: req.headers['user-agent'] || '',
-            payload: req.method !== 'GET' ? JSON.stringify(req.body || {}).slice(0, 1000) : '',
+            payload: req.method !== 'GET' ? '[REDACTED]' : '',
             headers: JSON.stringify({
-                authorization: req.headers['authorization'] || '',
-                cookie: req.headers['cookie'] || '',
                 origin: req.headers['origin'] || '',
                 referer: req.headers['referer'] || '',
             }),

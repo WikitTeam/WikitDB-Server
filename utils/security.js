@@ -30,8 +30,10 @@ export function escapeHtml(str) {
  * 从请求中提取客户端 IP
  */
 export function getClientIp(req) {
+    const trustProxy = process.env.TRUST_PROXY === 'true';
     const forwarded = req.headers['x-forwarded-for'];
-    if (forwarded) return String(forwarded).split(',')[0].trim();
+    if (trustProxy && forwarded) return String(forwarded).split(',')[0].trim();
+    if (trustProxy && req.headers['x-real-ip']) return String(req.headers['x-real-ip']);
     return req.socket?.remoteAddress || 'unknown';
 }
 

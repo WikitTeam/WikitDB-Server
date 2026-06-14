@@ -2,13 +2,6 @@ import prisma from '../../../lib/prisma';
 import { withAdmin } from '../../../utils/withAdmin';
 
 async function handler(req, res) {
-    if (req.method === 'GET') {
-        const setting = await prisma.setting.findUnique({
-            where: { key: 'system_broadcast' }
-        });
-        return res.status(200).json({ message: setting?.value || '' });
-    }
-
     if (req.method === 'POST') {
         const { message } = req.body;
         if (message) {
@@ -28,4 +21,14 @@ async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
 }
 
-export default withAdmin(handler);
+async function getBroadcast(req, res) {
+    const setting = await prisma.setting.findUnique({
+        where: { key: 'system_broadcast' }
+    });
+    return res.status(200).json({ message: setting?.value || '' });
+}
+
+export default function route(req, res) {
+    if (req.method === 'GET') return getBroadcast(req, res);
+    return withAdmin(handler)(req, res);
+}

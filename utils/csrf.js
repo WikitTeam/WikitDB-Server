@@ -9,6 +9,21 @@ const ALLOWED_ORIGINS = [
     process.env.SITE_ORIGIN,
 ].filter(Boolean);
 
+function getAllowedOrigins(req) {
+    const origins = new Set(ALLOWED_ORIGINS);
+    const trustProxy = process.env.TRUST_PROXY === 'true';
+    const forwardedHost = trustProxy ? req.headers['x-forwarded-host'] : null;
+    const host = String(forwardedHost || req.headers.host || '').split(',')[0].trim();
+    if (host) {
+        const forwardedProto = trustProxy ? req.headers['x-forwarded-proto'] : null;
+        const protocol = String(forwardedProto || (req.socket?.encrypted ? 'https' : 'http'))
+            .split(',')[0]
+            .trim();
+        origins.add(`${protocol}://${host}`);
+    }
+    return origins;
+}
+
 export function validateOrigin(req) {
     if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
         return true;
@@ -16,15 +31,16 @@ export function validateOrigin(req) {
 
     const origin = req.headers['origin'];
     const referer = req.headers['referer'];
+    const allowedOrigins = getAllowedOrigins(req);
 
     if (origin) {
-        return ALLOWED_ORIGINS.some(allowed => origin === allowed);
+        return allowedOrigins.has(origin);
     }
 
     if (referer) {
         try {
             const refOrigin = new URL(referer).origin;
-            return ALLOWED_ORIGINS.some(allowed => refOrigin === allowed);
+            return allowedOrigins.has(refOrigin);
         } catch {
             return false;
         }

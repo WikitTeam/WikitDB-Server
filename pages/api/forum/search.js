@@ -1,5 +1,6 @@
 import prisma from '../../../lib/prisma';
 import { withLogging } from '../../../utils/logRequest';
+import { sanitizeRichHtml } from '../../../utils/htmlSanitizer';
 const config = require('../../../wikitdb.config.js');
 
 async function handler(req, res) {
@@ -12,20 +13,25 @@ async function handler(req, res) {
     const wikiConfig = config.SUPPORT_WIKI.find(w => w.PARAM === site);
     if (!wikiConfig) return res.status(404).json({ error: '未找到该站点配置' });
 
-    const page = parseInt(p, 10) || 1;
+    const page = Math.min(Math.max(parseInt(p, 10) || 1, 1), 1000);
     const pageSize = 20;
-    const keyword = q.trim().toLowerCase();
-
-    const allPosts = await prisma.forumPost.findMany({ where: { siteParam: site } });
-
-    const matched = allPosts.filter(post => {
-        const titleMatch = post.title && post.title.toLowerCase().includes(keyword);
-        const contentMatch = post.contentHtml && post.contentHtml.toLowerCase().includes(keyword);
-        return titleMatch || contentMatch;
-    });
-
-    const total = matched.length;
-    const paged = matched.slice((page - 1) * pageSize, page * pageSize);
+    const keyword = q.trim().slice(0, 100);
+    const where = {
+        siteParam: site,
+        OR: [
+            { title: { contains: keyword, mode: 'insensitive' } },
+            { contentHtml: { contains: keyword, mode: 'insensitive' } }
+        ]
+    };
+    const [total, paged] = await Promise.all([
+        prisma.forumPost.count({ where }),
+        prisma.forumPost.findMany({
+            where,
+            orderBy: { id: 'desc' },
+            skip: (page - 1) * pageSize,
+            take: pageSize
+        })
+    ]);
 
     const threadIds = [...new Set(paged.map(p => p.threadId))];
     const threads = await prisma.forumThread.findMany({
@@ -36,6 +42,7 @@ async function handler(req, res) {
 
     const results = paged.map(p => ({
         ...p,
+        contentHtml: sanitizeRichHtml(p.contentHtml),
         threadTitle: threadMap[p.threadId]?.title || ''
     }));
 

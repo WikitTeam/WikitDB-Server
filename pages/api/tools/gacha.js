@@ -1,5 +1,6 @@
 import prisma from '../../../lib/prisma';
 import { withAuth } from '../../../utils/withAuth';
+import { settleWager } from '../../../utils/balance';
 const { DEFAULT_GQL_ENDPOINT } = require('../../../utils/graphql');
 
 const GRAPHQL_ENDPOINT = DEFAULT_GQL_ENDPOINT;
@@ -46,24 +47,7 @@ async function handler(req, res) {
         else if (r < 0) { rarity = 'CURSED'; reward = 0; }
         
         const result = await prisma.$transaction(async (tx) => {
-            const dbUser = await tx.user.findUnique({
-                where: { id: user.id },
-                select: { balance: true }
-            });
-
-            if (dbUser.balance.lt(200)) {
-                throw new Error('余额不足，每次抽取需要 ¥200');
-            }
-
-            const netChange = reward - 200;
-            const updatedUser = await tx.user.update({
-                where: { id: user.id },
-                data: {
-                    balance: {
-                        increment: netChange
-                    }
-                }
-            });
+            const updatedUser = await settleWager(tx, user.id, 200, reward);
 
             await tx.gacha.create({
                 data: {

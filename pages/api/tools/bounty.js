@@ -1,5 +1,6 @@
 import prisma from '../../../lib/prisma';
-import { verifyToken } from '../../../utils/auth';
+import { withAuth } from '../../../utils/withAuth';
+import { getAdminUser } from '../../../utils/adminAuth';
 const { DEFAULT_GQL_ENDPOINT } = require('../../../utils/graphql');
 
 const generateBounties = (config) => {
@@ -25,7 +26,7 @@ const generateBounties = (config) => {
     return bounties;
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method === 'GET') {
         if (req.query.action === 'config') {
             try {
@@ -67,9 +68,8 @@ export default async function handler(req, res) {
         const { action, bountyId, wiki, page } = req.body;
 
         if (action === 'refresh') {
-            // refresh 需要登录鉴权
-            const refreshDecoded = verifyToken(req);
-            if (!refreshDecoded || !refreshDecoded.username) return res.status(401).json({ error: '未授权的访问' });
+            const admin = await getAdminUser(req);
+            if (!admin) return res.status(403).json({ error: '仅管理员可刷新悬赏' });
 
             const configRecord = await prisma.setting.findUnique({ where: { key: 'config:bounty' } });
             let config = {};
@@ -86,9 +86,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, bounties: newBounties });
         }
 
-        const decoded = verifyToken(req);
-        if (!decoded || !decoded.username) return res.status(401).json({ error: '未授权的访问' });
-        const username = decoded.username; 
+        const username = req.user.username;
 
         if (!bountyId || !wiki || !page) return res.status(400).json({ error: '请填写完整的 Wiki 和 Page 标识符' });
 
@@ -128,6 +126,16 @@ export default async function handler(req, res) {
             if (!hasAllTags || !meetsRating) return res.status(400).json({ error: `验证不通过。` });
 
             const result = await prisma.$transaction(async (tx) => {
+                await tx.bountyClaim.create({
+                    data: {
+                        bountyId,
+                        userId: user.id,
+                        wiki,
+                        page,
+                        reward: bounty.reward
+                    }
+                });
+
                 const updatedUser = await tx.user.update({
                     where: { id: user.id },
                     data: {
@@ -161,9 +169,18 @@ export default async function handler(req, res) {
             });
 
             return res.status(200).json({ success: true, article, reward: bounty.reward, newBalance: result, bounties });
-        } catch (e) { 
+        } catch (e) {
             console.error('Bounty error:', e);
+            if (e.code === 'P2002') {
+                return res.status(409).json({ error: '这笔悬赏已经被领取' });
+            }
             return res.status(500).json({ error: e.message || '服务器内部错误' }); 
         }
     }
+}
+
+export default function route(req, res) {
+    if (req.method === 'GET') return handler(req, res);
+    if (req.method === 'POST') return withAuth(handler)(req, res);
+    return res.status(405).json({ error: 'Method not allowed' });
 }

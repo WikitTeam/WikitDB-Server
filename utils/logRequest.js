@@ -1,8 +1,24 @@
 import prisma from '../lib/prisma';
 import { verifyToken } from './auth';
+import { getClientIp } from './security';
+
+const REDACTED_HEADERS = new Set(['authorization', 'cookie', 'proxy-authorization', 'set-cookie']);
+const REDACTED_BODY_KEYS = /password|token|secret|code|session|cookie/i;
+
+function redactObject(value) {
+    if (!value || typeof value !== 'object') return value;
+    if (Array.isArray(value)) return value.map(redactObject);
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+        key,
+        REDACTED_BODY_KEYS.test(key) ? '[REDACTED]' : redactObject(item)
+    ]));
+}
 
 function formatHeaders(headers) {
-    const entries = Object.entries(headers);
+    const entries = Object.entries(headers).map(([key, value]) => [
+        key,
+        REDACTED_HEADERS.has(key.toLowerCase()) ? '[REDACTED]' : value
+    ]);
     if (entries.length === 0) return '(empty)';
     const maxKeyLen = Math.max(...entries.map(([k]) => k.length));
     return entries
@@ -14,7 +30,9 @@ function printRequestLog(req) {
     const now = new Date();
     const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
-    const body = typeof req.body === 'object' ? JSON.stringify(req.body, null, 2) : (req.body || '(empty)');
+    const body = typeof req.body === 'object'
+        ? JSON.stringify(redactObject(req.body), null, 2)
+        : (req.body ? '[NON-JSON BODY OMITTED]' : '(empty)');
 
     console.log(
 `===== NEW REQUEST =====
@@ -31,8 +49,7 @@ export async function logRequest(req, res) {
     try {
         printRequestLog(req);
 
-        const forwarded = req.headers['x-forwarded-for'];
-        const ip = forwarded ? String(forwarded).split(',')[0].trim() : req.socket?.remoteAddress || null;
+        const ip = getClientIp(req);
 
         let username = null;
         try {

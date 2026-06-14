@@ -25,19 +25,29 @@ async function handler(req, res) {
 
     try {
         const result = await prisma.$transaction(async (tx) => {
-            const currentBalance = Number(user.balance);
-            if (currentBalance + adjustAmount < 0) {
-                throw new Error(`操作失败：用户账户可用余额不足（当前: ${currentBalance.toFixed(2)}）`);
-            }
-
-            const updatedUser = await tx.user.update({
-                where: { id: user.id },
-                data: {
-                    balance: {
-                        increment: adjustAmount
-                    }
+            let updatedUser;
+            if (adjustAmount < 0) {
+                const changed = await tx.user.updateMany({
+                    where: {
+                        id: user.id,
+                        balance: { gte: Math.abs(adjustAmount) }
+                    },
+                    data: { balance: { increment: adjustAmount } }
+                });
+                if (changed.count !== 1) {
+                    throw new Error('操作失败：用户账户可用余额不足');
                 }
-            });
+                updatedUser = await tx.user.findUnique({
+                    where: { id: user.id },
+                    select: { balance: true }
+                });
+            } else {
+                updatedUser = await tx.user.update({
+                    where: { id: user.id },
+                    data: { balance: { increment: adjustAmount } },
+                    select: { balance: true }
+                });
+            }
 
             const trade = await tx.trade.create({
                 data: {

@@ -1,14 +1,12 @@
 import prisma from '../../lib/prisma';
+import { withAuth } from '../../utils/withAuth';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'GET') {
         return res.status(405).json({ error: '仅支持 GET 请求' });
     }
 
-    const { username } = req.query;
-    if (!username) {
-        return res.status(400).json({ error: '缺少用户名' });
-    }
+    const username = req.user.username;
 
     try {
         const user = await prisma.user.findUnique({
@@ -37,3 +35,5 @@ export default async function handler(req, res) {
         res.status(500).json({ error: '获取控制台数据失败' });
     }
 }
+
+export default withAuth(handler);

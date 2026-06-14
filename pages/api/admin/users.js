@@ -4,14 +4,22 @@ import { withAdmin } from '../../../utils/withAdmin';
 async function handler(req, res) {
     if (req.method === 'GET') {
         // 增加分页支持，防止大批量读取造成性能瓶颈
-        const page = parseInt(req.query.page) || 1;
-        const pageSize = parseInt(req.query.pageSize) || 50;
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const pageSize = Math.min(Math.max(parseInt(req.query.pageSize, 10) || 50, 1), 100);
 
         const [usersData, total] = await Promise.all([
             prisma.user.findMany({
                 orderBy: { balance: 'desc' },
                 skip: (page - 1) * pageSize,
-                take: pageSize
+                take: pageSize,
+                select: {
+                    username: true,
+                    wikidotAccount: true,
+                    balance: true,
+                    isAdmin: true,
+                    status: true,
+                    createdAt: true
+                }
             }),
             prisma.user.count()
         ]);

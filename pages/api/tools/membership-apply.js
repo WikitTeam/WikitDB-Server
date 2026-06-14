@@ -1,13 +1,14 @@
 import * as cheerio from 'cheerio';
 import axios from 'axios';
+import { withAuth } from '../../../utils/withAuth';
+import { getTrustedWikiByUrl } from '../../../utils/trustedWiki';
 const { wikidotLimiter } = require('../../../utils/rateLimiter');
 
 const LOGIN_URL = 'https://www.wikidot.com/default--flow/login__LoginPopupScreen';
 
 function normalizeUrl(url) {
-    let u = (url || '').trim().replace(/\/$/, '');
-    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
-    return u;
+    const wiki = getTrustedWikiByUrl(url);
+    return wiki ? wiki.URL.replace(/\/$/, '') : null;
 }
 
 async function wikidotLogin(username, password) {
@@ -58,6 +59,7 @@ async function wikidotAjax(siteUrl, sessionId, params) {
     await wikidotLimiter.wait(10000);
 
     const baseUrl = normalizeUrl(siteUrl);
+    if (!baseUrl) throw new Error('仅允许访问系统配置中的 HTTPS Wikidot 站点');
     const ajaxUrl = `${baseUrl}/ajax-module-connector.php`;
     const cookie = `WIKIDOT_SESSION_ID=${sessionId}; wikidot_token7=123456;`;
 
@@ -80,7 +82,7 @@ async function wikidotAjax(siteUrl, sessionId, params) {
     return data.body || '';
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: '仅支持 POST' });
     }
@@ -104,6 +106,9 @@ export default async function handler(req, res) {
             }
 
             const baseUrl = normalizeUrl(siteUrl);
+            if (!baseUrl) {
+                return res.status(400).json({ error: '仅允许访问系统配置中的 HTTPS Wikidot 站点' });
+            }
             const ajaxUrl = `${baseUrl}/ajax-module-connector.php`;
             const cookie = `WIKIDOT_SESSION_ID=${sessionId}; wikidot_token7=123456;`;
             const headers = {
@@ -265,3 +270,5 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: error.message || '服务器内部错误' });
     }
 }
+
+export default withAuth(handler);
