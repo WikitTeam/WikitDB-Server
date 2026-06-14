@@ -402,11 +402,12 @@ const DeleteAnnouncement = () => {
                             生成公告代码
                         </button>
                     </div>
-                    <div 
+                    <pre
                         id="generated-code-container"
                         className="w-full h-48 bg-gray-900 border border-gray-700 text-gray-300 rounded-lg p-4 font-mono text-sm overflow-auto resize-y whitespace-pre-wrap outline-none"
-                        dangerouslySetInnerHTML={{ __html: generatedCode || '点击右上角按钮生成代码...' }}
-                    />
+                    >
+                        {generatedCode || '点击右上角按钮生成代码...'}
+                    </pre>
                     {generatedCode && !generatedCode.includes('请先添加') && (
                         <div className="mt-4 flex justify-end">
                             <button 

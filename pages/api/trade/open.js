@@ -1,6 +1,7 @@
 import prisma from '../../../lib/prisma';
 import { withAuth } from '../../../utils/withAuth';
 import { validateNumberRange } from '../../../utils/security';
+import { debitBalance } from '../../../utils/balance';
 
 async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).end();
@@ -13,23 +14,7 @@ async function handler(req, res) {
 
     try {
         const result = await prisma.$transaction(async (tx) => {
-            const dbUser = await tx.user.findUnique({
-                where: { id: user.id },
-                select: { balance: true }
-            });
-
-            if (dbUser.balance.lt(safeAmount)) {
-                throw new Error('余额不足');
-            }
-
-            const updatedUser = await tx.user.update({
-                where: { id: user.id },
-                data: {
-                    balance: {
-                        decrement: safeAmount
-                    }
-                }
-            });
+            const updatedUser = await debitBalance(tx, user.id, safeAmount);
 
             const trade = await tx.trade.create({
                 data: {

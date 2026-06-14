@@ -1,35 +1,13 @@
 import prisma from '../../lib/prisma';
-import { verifyToken } from '../../utils/auth';
-const SUPER_ADMIN = process.env.SUPER_ADMIN || 'Laimu_slime';
+import { withAdmin } from '../../utils/withAdmin';
+import { validateNumberRange } from '../../utils/security';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: '仅支持 POST 请求' });
     }
 
-    // 核心安全修复：从服务端验证 Token，获取真实操作者身份
-    const decoded = verifyToken(req);
-    if (!decoded || !decoded.username) {
-        return res.status(401).json({ error: '未登录或身份凭证无效' });
-    }
-    const realOperator = decoded.username;
-
     const { action, targetUser, amount } = req.body;
-
-    // 验证操作者权限
-    let isAuthorized = realOperator === SUPER_ADMIN;
-    if (!isAuthorized) {
-        const caller = await prisma.user.findUnique({
-            where: { username: realOperator }
-        });
-        if (caller && caller.isAdmin) {
-            isAuthorized = true;
-        }
-    }
-
-    if (!isAuthorized) {
-        return res.status(403).json({ error: '权限不足，发生非法调用记录' });
-    }
 
     try {
         if (action === 'check') {
@@ -38,8 +16,7 @@ export default async function handler(req, res) {
                 select: { username: true }
             });
             const adminSet = adminUsers.map(u => u.username);
-            const admins = [SUPER_ADMIN, ...adminSet.filter(a => a !== SUPER_ADMIN)];
-            return res.status(200).json({ isAdmin: true, admins });
+            return res.status(200).json({ isAdmin: true, admins: adminSet });
         }
 
         if (action === 'add_admin') {
@@ -53,7 +30,7 @@ export default async function handler(req, res) {
 
         if (action === 'remove_admin') {
             if (!targetUser) return res.status(400).json({ error: '缺少目标用户' });
-            if (targetUser === SUPER_ADMIN) return res.status(400).json({ error: '不能移除创始人' });
+            if (targetUser === req.admin.username) return res.status(400).json({ error: '不能移除自己的管理员权限' });
             await prisma.user.update({
                 where: { username: targetUser },
                 data: { isAdmin: false }
@@ -63,6 +40,10 @@ export default async function handler(req, res) {
 
         if (action === 'give_money') {
             if (!targetUser || !amount) return res.status(400).json({ error: '参数不完整' });
+            const safeAmount = validateNumberRange(amount, -1000000, 1000000);
+            if (safeAmount === null || safeAmount === 0) {
+                return res.status(400).json({ error: '金额必须是 -1000000 到 1000000 之间的非零数字' });
+            }
             
             const user = await prisma.user.findUnique({
                 where: { username: targetUser }
@@ -70,15 +51,31 @@ export default async function handler(req, res) {
             
             if (!user) return res.status(404).json({ error: '找不到该用户' });
 
-            const currentBalance = user.balance !== null ? Number(user.balance) : 10000;
-            const newBalance = currentBalance + Number(amount);
+            let updated;
+            if (safeAmount < 0) {
+                const changed = await prisma.user.updateMany({
+                    where: {
+                        id: user.id,
+                        balance: { gte: Math.abs(safeAmount) }
+                    },
+                    data: { balance: { increment: safeAmount } }
+                });
+                if (changed.count !== 1) {
+                    return res.status(400).json({ error: '调整后余额不能为负数' });
+                }
+                updated = await prisma.user.findUnique({
+                    where: { id: user.id },
+                    select: { balance: true }
+                });
+            } else {
+                updated = await prisma.user.update({
+                    where: { id: user.id },
+                    data: { balance: { increment: safeAmount } },
+                    select: { balance: true }
+                });
+            }
             
-            await prisma.user.update({
-                where: { username: targetUser },
-                data: { balance: newBalance }
-            });
-            
-            return res.status(200).json({ message: '资金变更成功', newBalance });
+            return res.status(200).json({ message: '资金变更成功', newBalance: updated.balance });
         }
 
         return res.status(400).json({ error: '未知操作' });
@@ -87,3 +84,5 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: '服务器内部错误' });
     }
 }
+
+export default withAdmin(handler);

@@ -2,8 +2,9 @@ import prisma from '../../lib/prisma';
 import bcrypt from 'bcryptjs';
 import { signToken, serializeAuthCookie } from '../../utils/auth';
 import { rateLimit, ipRateLimit, getClientIp } from '../../utils/security';
+import { withCsrf } from '../../utils/csrf';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: '只接受 POST 请求' });
     }
@@ -22,21 +23,29 @@ export default async function handler(req, res) {
             return res.status(429).json({ error: '当前网络登录尝试过于频繁，请稍后再试' });
         }
 
-        // 用户级别限速：同一用户名 5 分钟内最多 3 次失败尝试
-        const limited = await rateLimit(`login:${username}`, 3, 5 * 60 * 1000);
-        if (limited) {
-            return res.status(429).json({ error: '登录尝试过于频繁，请 5 分钟后再试' });
-        }
-
         const user = await prisma.user.findUnique({
             where: { username }
         });
 
-        if (!user) return res.status(400).json({ error: '用户名或密码错误' });
+        if (!user) {
+            const limited = await rateLimit(`login:${username}`, 3, 5 * 60 * 1000);
+            return res.status(limited ? 429 : 400).json({
+                error: limited ? '登录尝试过于频繁，请 5 分钟后再试' : '用户名或密码错误'
+            });
+        }
 
         const isMatch = await bcrypt.compare(password, user.password);
 
-        if (!isMatch) return res.status(400).json({ error: '用户名或密码错误' });
+        if (!isMatch) {
+            const limited = await rateLimit(`login:${username}`, 3, 5 * 60 * 1000);
+            return res.status(limited ? 429 : 400).json({
+                error: limited ? '登录尝试过于频繁，请 5 分钟后再试' : '用户名或密码错误'
+            });
+        }
+
+        if (user.status !== 'active') {
+            return res.status(403).json({ error: '账号当前不可用' });
+        }
 
         const token = signToken({ username: user.username, id: user.id });
 
@@ -52,3 +61,5 @@ export default async function handler(req, res) {
         res.status(500).json({ error: '服务器内部错误' });
     }
 }
+
+export default withCsrf(handler);

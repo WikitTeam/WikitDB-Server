@@ -1,6 +1,8 @@
 import prisma from '../../../lib/prisma';
 import { withAuth } from '../../../utils/withAuth';
 import { validateNumberRange } from '../../../utils/security';
+import { debitBalance } from '../../../utils/balance';
+import { runSerializable } from '../../../utils/transaction';
 const { DEFAULT_GQL_ENDPOINT } = require('../../../utils/graphql');
 
 async function getAuthorPrice(authorName) {
@@ -85,7 +87,7 @@ async function handler(req, res) {
 
         const price = Number(currentPrice);
 
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await runSerializable(prisma, async (tx) => {
             const dbUser = await tx.user.findUnique({ where: { id: user.id } });
             if (!dbUser) throw new Error('用户不存在');
 
@@ -153,16 +155,13 @@ async function handler(req, res) {
                 throw new Error('未知指令');
             }
 
-            // Check if balance would go negative
-            if (Number(dbUser.balance) + balanceChange < 0) {
-                throw new Error('余额不足');
-            }
-
-            // Update user balance
-            const updatedUser = await tx.user.update({
-                where: { id: user.id },
-                data: { balance: { increment: balanceChange } }
-            });
+            const updatedUser = balanceChange < 0
+                ? await debitBalance(tx, user.id, Math.abs(balanceChange))
+                : await tx.user.update({
+                    where: { id: user.id },
+                    data: { balance: { increment: balanceChange } },
+                    select: { balance: true }
+                });
 
             // Update portfolio
             portfolio[authorName] = { shares: currentShares, avgCost };

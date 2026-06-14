@@ -1,5 +1,6 @@
 import prisma from '../../../lib/prisma';
 import { withLogging } from '../../../utils/logRequest';
+import { sanitizeRichHtml } from '../../../utils/htmlSanitizer';
 const { cached } = require('../../../utils/cache');
 const config = require('../../../wikitdb.config.js');
 
@@ -12,7 +13,7 @@ async function handler(req, res) {
     const wikiConfig = config.SUPPORT_WIKI.find(w => w.PARAM === site);
     if (!wikiConfig) return res.status(404).json({ error: '未找到该站点配置' });
 
-    const count = Math.min(parseInt(limit, 10) || 20, 50);
+    const count = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 50);
 
     const cacheKey = `forum-recent:${site}:${count}`;
     const posts = await cached(cacheKey, async () => {
@@ -31,6 +32,7 @@ async function handler(req, res) {
 
         return recentPosts.map(p => ({
             ...p,
+            contentHtml: sanitizeRichHtml(p.contentHtml),
             threadTitle: threadMap[p.threadId]?.title || ''
         }));
     }, 3 * 60 * 1000);

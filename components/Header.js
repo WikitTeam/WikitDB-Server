@@ -33,7 +33,11 @@ const Header = () => {
     }, []);
 
     // 退出登录逻辑
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await fetch('/api/logout', {
+            method: 'POST',
+            credentials: 'include'
+        }).catch(() => {});
         localStorage.removeItem('username');
         localStorage.removeItem('token');
         setUsername(null);

@@ -1,6 +1,7 @@
 import prisma from '../../../lib/prisma';
 import { withAuth } from '../../../utils/withAuth';
 import { validateNumberRange } from '../../../utils/security';
+import { settleWager } from '../../../utils/balance';
 const { DEFAULT_GQL_ENDPOINT } = require('../../../utils/graphql');
 
 async function handler(req, res) {
@@ -52,26 +53,8 @@ async function handler(req, res) {
             reward = amount;
         }
 
-        const netChange = reward - amount;
-
         const result = await prisma.$transaction(async (tx) => {
-            const dbUser = await tx.user.findUnique({
-                where: { id: user.id },
-                select: { balance: true }
-            });
-
-            if (dbUser.balance.lt(amount)) {
-                throw new Error('账户余额不足');
-            }
-
-            const updatedUser = await tx.user.update({
-                where: { id: user.id },
-                data: {
-                    balance: {
-                        increment: netChange
-                    }
-                }
-            });
+            const updatedUser = await settleWager(tx, user.id, amount, reward);
 
             await tx.trade.create({
                 data: {

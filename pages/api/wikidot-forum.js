@@ -1,18 +1,18 @@
 import prisma from '../../lib/prisma';
 import * as cheerio from 'cheerio';
 import axios from 'axios';
+import { sanitizeRichHtml } from '../../utils/htmlSanitizer';
 
 const config = require('../../wikitdb.config.js');
 
 let botCookieCache = null;
 
-function sanitizeHtml(html) {
-    if (!html) return '';
-    let sanitized = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    sanitized = sanitized.replace(/\son\w+="[^"]*"/gi, '');
-    sanitized = sanitized.replace(/\son\w+='[^']*'/gi, '');
-    sanitized = sanitized.replace(/href="javascript:[^"]*"/gi, 'href="#"');
-    return sanitized;
+function sanitizePostTree(posts = []) {
+    return posts.map((post) => ({
+        ...post,
+        contentHtml: sanitizeRichHtml(post.contentHtml),
+        children: sanitizePostTree(post.children || [])
+    }));
 }
 
 async function getBotCookie() {
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     // 接收参数，支持页码 p
     const { wiki, pageId, p = 1 } = req.query;
     if (!wiki || !pageId) return res.status(400).json({ error: 'Missing parameters' });
-    const pageNum = parseInt(p, 10) || 1;
+    const pageNum = Math.min(Math.max(parseInt(p, 10) || 1, 1), 1000);
 
     try {
         const cacheKey = `forum_v11:${wiki}:${pageId}:p${pageNum}`;
@@ -56,8 +56,13 @@ export default async function handler(req, res) {
         const record = await prisma.setting.findUnique({ where: { key: cacheKey } });
         if (record && record.value) {
             try {
-                const parsed = JSON.parse(record.value);
-                if (parsed && parsed.threadId) return res.status(200).json(parsed);
+                const parsed = typeof record.value === 'string'
+                    ? JSON.parse(record.value)
+                    : record.value;
+                if (parsed && parsed.threadId) {
+                    parsed.threads = sanitizePostTree(parsed.threads);
+                    return res.status(200).json(parsed);
+                }
             } catch (e) {}
         }
 
@@ -134,7 +139,7 @@ export default async function handler(req, res) {
                 : `https://www.wikidot.com/avatar.php?account=default`;
 
             const rawContentHtml = $el.find('.content').html() || '';
-            const contentHtml = sanitizeHtml(rawContentHtml);
+            const contentHtml = sanitizeRichHtml(rawContentHtml);
 
             const odate = $el.find('.odate').first();
             const timestamp = odate.text().trim();

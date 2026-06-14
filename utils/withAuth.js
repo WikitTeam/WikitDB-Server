@@ -1,5 +1,6 @@
 import { verifyToken } from './auth';
 import prisma from '../lib/prisma';
+import { validateOrigin } from './csrf';
 
 /**
  * 通用用户鉴权包装器
@@ -9,6 +10,10 @@ import prisma from '../lib/prisma';
 export function withAuth(handler) {
   return async (req, res) => {
     try {
+      if (!validateOrigin(req)) {
+        return res.status(403).json({ error: '请求来源不合法' });
+      }
+
       const decoded = verifyToken(req);
       if (!decoded || !decoded.username) {
         return res.status(401).json({ error: '会话已过期，请重新登录' });

@@ -4,6 +4,7 @@ import { escapeHtml } from '../../utils/security';
 const config = require('../../wikitdb.config.js');
 const { getGraphQLEndpoint } = require('../../utils/graphql');
 import { withLogging } from '../../utils/logRequest';
+import { sanitizeHistoryHtml } from '../../utils/htmlSanitizer';
 
 async function handler(req, res) {
     const { site, page, hpage = 1 } = req.query;
@@ -268,9 +269,9 @@ async function handler(req, res) {
                     const data = await srcRes.value.json();
                     if (data.status === 'ok') {
                         const $src = cheerio.load(data.body);
-                        let rawHtml = $src('.page-source').html() || data.body || '';
-                        rawHtml = rawHtml.replace(/<br\s*\/?>/gi, '\n');
-                        sourceCode = rawHtml.replace(/^(?:[ \t\u00a0\u3000]|&nbsp;)+/gm, '').trim();
+                        sourceCode = ($src('.page-source').text() || $src.root().text() || '')
+                            .replace(/^(?:[ \t\u00a0\u3000])+/gm, '')
+                            .trim();
                     } else {
                         sourceCode = `请求源码失败，原站返回: ${data.status}`;
                     }
@@ -483,8 +484,8 @@ async function handler(req, res) {
             downvotes: finalDownvotes,
             comments: gqlData?.comments,
             lastUpdated: lastUpdated,
-            sourceCode: sourceCode,
-            historyHtml: historyHtml,
+            sourceCode,
+            historyHtml: sanitizeHistoryHtml(historyHtml),
             maxHistoryPage: maxHistoryPage,
             pageId: pageId,
             ratingTable: ratingTable,

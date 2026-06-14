@@ -1,5 +1,6 @@
 import prisma from '../../../lib/prisma';
 import { withAuth } from '../../../utils/withAuth';
+import { settleWager } from '../../../utils/balance';
 const { DEFAULT_GQL_ENDPOINT } = require('../../../utils/graphql');
 
 async function getHandler(req, res) {
@@ -63,26 +64,8 @@ async function postHandler(req, res) {
             if (hitCount === 2) reward = scanCost * 10;
             if (hitCount === 3) reward = scanCost * 100;
 
-            const netChange = reward - scanCost;
-
             const result = await prisma.$transaction(async (tx) => {
-                const dbUser = await tx.user.findUnique({
-                    where: { id: user.id },
-                    select: { balance: true }
-                });
-
-                if (dbUser.balance.lt(scanCost)) {
-                    throw new Error(`余额不足，扫描需要 ¥${scanCost}`);
-                }
-
-                const updatedUser = await tx.user.update({
-                    where: { id: user.id },
-                    data: {
-                        balance: {
-                            increment: netChange
-                        }
-                    }
-                });
+                const updatedUser = await settleWager(tx, user.id, scanCost, reward);
 
                 await tx.trade.create({
                     data: {

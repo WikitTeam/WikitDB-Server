@@ -1,4 +1,6 @@
-export default async function handler(req, res) {
+import { withAuth } from '../../../utils/withAuth';
+
+async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ status: 'error', message: '仅支持 POST 请求' });
     }
@@ -44,3 +46,5 @@ export default async function handler(req, res) {
         res.status(500).json({ status: 'error', message: '请求 Wikit 接口异常' });
     }
 }
+
+export default withAuth(handler);

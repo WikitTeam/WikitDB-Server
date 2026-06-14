@@ -12,8 +12,8 @@ async function handler(req, res) {
     const wikiConfig = config.SUPPORT_WIKI.find(w => w.PARAM === site);
     if (!wikiConfig) return res.status(404).json({ error: '未找到该站点配置' });
 
-    const page = parseInt(p, 10) || 1;
-    const size = Math.min(parseInt(pageSize, 10) || 20, 50);
+    const page = Math.min(Math.max(parseInt(p, 10) || 1, 1), 1000);
+    const size = Math.min(Math.max(parseInt(pageSize, 10) || 20, 1), 50);
 
     const cacheKey = `forum-threads:${site}:${category || 'all'}:${page}:${size}`;
     const result = await cached(cacheKey, async () => {

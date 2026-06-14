@@ -1,8 +1,10 @@
 import prisma from '../../lib/prisma';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { rateLimit, ipRateLimit, getClientIp } from '../../utils/security';
+import { withCsrf } from '../../utils/csrf';
 
-export default async function handler(req, res) {
+async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).end();
 
     const { action, username, password, email, code } = req.body;
@@ -109,6 +111,15 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: '电子邮箱与验证码不能为空' });
         }
 
+        const ip = getClientIp(req);
+        if (ipRateLimit(ip, 'register-submit', 30, 10 * 60 * 1000)) {
+            return res.status(429).json({ error: '验证码尝试过于频繁' });
+        }
+        const limited = await rateLimit(`verify:${email}`, 8, 10 * 60 * 1000);
+        if (limited) {
+            return res.status(429).json({ error: '验证码尝试过于频繁，请稍后重试' });
+        }
+
         const record = await prisma.verificationCode.findUnique({ where: { email } });
         if (!record) {
             return res.status(400).json({ error: '验证码记录不存在' });
@@ -146,3 +157,5 @@ export default async function handler(req, res) {
 
     return res.status(400).json({ error: '无效的操作请求' });
 }
+
+export default withCsrf(handler);

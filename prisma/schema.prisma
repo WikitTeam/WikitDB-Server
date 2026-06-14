@@ -18,11 +18,26 @@ model User {
   status         String   @default("active") @db.VarChar(10)
   createdAt      DateTime @default(now())
 
-  trades Trade[]
-  gachas Gacha[]
-  images Image[]
+  trades       Trade[]
+  gachas       Gacha[]
+  images       Image[]
+  bountyClaims BountyClaim[]
 
   @@map("users")
+}
+
+model BountyClaim {
+  bountyId  String   @id @db.VarChar(100)
+  userId    Int
+  wiki      String   @db.VarChar(100)
+  page      String
+  reward    Decimal  @db.Decimal(12, 2)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("bounty_claims")
 }
 
 model Trade {
@@ -73,6 +88,28 @@ model Setting {
   createdAt DateTime @default(now())
 
   @@map("settings")
+}
+
+model TempReg {
+  username   String   @id @db.VarChar(20)
+  verifyCode String   @unique @db.VarChar(32)
+  password   String
+  wdid       String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("temp_registrations")
+}
+
+model VerificationCode {
+  email     String   @id
+  code      String   @db.VarChar(12)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("verification_codes")
 }
 
 model AccessLog {
