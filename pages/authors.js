@@ -87,7 +87,7 @@ const AuthorProfile = () => {
             
             setRankingCache(prev => ({
                 ...prev,
-                [tabParam]: result.ranking
+                [tabParam]: (result.ranking || []).filter(a => !/user.?deleted/i.test(a.name))
             }));
         } catch (err) {
             setError(err.message);
@@ -187,7 +187,9 @@ const AuthorProfile = () => {
                             <div>
                                 <h2 className="text-3xl font-bold text-white mb-2">{data.name}</h2>
                                 <div className="text-sm text-gray-400">
-                                    数据同步自 Wikit GraphQL 数据库
+                                    {data.fromAttribution
+                                        ? '数据同步自 crom 归属数据库 + Wikit'
+                                        : '数据同步自 Wikit GraphQL 数据库'}
                                 </div>
                             </div>
                         </div>
@@ -204,7 +206,7 @@ const AuthorProfile = () => {
                             {data.attribution && data.attribution.pages > 0 && (
                                 <div className="mb-6 rounded-lg border border-emerald-900/50 bg-emerald-950/30 p-4">
                                     <p className="text-gray-300 leading-relaxed">
-                                        <span className="font-semibold text-emerald-400">归属资料</span>登记名下
+                                        <span className="font-semibold text-emerald-400">crom 归属资料</span>登记名下
                                         <span className="font-semibold text-white"> {data.attribution.pages} </span>
                                         个归属页面，归属总评分为
                                         <span className="font-semibold text-emerald-400"> {data.attribution.score > 0 ? `+${data.attribution.score}` : data.attribution.score} </span>
@@ -242,7 +244,7 @@ const AuthorProfile = () => {
 
                             {data.attribution && data.attribution.sites && data.attribution.sites.length > 0 && (
                                 <div className="mt-6">
-                                    <h4 className="text-lg font-medium text-white mb-3">归属站点分数分布（来自站点归属资料页）：</h4>
+                                    <h4 className="text-lg font-medium text-white mb-3">crom 站点分数分布（来自站点归属资料页）：</h4>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                         {data.attribution.sites.map((site, index) => (
                                             <div key={index} className="bg-emerald-950/30 p-4 rounded-lg border border-emerald-900/40">
@@ -300,6 +302,13 @@ const AuthorProfile = () => {
                                             );
                                         })}
                                     </div>
+                                ) : data.fromAttribution ? (
+                                    <div className="text-sm text-gray-500 py-8 flex-1 flex items-center justify-center bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
+                                        <div className="text-center">
+                                            <div>crom 归属数据暂未包含投票收藏信息</div>
+                                            <div className="mt-1 text-xs">仅 Wikit 活跃作者可查询</div>
+                                        </div>
+                                    </div>
                                 ) : (
                                     <div className="text-sm text-gray-500 py-8 flex-1 flex items-center justify-center bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
                                         数据源暂时不可用（Wikit 接口超时或异常）
@@ -333,6 +342,13 @@ const AuthorProfile = () => {
                                                 </div>
                                             );
                                         })}
+                                    </div>
+                                ) : data.fromAttribution ? (
+                                    <div className="text-sm text-gray-500 py-8 flex-1 flex items-center justify-center bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
+                                        <div className="text-center">
+                                            <div>crom 归属数据暂未包含投票收藏信息</div>
+                                            <div className="mt-1 text-xs">仅 Wikit 活跃作者可查询</div>
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="text-sm text-gray-500 py-8 flex-1 flex items-center justify-center bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
