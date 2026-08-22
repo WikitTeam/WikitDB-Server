@@ -10,8 +10,8 @@ const { buildBackupArgs, getWikiName } = require('./utils/wikitBackup');
 const fs = require('fs');
 const path = require('path');
 
-const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 10 });
-const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 10 });
+const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 20 });
+const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 20 });
 const request = axios.create({
     httpAgent,
     httpsAgent,
@@ -19,6 +19,9 @@ const request = axios.create({
 });
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// 跨页面/跨站点复用 UserLookup 结果，避免对同一作者反复查询 wikidot
+let userIdCache = {};
 
 const CRAWLER_LOG_FILE = path.join(process.cwd(), 'crawler.log');
 
@@ -130,13 +133,22 @@ async function runCrawler() {
             finishedAt: null,
             currentSite: null,
             currentStage: '',
-            overall: { totalSites: config.SUPPORT_WIKI.length, doneSites: 0 },
+            overall: { totalSites: config.SUPPORT_WIKI.filter(s => !s.CROM_API).length, doneSites: 0 },
             sites: config.SUPPORT_WIKI.map(buildSiteStatus),
             lastRun: crawlStatus.lastRun
         };
         await persistCrawlStatus();
         for (const siteConfig of config.SUPPORT_WIKI) {
             const wikiParam = siteConfig.PARAM;
+
+            // crom 站点由 auto-attribution.js 独立处理（crom API 拿作者分数 + 页面评分），
+            // auto-crawler 逐页爬取对 8k+ 页面的站点效率极低且会与 attribution 争抢 DB 连接，
+            // 因此跳过已配置 CROM_API 的站点，仅保留非 crom 站点的讨论区/投票抓取
+            if (siteConfig.CROM_API) {
+                logLine(`[${new Date().toLocaleString()}] 跳过 ${wikiParam}（crom 站点，由 attribution 服务处理）`);
+                continue;
+            }
+
             const actualWikiName = siteConfig.URL.replace(/^https?:\/\//i, '').split('.')[0];
             const baseUrl = siteConfig.URL.replace(/\/$/, '');
 
@@ -186,7 +198,7 @@ async function runCrawler() {
                 } catch (e) {
                     await sleep(3000);
                 }
-                await sleep(1000);
+                await sleep(300);
             }
 
             if (siteStatus) {
@@ -197,7 +209,7 @@ async function runCrawler() {
 
             let userVotesMap = {};
             let count = 0;
-            const CONCURRENCY = 3;
+            const CONCURRENCY = 5;
 
             for (let i = 0; i < allPages.length; i += CONCURRENCY) {
                 const batch = allPages.slice(i, i + CONCURRENCY);
@@ -234,7 +246,6 @@ async function runCrawler() {
                                     const { data: forumHtml } = await request.get(forumUrl, { headers: baseHeaders });
                                     const $forum = cheerio.load(forumHtml);
                                     const posts = [];
-                                    const userIdCache = {};
                                     
                                     const postElements = $forum('.post').toArray();
                                     for (const el of postElements) {
@@ -276,7 +287,7 @@ async function runCrawler() {
                                                 userid = userIdCache[author];
                                             } else {
                                                 try {
-                                                    const lookupRes = await axios.get(`https://www.wikidot.com/quickmodule.php?module=UserLookupQModule&q=${encodeURIComponent(author)}`, { timeout: 5000 });
+                                                    const lookupRes = await axios.get(`https://www.wikidot.com/quickmodule.php?module=UserLookupQModule&q=${encodeURIComponent(author)}`, { timeout: 3000 });
                                                     if (lookupRes.data && lookupRes.data.users && lookupRes.data.users.length > 0) {
                                                         userid = lookupRes.data.users[0].user_id;
                                                         userIdCache[author] = userid;
@@ -390,7 +401,7 @@ async function runCrawler() {
                         siteStatus.errors = siteErrors;
                         await persistCrawlStatus();
                     }
-                    for (const [user, newVotes] of Object.entries(userVotesMap)) {
+                    await Promise.all(Object.entries(userVotesMap).map(async ([user, newVotes]) => {
                         const key = `user_votes_${user.toLowerCase().replace(/_/g, '-').replace(/ /g, '-')}`;
                         const record = await prisma.setting.findUnique({ where: { key } });
                         let existingMap = new Map();
@@ -417,10 +428,10 @@ async function runCrawler() {
                             update: { value: JSON.stringify(truncatedVotes) },
                             create: { key, value: JSON.stringify(truncatedVotes) }
                         });
-                    }
+                    }));
                     userVotesMap = {}; 
                 }
-                await sleep(2500);
+                await sleep(600);
             }
 
             if (siteStatus) {
@@ -459,7 +470,12 @@ async function runCrawler() {
 }
 
 cron.schedule('0 */3 * * *', () => runCrawler());
-runCrawler();
+// 启动时是否立即执行一轮全量抓取。
+// 默认开启（与原行为一致）；低内存服务器建议在 systemd 里设 RUN_CRAWLER_ON_START=false，
+// 避免「抓取 → OOM 被杀 → 重启 → 再抓取」的循环把整个服务器拖垮。
+if (String(process.env.RUN_CRAWLER_ON_START).toLowerCase() !== 'false') {
+    runCrawler();
+}
 
 let isBackupRunning = false;
 

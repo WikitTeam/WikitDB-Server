@@ -158,7 +158,7 @@ export async function getServerSideProps(context) {
             totalPages = searchRes.totalCount || 0;
         }
         if (rankingRes) {
-            topAuthors = rankingRes.ranking || [];
+            topAuthors = (rankingRes.ranking || []).filter(a => !/user.?deleted/i.test(a.name));
         }
     } catch (e) {
         // 静默处理，页面会显示空状态

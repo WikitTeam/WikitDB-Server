@@ -29,7 +29,31 @@ async function handler(req, res) {
 
         const merged = configuredSites.map(cfg => {
             const existing = recorded.find(s => s && s.param === cfg.PARAM);
-            if (existing) return { ...existing, name: cfg.NAME || existing.name };
+            if (existing) {
+                // crom 站点由 attribution 服务处理，auto-crawler 跳过；
+                // 显示为 'skipped' 避免用户困惑（否则会一直显示 pending）
+                if (cfg.CROM_API) {
+                    return { ...existing, status: 'skipped', name: cfg.NAME || existing.name };
+                }
+                return { ...existing, name: cfg.NAME || existing.name };
+            }
+            // 新站点：crom 标记的直接显示为 skipped
+            if (cfg.CROM_API) {
+                return {
+                    param: cfg.PARAM,
+                    name: cfg.NAME || cfg.PARAM,
+                    status: 'skipped',
+                    pagesFound: 0,
+                    pagesProcessed: 0,
+                    votes: 0,
+                    discussions: 0,
+                    errors: 0,
+                    startedAt: null,
+                    finishedAt: null,
+                    lastRun: null,
+                    error: null
+                };
+            }
             return {
                 param: cfg.PARAM,
                 name: cfg.NAME || cfg.PARAM,

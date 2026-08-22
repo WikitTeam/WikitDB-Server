@@ -383,6 +383,7 @@ export default function AdminDashboard() {
             done: ['bg-emerald-950 text-emerald-300 border-emerald-800', '完成'],
             pending: ['bg-neutral-800 text-neutral-400 border-neutral-700', '等待'],
             error: ['bg-red-950 text-red-300 border-red-800', '异常'],
+            skipped: ['bg-sky-950 text-sky-300 border-sky-800', '归属服务'],
         };
         const [cls, label] = map[status] || map.pending;
         return <span className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${cls}`}>{label}</span>;

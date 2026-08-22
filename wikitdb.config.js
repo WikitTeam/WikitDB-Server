@@ -1,6 +1,6 @@
 module.exports = {
     SITE_NAME: 'WikitDB',
-    SITE_URL: '',
+    SITE_URL: 'https://www.wikitdb.cn',
     SITE_SINCE: '2026',
     SITE_AUTHOR: 'WikitDB Team',
     SUPPORT_WIKI: [
@@ -28,7 +28,10 @@ module.exports = {
             ImgURL: "https://laimu.backroomswiki.top/img/Logo.png",
             PARAM: "if",
             WIKIT_ID: "if-backrooms",
-            AUTHOR_TAG: "作者"
+            AUTHOR_TAG: "作者",
+            // if 排行榜走纯 Wikit CIL（不使用 crom 评分），因此无 CROM_API；
+            // 但保留归属资料页 ATTRIBUTION_PAGE，用于作者详情页展示作者名下归属页面列表
+            ATTRIBUTION_PAGE: "attribution-metadata"
         },
         {
             NAME: "地下黑市",
@@ -52,7 +55,10 @@ module.exports = {
             ImgURL: "https://rule-wiki.wdfiles.com/local--files/component%3Atheme/rule-wiki-new.svg",
             PARAM: "rule",
             WIKIT_ID: "rule-wiki",
-            AUTHOR_TAG: "作者"
+            AUTHOR_TAG: "作者",
+            // rule 排行榜走纯 Wikit CIL（不使用 crom 评分），因此无 CROM_API；
+            // 但保留归属资料页 ATTRIBUTION_PAGE，用于作者详情页展示作者名下归属页面列表
+            ATTRIBUTION_PAGE: "attribution-metadata"
         },
         {
             NAME: "纸上书",
@@ -83,14 +89,25 @@ module.exports = {
             WIKIT_ID: "scp-wiki-mc"
         },
         {
-            NAME: "The Bsckrooms中文维基",
+            NAME: "The Backrooms中文维基",
             URL: "https://backrooms-wiki-cn.wikidot.com/",
             ImgURL: "https://7bye.com/hoah/i/2023/12/31/5hsx3.svg",
             PARAM: "brcn",
             WIKIT_ID: "backrooms-wiki-cn",
             GQL_API: "https://wikit.unitreaty.org/backrooms/apiv1/graphql",
+            CROM_API: "https://api.crom.avn.sh/graphql",
             ATTRIBUTION_PAGE: "attribution-metadata",
             FORUM_SYNC: true
+        },
+        {
+            NAME: "The Nationarea",
+            URL: "https://nationarea.wikidot.com/",
+            ImgURL: "https://nationarea.wdfiles.com/local--files/start/logo.png",
+            PARAM: "na",
+            WIKIT_ID: "nationarea",
+            AUTHOR_TAG: "作者",
+            CROM_API: "https://api.crom.avn.sh/graphql",
+            ATTRIBUTION_PAGE: "attribution-metadata"
         },
     ]
 };
