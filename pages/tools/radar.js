@@ -11,9 +11,9 @@ const { DEFAULT_GQL_ENDPOINT } = require('../../utils/graphql');
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-gray-900 border border-gray-700 p-3 rounded-lg shadow-xl">
-                <p className="text-gray-300 font-bold mb-1">{payload[0].payload.subject}</p>
-                <p className="text-blue-400 font-mono">
+            <div className="bg-panel border border-line p-3 rounded-lg shadow-xl">
+                <p className="text-fg-2 font-bold mb-1">{payload[0].payload.subject}</p>
+                <p className="text-blue-600 dark:text-blue-400 font-mono">
                     评估指数: {payload[0].value.toFixed(1)} / 100
                 </p>
             </div>
@@ -159,16 +159,16 @@ export default function AuthorRadar() {
             </Head>
 
             <div className="flex flex-col gap-6">
-                <div className="border-b border-gray-800 pb-4">
-                    <h1 className="text-3xl font-bold text-white tracking-tight">创作者战力雷达评估</h1>
-                    <p className="mt-2 text-gray-400 text-sm">跨站聚合创作者历史记录，全方位推算其“危险等级”。</p>
+                <div className="border-b border-line pb-4">
+                    <h1 className="text-3xl font-bold text-fg tracking-tight">创作者战力雷达评估</h1>
+                    <p className="mt-2 text-fg-3 text-sm">跨站聚合创作者历史记录，全方位推算其“危险等级”。</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* 左侧控制台与评估报告区域 */}
                     <div className="lg:col-span-1 flex flex-col gap-6">
-                        <div className="bg-gray-800/40 rounded-xl border border-gray-700 p-6 shadow-lg">
-                            <label className="block text-sm font-medium text-gray-400 mb-2">追踪作者档案</label>
+                        <div className="bg-panel rounded-xl border border-line p-6 shadow-lg">
+                            <label className="block text-sm font-medium text-fg-3 mb-2">追踪作者档案</label>
                             <div className="flex gap-3">
                                 <input 
                                     type="text" 
@@ -176,41 +176,41 @@ export default function AuthorRadar() {
                                     onChange={(e) => setAuthorName(e.target.value)}
                                     placeholder="输入作者名称..."
                                     onKeyDown={(e) => e.key === 'Enter' && fetchAuthorData()}
-                                    className="flex-1 w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors shadow-inner"
+                                    className="flex-1 w-full bg-sunken border border-line rounded-lg px-4 py-2 text-fg focus:outline-none focus:border-accent-line transition-colors shadow-inner"
                                 />
                                 <button 
                                     onClick={fetchAuthorData}
                                     disabled={isLoading}
-                                    className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold transition-colors disabled:bg-gray-600 whitespace-nowrap"
+                                    className="bg-accent-solid hover:bg-accent-solid-hover text-accent-fg px-4 py-2 rounded-lg font-semibold transition-colors disabled:bg-line-strong whitespace-nowrap"
                                 >
                                     {isLoading ? '扫描中' : '执行扫描'}
                                 </button>
                             </div>
-                            {error && <div className="mt-3 text-sm text-red-400 font-medium">{error}</div>}
+                            {error && <div className="mt-3 text-sm text-red-600 dark:text-red-400 font-medium">{error}</div>}
                         </div>
 
                         {report && (
-                            <div className="bg-gray-800/60 rounded-xl border border-gray-700 p-6 flex-1 border-t-4 border-t-red-900 shadow-2xl relative overflow-hidden">
+                            <div className="bg-panel rounded-xl border border-line p-6 flex-1 border-t-4 border-t-red-900 shadow-2xl relative overflow-hidden">
                                 {/* 添加一个隐约的红色发光背景修饰 */}
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-red-900/10 rounded-full blur-3xl pointer-events-none"></div>
                                 
-                                <h3 className="text-red-400 text-xs font-bold tracking-widest mb-2 uppercase relative z-10">Danger Level Evaluation</h3>
-                                <div className="text-2xl font-bold text-white mb-4 relative z-10">{report.title}</div>
-                                <div className="text-gray-300 text-sm leading-relaxed mb-6 bg-gray-900/80 p-4 rounded-lg border border-gray-700/50 shadow-inner relative z-10">
+                                <h3 className="text-red-600 dark:text-red-400 text-xs font-bold tracking-widest mb-2 uppercase relative z-10">Danger Level Evaluation</h3>
+                                <div className="text-2xl font-bold text-fg mb-4 relative z-10">{report.title}</div>
+                                <div className="text-fg-2 text-sm leading-relaxed mb-6 bg-sunken p-4 rounded-lg border border-line shadow-inner relative z-10">
                                     {report.desc}
                                 </div>
                                 <div className="space-y-3 text-sm relative z-10">
-                                    <div className="flex justify-between border-b border-gray-700/50 pb-2">
-                                        <span className="text-gray-500">已确认档案数</span>
-                                        <span className="text-blue-400 font-mono font-bold">{report.count} 份</span>
+                                    <div className="flex justify-between border-b border-line pb-2">
+                                        <span className="text-fg-3">已确认档案数</span>
+                                        <span className="text-blue-600 dark:text-blue-400 font-mono font-bold">{report.count} 份</span>
                                     </div>
-                                    <div className="flex justify-between border-b border-gray-700/50 pb-2">
-                                        <span className="text-gray-500">最高突破评分</span>
-                                        <span className="text-green-400 font-mono font-bold">{report.maxRating > -999 ? `+${report.maxRating}` : 'N/A'}</span>
+                                    <div className="flex justify-between border-b border-line pb-2">
+                                        <span className="text-fg-3">最高突破评分</span>
+                                        <span className="text-green-600 dark:text-green-400 font-mono font-bold">{report.maxRating > -999 ? `+${report.maxRating}` : 'N/A'}</span>
                                     </div>
                                     <div className="flex justify-between pb-1">
-                                        <span className="text-gray-500">活动范围</span>
-                                        <span className="text-purple-400 font-mono font-bold">{report.wikiCount} 个平行站点</span>
+                                        <span className="text-fg-3">活动范围</span>
+                                        <span className="text-purple-600 dark:text-purple-400 font-mono font-bold">{report.wikiCount} 个平行站点</span>
                                     </div>
                                 </div>
                             </div>
@@ -218,29 +218,29 @@ export default function AuthorRadar() {
                     </div>
 
                     {/* 右侧动态雷达图渲染区域 */}
-                    <div className="lg:col-span-2 bg-gray-800/40 rounded-xl border border-gray-700 p-6 flex flex-col items-center justify-center min-h-[450px] shadow-lg relative overflow-hidden">
+                    <div className="lg:col-span-2 bg-panel rounded-xl border border-line p-6 flex flex-col items-center justify-center min-h-[450px] shadow-lg relative overflow-hidden">
                         {/* 蓝色氛围光背景 */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
-                            <div className="w-96 h-96 bg-blue-600 rounded-full blur-[100px]"></div>
+                            <div className="w-96 h-96 bg-accent rounded-full blur-[100px]"></div>
                         </div>
 
                         {!report && !isLoading ? (
-                            <div className="text-gray-500 flex flex-col items-center gap-3 relative z-10">
+                            <div className="text-fg-3 flex flex-col items-center gap-3 relative z-10">
                                 <span>请输入作者名称以启动雷达扫描网络</span>
                             </div>
                         ) : isLoading ? (
-                            <div className="text-blue-500 animate-pulse font-mono tracking-wider relative z-10">正在从全球数据库拉取交叉对比数据...</div>
+                            <div className="text-blue-600 dark:text-blue-500 animate-pulse font-mono tracking-wider relative z-10">正在从全球数据库拉取交叉对比数据...</div>
                         ) : (
                             <div className="w-full h-full min-h-[400px] relative z-10">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                                         {/* 绘制背景蛛网，调整颜色以适配暗色模式 */}
-                                        <PolarGrid stroke="#4b5563" />
+                                        <PolarGrid stroke="var(--w-line)" />
                                         
                                         {/* 六个维度的文本标签 */}
                                         <PolarAngleAxis 
                                             dataKey="subject" 
-                                            tick={{ fill: '#d1d5db', fontSize: 13, fontWeight: 'bold' }} 
+                                            tick={{ fill: 'var(--w-fg-3)', fontSize: 13, fontWeight: 'bold' }} 
                                         />
                                         
                                         {/* 隐藏具体的刻度轴线条，保持图表清爽 */}
@@ -250,9 +250,9 @@ export default function AuthorRadar() {
                                         <Radar
                                             name="战力指数"
                                             dataKey="value"
-                                            stroke="#3b82f6"
+                                            stroke="var(--w-accent)"
                                             strokeWidth={3}
-                                            fill="#3b82f6"
+                                            fill="var(--w-accent)"
                                             fillOpacity={0.5}
                                         />
                                         

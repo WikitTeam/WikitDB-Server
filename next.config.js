@@ -3,6 +3,11 @@
 // 允许嵌入的跨域 iframe（删除倒计时器等）
 const ALLOWED_FRAME_DOMAINS = ['https://timer.backroomswiki.cn'];
 
+// Next.js dev 模式（webpack/HMR runtime）内部使用 eval()，
+// CSP 若不放行 'unsafe-eval' 会导致客户端渲染崩溃白屏。
+// 仅在开发环境放宽，生产构建保持严格 CSP。
+const isDev = process.env.NODE_ENV !== 'production';
+
 const nextConfig = {
     async rewrites() {
         return [
@@ -38,7 +43,7 @@ const nextConfig = {
                     { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
                     { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
                     { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-                    { key: 'Content-Security-Policy', value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; worker-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://wikit.unitreaty.org https://www.wikidot.com; frame-src 'self' ${ALLOWED_FRAME_DOMAINS.join(' ')}; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'` },
+                    { key: 'Content-Security-Policy', value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''}; worker-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://wikit.unitreaty.org https://www.wikidot.com; frame-src 'self' ${ALLOWED_FRAME_DOMAINS.join(' ')}; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'` },
                 ],
             },
         ];

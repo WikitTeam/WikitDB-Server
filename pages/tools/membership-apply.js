@@ -132,50 +132,50 @@ export default function MembershipApply() {
             </Head>
 
             <div className="py-8 max-w-4xl mx-auto">
-                <div className="mb-6 border-b border-gray-700 pb-4 flex items-center gap-4">
-                    <Link href="/tools" className="text-gray-400 hover:text-white transition-colors">
+                <div className="mb-6 border-b border-line pb-4 flex items-center gap-4">
+                    <Link href="/tools" className="text-fg-3 hover:text-fg transition-colors">
                         <i className="fa-solid fa-arrow-left"></i> 返回
                     </Link>
-                    <h1 className="text-2xl font-bold text-white">批量审批站点申请</h1>
+                    <h1 className="text-2xl font-bold text-fg">批量审批站点申请</h1>
                 </div>
 
                 {error && (
-                    <div className="mb-4 p-3 rounded-lg bg-red-900/20 border border-red-900/50 text-red-400 text-sm">
+                    <div className="mb-4 p-3 rounded-lg bg-red-900/20 border border-red-900/50 text-red-600 dark:text-red-400 text-sm">
                         {error}
                     </div>
                 )}
 
                 {result && (
-                    <div className="mb-4 p-3 rounded-lg bg-green-900/20 border border-green-900/50 text-green-400 text-sm">
+                    <div className="mb-4 p-3 rounded-lg bg-green-900/20 border border-green-900/50 text-green-600 dark:text-green-400 text-sm">
                         <div className="font-bold mb-1">{result.message}</div>
                         {result.results && result.results.filter(r => !r.success).length > 0 && (
-                            <div className="mt-2 text-red-400 text-xs">
+                            <div className="mt-2 text-red-600 dark:text-red-400 text-xs">
                                 失败项：{result.results.filter(r => !r.success).map(r => `${r.userName}(${r.error})`).join('、')}
                             </div>
                         )}
                     </div>
                 )}
 
-                <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10 mb-6">
-                    <h2 className="text-lg font-semibold text-white mb-4">1. 登录 Wikidot</h2>
+                <div className="bg-panel rounded-xl p-6 border border-line mb-6">
+                    <h2 className="text-lg font-semibold text-fg mb-4">1. 登录 Wikidot</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">Wikidot 用户名</label>
+                            <label className="block text-sm font-medium text-fg-2 mb-1">Wikidot 用户名</label>
                             <input
                                 type="text"
                                 value={username}
                                 onChange={e => setUsername(e.target.value)}
-                                className="w-full bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5"
+                                className="w-full bg-sunken border border-line text-fg text-sm rounded-lg focus:ring-accent focus:border-accent-line p-2.5"
                                 placeholder="你的 Wikidot 管理员账号"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">密码</label>
+                            <label className="block text-sm font-medium text-fg-2 mb-1">密码</label>
                             <input
                                 type="password"
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
-                                className="w-full bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5"
+                                className="w-full bg-sunken border border-line text-fg text-sm rounded-lg focus:ring-accent focus:border-accent-line p-2.5"
                             />
                         </div>
                     </div>
@@ -183,35 +183,35 @@ export default function MembershipApply() {
                         <button
                             onClick={handleLogin}
                             disabled={loading || !!sessionId}
-                            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors"
+                            className="px-5 py-2 bg-accent-solid hover:bg-accent-solid-hover disabled:opacity-50 text-accent-fg text-sm font-medium rounded-lg transition-colors"
                         >
                             {sessionId ? '已登录' : loading ? '登录中...' : '登录'}
                         </button>
                         {sessionId && (
-                            <span className="text-green-400 text-sm flex items-center gap-1">
+                            <span className="text-green-600 dark:text-green-400 text-sm flex items-center gap-1">
                                 <i className="fa-solid fa-circle-check"></i> Session: {sessionId.substring(0, 8)}...
                             </span>
                         )}
                     </div>
                 </div>
 
-                <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10 mb-6">
-                    <h2 className="text-lg font-semibold text-white mb-4">2. 拉取待审批列表</h2>
+                <div className="bg-panel rounded-xl p-6 border border-line mb-6">
+                    <h2 className="text-lg font-semibold text-fg mb-4">2. 拉取待审批列表</h2>
                     <div className="flex gap-3 items-end">
                         <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-300 mb-1">站点 URL</label>
+                            <label className="block text-sm font-medium text-fg-2 mb-1">站点 URL</label>
                             <input
                                 type="text"
                                 value={siteUrl}
                                 onChange={e => setSiteUrl(e.target.value)}
-                                className="w-full bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5"
+                                className="w-full bg-sunken border border-line text-fg text-sm rounded-lg focus:ring-accent focus:border-accent-line p-2.5"
                                 placeholder="https://your-site.wikidot.com"
                             />
                         </div>
                         <button
                             onClick={handleFetchList}
                             disabled={loading || !sessionId}
-                            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                            className="px-5 py-2.5 bg-accent-solid hover:bg-accent-solid-hover disabled:opacity-50 text-accent-fg text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
                         >
                             {loading ? '加载中...' : '拉取列表'}
                         </button>
@@ -219,14 +219,14 @@ export default function MembershipApply() {
                 </div>
 
                 {applications.length > 0 && (
-                    <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10">
+                    <div className="bg-panel rounded-xl p-6 border border-line">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-white">
-                                3. 审批操作 <span className="text-sm font-normal text-gray-400">({applications.length} 条申请)</span>
+                            <h2 className="text-lg font-semibold text-fg">
+                                3. 审批操作 <span className="text-sm font-normal text-fg-3">({applications.length} 条申请)</span>
                             </h2>
                             <button
                                 onClick={toggleAll}
-                                className="text-sm text-indigo-400 hover:text-indigo-300"
+                                className="text-sm text-accent hover:text-accent-hover"
                             >
                                 {selected.size === applications.length ? '取消全选' : '全选'}
                             </button>
@@ -238,37 +238,37 @@ export default function MembershipApply() {
                                     key={idx}
                                     className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                                         selected.has(idx)
-                                            ? 'bg-indigo-900/20 border-indigo-500/50'
-                                            : 'bg-gray-900/40 border-gray-700/50 hover:border-gray-600'
+                                            ? 'bg-accent-soft border-accent-line'
+                                            : 'bg-sunken border-line hover:border-line-strong'
                                     }`}
                                 >
                                     <input
                                         type="checkbox"
                                         checked={selected.has(idx)}
                                         onChange={() => toggleSelect(idx)}
-                                        className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-indigo-600 focus:ring-indigo-500"
+                                        className="w-4 h-4 rounded border-line bg-sunken text-accent focus:ring-accent"
                                     />
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-sm font-medium text-white">{app.userName}</div>
-                                        <div className="text-xs text-gray-500 flex gap-3">
+                                        <div className="text-sm font-medium text-fg">{app.userName}</div>
+                                        <div className="text-xs text-fg-3 flex gap-3">
                                             {app.date && <span>{app.date}</span>}
                                             {app.comment && <span className="truncate">理由: {app.comment}</span>}
                                         </div>
                                     </div>
                                     {app.userId && (
-                                        <span className="text-xs text-gray-600 font-mono">#{app.userId}</span>
+                                        <span className="text-xs text-fg-3 font-mono">#{app.userId}</span>
                                     )}
                                 </label>
                             ))}
                         </div>
 
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-300 mb-1">拒绝理由（仅拒绝时使用）</label>
+                            <label className="block text-sm font-medium text-fg-2 mb-1">拒绝理由（仅拒绝时使用）</label>
                             <input
                                 type="text"
                                 value={declineReason}
                                 onChange={e => setDeclineReason(e.target.value)}
-                                className="w-full bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5"
+                                className="w-full bg-sunken border border-line text-fg text-sm rounded-lg focus:ring-accent focus:border-accent-line p-2.5"
                                 placeholder="选填"
                             />
                         </div>
@@ -277,14 +277,14 @@ export default function MembershipApply() {
                             <button
                                 onClick={() => handleProcess('accept')}
                                 disabled={processing || selected.size === 0}
-                                className="flex-1 px-5 py-2.5 bg-green-600 hover:bg-green-500 disabled:bg-gray-700 text-white text-sm font-bold rounded-lg transition-colors"
+                                className="flex-1 px-5 py-2.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition-colors"
                             >
                                 {processing ? '处理中...' : `批量通过 (${selected.size})`}
                             </button>
                             <button
                                 onClick={() => handleProcess('decline')}
                                 disabled={processing || selected.size === 0}
-                                className="flex-1 px-5 py-2.5 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 text-white text-sm font-bold rounded-lg transition-colors"
+                                className="flex-1 px-5 py-2.5 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition-colors"
                             >
                                 {processing ? '处理中...' : `批量拒绝 (${selected.size})`}
                             </button>

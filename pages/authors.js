@@ -6,10 +6,79 @@ import dynamic from 'next/dynamic';
 
 const config = require('../wikitdb.config.js');
 
-const AuthorActivityChart = dynamic(() => import('../components/AuthorActivityChart'), { 
+const AuthorActivityChart = dynamic(() => import('../components/AuthorActivityChart'), {
     ssr: false,
-    loading: () => <div className="flex items-center justify-center h-full text-gray-500 text-sm">正在加载图表引擎...</div>
+    loading: () => <div className="flex h-full items-center justify-center text-sm text-fg-3">正在加载图表引擎...</div>
 });
+
+// 评分正负的功能色（沿用全站惯例），零值为弱化文字
+const ratingColor = (v) =>
+    v > 0 ? 'text-emerald-600 dark:text-emerald-500'
+        : v < 0 ? 'text-red-600 dark:text-red-500'
+            : 'text-fg-3';
+
+const fmtSigned = (v) => (v > 0 ? `+${v}` : `${v}`);
+
+// 统计小指标：值加载前显示占位符
+const Stat = ({ label, value, valueClass = 'text-fg' }) => (
+    <div className="min-w-0">
+        <div className={`truncate font-mono text-lg font-semibold tabular-nums ${valueClass}`}>
+            {typeof value === 'number' ? value.toLocaleString() : (value ?? '—')}
+        </div>
+        <div className="mt-0.5 text-xs text-fg-3">{label}</div>
+    </div>
+);
+
+// 区块小标题：图标 + 文案
+const GroupTitle = ({ icon, children }) => (
+    <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-fg">
+        <span className="flex h-6 w-6 items-center justify-center rounded bg-sunken text-[10px] text-fg-2">
+            <i className={`fa-solid ${icon}`}></i>
+        </span>
+        {children}
+    </h3>
+);
+
+// 面板标题行：面板顶部的标题 + 右侧可选操作区
+const PanelHeader = ({ icon, children, extra }) => (
+    <div className="flex flex-col gap-3 border-b border-line p-4 sm:flex-row sm:items-center sm:justify-between">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
+            <span className="flex h-6 w-6 items-center justify-center rounded bg-sunken text-[10px] text-fg-2">
+                <i className={`fa-solid ${icon}`}></i>
+            </span>
+            {children}
+        </h3>
+        {extra}
+    </div>
+);
+
+// 分页按钮（与 pages.js 吸顶工具栏同款）
+const PagerButton = ({ icon, label, disabled, onClick }) => (
+    <button
+        type="button"
+        aria-label={label}
+        title={label}
+        disabled={disabled}
+        onClick={onClick}
+        className="flex h-8 w-8 items-center justify-center rounded border border-line bg-panel text-xs text-fg-2 transition-colors hover:border-line-strong hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
+    >
+        <i className={`fa-solid ${icon}`}></i>
+    </button>
+);
+
+// 排名徽章：前三名奖牌色，其余弱化
+const RankBadge = ({ rank }) => {
+    const cls =
+        rank === 1 ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+            : rank === 2 ? 'bg-zinc-500/15 text-zinc-600 dark:text-zinc-300'
+                : rank === 3 ? 'bg-orange-500/15 text-orange-600 dark:text-orange-400'
+                    : 'text-fg-3';
+    return (
+        <span className={`flex h-6 w-6 items-center justify-center rounded-sm font-mono text-xs font-semibold ${cls}`}>
+            {rank}
+        </span>
+    );
+};
 
 const AuthorProfile = () => {
     const router = useRouter();
@@ -34,13 +103,13 @@ const AuthorProfile = () => {
             fetchAuthorData(name);
         } else {
             setData(null);
-            
+
             if (search) {
                 setSearchInput(search);
             } else if (!search && !name) {
                 setSearchInput('');
             }
-            
+
             if (!rankingCache[activeTab]) {
                 fetchRankingData(activeTab);
             }
@@ -76,15 +145,15 @@ const AuthorProfile = () => {
     const fetchRankingData = async (tabParam) => {
         setLoading(true);
         setError(null);
-        
+
         try {
             const res = await fetch(`/api/ranking?site=${tabParam}`);
             const result = await res.json();
-            
+
             if (!res.ok) {
                 throw new Error(result.details || result.error || '获取排行榜失败');
             }
-            
+
             setRankingCache(prev => ({
                 ...prev,
                 [tabParam]: result.ranking
@@ -112,7 +181,7 @@ const AuthorProfile = () => {
     };
 
     const currentRankingList = rankingCache[activeTab] || [];
-    
+
     let displayedRankingList = currentRankingList;
     if (!name && search) {
         const lowerSearch = search.toLowerCase();
@@ -132,8 +201,8 @@ const AuthorProfile = () => {
     }
 
     const displayedPages = data && data.pages ? (
-        filterSite === 'all' 
-            ? data.pages 
+        filterSite === 'all'
+            ? data.pages
             : data.pages.filter(page => page.wiki === filterSite)
     ) : [];
 
@@ -143,414 +212,452 @@ const AuthorProfile = () => {
                 <title>{data ? `${data.name} 的主页 - ${config.SITE_NAME}` : `作者查询与排行 - ${config.SITE_NAME}`}</title>
             </Head>
 
-            <div className="py-8">
-                <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-700 pb-6">
-                    <h1 className="text-3xl font-bold text-white">
-                        {name ? '作者信息' : search ? '搜索结果' : '作者评分排行榜'}
-                    </h1>
-                    
-                    <form onSubmit={handleSearch} className="relative w-full sm:w-80">
-                        <input
-                            type="text"
-                            placeholder="输入 Wikidot 用户名模糊搜索..."
-                            value={searchInput}
-                            onChange={(e) => setSearchInput(e.target.value)}
-                            className="w-full bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 placeholder-gray-500 transition-colors"
-                        />
-                        <button type="submit" className="absolute right-2.5 bottom-2 text-gray-400 hover:text-white">
-                            搜索
-                        </button>
-                    </form>
-                </div>
-
-                {loading && (
-                    <div className="text-gray-400 flex items-center justify-center py-12">
-                        正在加载数据...
-                    </div>
-                )}
-
-                {error && (
-                    <div className="text-red-400 bg-red-900/20 p-4 rounded-lg border border-red-900/50">
-                        检索失败: {error}
-                    </div>
-                )}
-
-                {data && !loading && (
-                    <div className="space-y-8">
-                        <div className="flex items-center gap-6">
-                            <img 
-                                src={data.avatar} 
-                                alt={data.name} 
-                                className="w-24 h-24 rounded-lg object-cover border-2 border-gray-700 bg-gray-900"
-                                onError={(e) => { e.target.src = 'https://www.wikidot.com/local--favicon/favicon.gif'; }}
-                            />
-                            <div>
-                                <h2 className="text-3xl font-bold text-white mb-2">{data.name}</h2>
-                                <div className="text-sm text-gray-400">
-                                    数据同步自 Wikit GraphQL 数据库
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10">
-                            <h3 className="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">全站数据总览</h3>
-                            <p className="text-gray-300 leading-relaxed mb-6">
-                                <span className="font-semibold text-indigo-400">{data.name}</span> 在所有站点中全局排名 <span className="font-semibold text-white">#{data.globalRank}</span>。
-                                共计拥有 <span className="font-semibold text-white">{data.totalPages}</span> 个页面，
-                                累计总评分为 <span className="font-semibold text-green-400">{data.totalRating > 0 ? `+${data.totalRating}` : data.totalRating}</span>，
-                                平均评分为 <span className="font-semibold text-white">{data.averageRating > 0 ? `+${data.averageRating}` : data.averageRating}</span>。
+            <div className="py-10">
+                <div className="max-w-5xl mx-auto px-2 sm:px-0">
+                    {/* 页头：标题 + 作者搜索 */}
+                    <header className="mb-8 flex flex-col gap-4 border-b border-line pb-6 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-tight text-fg">
+                                {name ? '作者信息' : search ? '搜索结果' : '作者排行'}
+                            </h1>
+                            <p className="mt-2 text-sm text-fg-3">
+                                {name ? '跨站点聚合的作者档案与活动数据。' : '按站点浏览活跃作者的评分排行，或搜索作者查看完整档案。'}
                             </p>
+                        </div>
+                        <form onSubmit={handleSearch} className="relative w-full shrink-0 sm:w-72">
+                            <i className="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-fg-3"></i>
+                            <input
+                                type="text"
+                                placeholder="输入 Wikidot 用户名..."
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                                className="w-full rounded border border-line bg-panel py-2 pl-9 pr-16 text-sm text-fg transition-colors placeholder:text-fg-3 focus:border-accent-line focus:outline-none"
+                            />
+                            <button
+                                type="submit"
+                                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded bg-accent-solid px-2.5 py-1 text-xs font-medium text-accent-fg transition-colors hover:bg-accent-solid-hover"
+                            >
+                                搜索
+                            </button>
+                        </form>
+                    </header>
 
+                    {error && (
+                        <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-600 dark:text-red-400">
+                            <i className="fa-solid fa-circle-exclamation mr-2"></i>检索失败：{error}
+                        </div>
+                    )}
+
+                    {/* 加载骨架（仅作者档案模式；排行榜模式的骨架放在下方站点按钮之后） */}
+                    {name && loading && (
+                        <div className="animate-pulse space-y-4" aria-hidden="true">
+                            <div className="h-24 rounded-lg border border-line bg-panel"></div>
+                            <div className="h-72 rounded-lg border border-line bg-panel"></div>
+                        </div>
+                    )}
+
+                    {data && !loading && (
+                        <div className="space-y-6">
+                            {/* 档案头：头像 + 关键指标 */}
+                            <section className="rounded-lg border border-line bg-panel p-4 sm:p-5">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                                    <img
+                                        src={data.avatar || 'https://www.wikidot.com/local--favicon/favicon.gif'}
+                                        alt={data.name}
+                                        className="h-16 w-16 shrink-0 rounded border border-line bg-sunken object-cover"
+                                        onError={(e) => { e.target.src = 'https://www.wikidot.com/local--favicon/favicon.gif'; }}
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                        <h2 className="truncate text-2xl font-bold text-fg">{data.name}</h2>
+                                        <p className="mt-1 text-xs text-fg-3">数据同步自 Wikit GraphQL 数据库</p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-6 border-t border-line pt-3 sm:border-0 sm:pt-0">
+                                        <Stat label="全局排名" value={`#${data.globalRank}`} />
+                                        <Stat label="页面总数" value={data.totalPages} />
+                                        <Stat label="累计评分" value={fmtSigned(data.totalRating)} valueClass={ratingColor(data.totalRating)} />
+                                        <Stat label="平均评分" value={fmtSigned(data.averageRating)} valueClass={ratingColor(data.averageRating)} />
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* 归属资料 */}
                             {data.attribution && data.attribution.pages > 0 && (
-                                <div className="mb-6 rounded-lg border border-emerald-900/50 bg-emerald-950/30 p-4">
-                                    <p className="text-gray-300 leading-relaxed">
-                                        <span className="font-semibold text-emerald-400">归属资料</span>登记名下
-                                        <span className="font-semibold text-white"> {data.attribution.pages} </span>
-                                        个归属页面，归属总评分为
-                                        <span className="font-semibold text-emerald-400"> {data.attribution.score > 0 ? `+${data.attribution.score}` : data.attribution.score} </span>
-                                        （平均 <span className="font-semibold text-white">{data.attribution.average > 0 ? `+${data.attribution.average}` : data.attribution.average}</span>）。
+                                <div className="flex items-start gap-2 rounded-lg border border-emerald-600/30 bg-emerald-600/5 p-4 text-sm leading-relaxed text-emerald-700 dark:text-emerald-400">
+                                    <i className="fa-solid fa-id-card mt-0.5 shrink-0"></i>
+                                    <p>
+                                        归属资料登记名下 <span className="font-semibold">{data.attribution.pages}</span> 个归属页面，
+                                        归属总评分 <span className="font-semibold">{fmtSigned(data.attribution.score)}</span>
+                                        （平均 {fmtSigned(data.attribution.average)}）。
                                     </p>
                                 </div>
                             )}
 
+                            {/* 站点数据分布 */}
                             {data.siteStats && data.siteStats.length > 0 && (
-                                <>
-                                    <h4 className="text-lg font-medium text-white mb-3">所属站点数据分布：</h4>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                <section>
+                                    <GroupTitle icon="fa-server">站点数据分布</GroupTitle>
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                         {data.siteStats.map((site, index) => {
                                             const siteConfig = config.SUPPORT_WIKI.find(w => w.WIKIT_ID === site.wiki || w.NAME === site.wiki);
                                             const siteName = siteConfig ? siteConfig.NAME : site.wiki;
                                             return (
-                                                <div key={index} className="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
-                                                    <div className="font-medium text-indigo-400 mb-2 truncate" title={siteName}>{siteName}</div>
-                                                    <div className="text-sm text-gray-400 space-y-1">
-                                                        <div className="flex justify-between"><span>站点排名:</span> <span className="text-white font-medium">#{site.rank}</span></div>
-                                                        <div className="flex justify-between"><span>页面总数:</span> <span className="text-white">{site.count}</span></div>
-                                                        <div className="flex justify-between">
-                                                            <span>站点总分:</span> 
-                                                            <span className={`font-medium ${site.rating > 0 ? 'text-green-400' : site.rating < 0 ? 'text-red-400' : 'text-gray-300'}`}>
-                                                                {site.rating > 0 ? `+${site.rating}` : site.rating}
-                                                            </span>
-                                                        </div>
+                                                <div key={index} className="rounded-lg border border-line bg-panel p-4">
+                                                    <div className="mb-2 truncate text-sm font-medium text-fg" title={siteName}>{siteName}</div>
+                                                    <div className="space-y-1 text-xs">
+                                                        <div className="flex justify-between"><span className="text-fg-3">站点排名</span><span className="font-mono font-medium text-fg">#{site.rank}</span></div>
+                                                        <div className="flex justify-between"><span className="text-fg-3">页面总数</span><span className="font-mono text-fg">{site.count}</span></div>
+                                                        <div className="flex justify-between"><span className="text-fg-3">站点总分</span><span className={`font-mono font-medium ${ratingColor(site.rating)}`}>{fmtSigned(site.rating)}</span></div>
                                                     </div>
                                                 </div>
                                             );
                                         })}
                                     </div>
-                                </>
+                                </section>
                             )}
 
+                            {/* 归属站点分数分布 */}
                             {data.attribution && data.attribution.sites && data.attribution.sites.length > 0 && (
-                                <div className="mt-6">
-                                    <h4 className="text-lg font-medium text-white mb-3">归属站点分数分布（来自站点归属资料页）：</h4>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                <section>
+                                    <GroupTitle icon="fa-id-card">归属站点分数分布（来自站点归属资料页）</GroupTitle>
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                         {data.attribution.sites.map((site, index) => (
-                                            <div key={index} className="bg-emerald-950/30 p-4 rounded-lg border border-emerald-900/40">
-                                                <div className="font-medium text-emerald-400 mb-2 truncate" title={site.siteName}>{site.siteName}</div>
-                                                <div className="text-sm text-gray-400 space-y-1">
-                                                    <div className="flex justify-between"><span>归属页面:</span> <span className="text-white">{site.pages}</span></div>
-                                                    <div className="flex justify-between">
-                                                        <span>归属总分:</span>
-                                                        <span className={`font-medium ${site.score > 0 ? 'text-emerald-400' : site.score < 0 ? 'text-red-400' : 'text-gray-300'}`}>
-                                                            {site.score > 0 ? `+${site.score}` : site.score}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span>平均:</span>
-                                                        <span className={`font-medium ${site.average > 0 ? 'text-emerald-400' : site.average < 0 ? 'text-red-400' : 'text-gray-300'}`}>
-                                                            {site.average > 0 ? `+${site.average}` : site.average}
-                                                        </span>
-                                                    </div>
+                                            <div key={index} className="rounded-lg border border-emerald-600/25 bg-panel p-4">
+                                                <div className="mb-2 truncate text-sm font-medium text-emerald-700 dark:text-emerald-400" title={site.siteName}>{site.siteName}</div>
+                                                <div className="space-y-1 text-xs">
+                                                    <div className="flex justify-between"><span className="text-fg-3">归属页面</span><span className="font-mono text-fg">{site.pages}</span></div>
+                                                    <div className="flex justify-between"><span className="text-fg-3">归属总分</span><span className={`font-mono font-medium ${ratingColor(site.score)}`}>{fmtSigned(site.score)}</span></div>
+                                                    <div className="flex justify-between"><span className="text-fg-3">平均</span><span className={`font-mono font-medium ${ratingColor(site.average)}`}>{fmtSigned(site.average)}</span></div>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-                                </div>
+                                </section>
                             )}
-                        </div>
 
-                        {data.pages && data.pages.length > 0 && (
-                            <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10">
-                                <h3 className="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">作者活力图</h3>
-                                <div className="h-[280px] w-full">
-                                    <AuthorActivityChart pages={data.pages} />
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10 flex flex-col">
-                                <h3 className="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">最喜欢的作者</h3>
-                                {data.favoriteAuthors && data.favoriteAuthors.length > 0 ? (
-                                    <div className="space-y-3 flex-1">
-                                        {data.favoriteAuthors.slice(0, 10).map((author, idx) => {
-                                            const maxScore = data.favoriteAuthors[0].positiveVotes;
-                                            const percentage = Math.max(5, (author.positiveVotes / maxScore) * 100);
-                                            return (
-                                                <div key={idx} className="flex items-center gap-3">
-                                                    <span className="w-6 text-xs text-gray-500 text-right shrink-0">#{author.rank}</span>
-                                                    <Link href={`/authors?name=${encodeURIComponent(author.name)}`} className="w-1/4 text-sm font-medium text-indigo-400 hover:text-indigo-300 truncate">
-                                                        {author.name}
-                                                    </Link>
-                                                    <div className="flex-1 h-6 bg-gray-900 rounded overflow-hidden flex items-center relative">
-                                                        <div className="h-full bg-indigo-600/40 border-r border-indigo-500/50 rounded-r transition-all duration-500" style={{ width: `${percentage}%` }}></div>
-                                                        <span className="text-xs text-gray-200 absolute left-2 font-medium">+{author.positiveVotes} / -{author.negativeVotes}</span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                            {/* 作者活力图 */}
+                            {data.pages && data.pages.length > 0 && (
+                                <section className="overflow-hidden rounded-lg border border-line bg-panel">
+                                    <PanelHeader icon="fa-chart-line">作者活力图</PanelHeader>
+                                    <div className="h-[280px] w-full p-4">
+                                        <AuthorActivityChart pages={data.pages} />
                                     </div>
-                                ) : (
-                                    <div className="text-sm text-gray-500 py-8 flex-1 flex items-center justify-center bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
-                                        数据源暂时不可用（Wikit 接口超时或异常）
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10 flex flex-col">
-                                <h3 className="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">最近的投票</h3>
-                                {data.voteRecords && data.voteRecords.length > 0 ? (
-                                    <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] pr-2">
-                                        {data.voteRecords.map((vote, idx) => {
-                                            const voteLabel = vote.type === 'cancel' ? '撤票' : vote.new === 1 ? '+1' : vote.new === -1 ? '-1' : vote.type;
-                                            const isUp = vote.new === 1;
-                                            const isCancel = vote.type === 'cancel';
-                                            const colorClass = isCancel ? 'bg-gray-500/10 text-gray-400 border border-gray-500/20' : isUp ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20';
-                                            const timeStr = vote.time ? new Date(vote.time).toLocaleDateString('zh-CN') : '';
-                                            const siteConfig = config.SUPPORT_WIKI.find(w => w.WIKIT_ID === vote.wiki);
-                                            const siteParam = siteConfig ? siteConfig.PARAM : vote.wiki;
-                                            return (
-                                                <div key={idx} className="flex items-center justify-between gap-3 text-sm bg-gray-900/40 p-2.5 rounded hover:bg-gray-800/80 transition-colors border border-gray-700/30">
-                                                    <div className="flex items-center gap-3 overflow-hidden">
-                                                        <span className={`font-bold px-2 py-0.5 rounded text-xs shrink-0 ${colorClass}`}>
-                                                            {voteLabel}
-                                                        </span>
-                                                        <Link href={`/page?site=${siteParam}&page=${encodeURIComponent(vote.page)}`} className="text-indigo-400 hover:text-indigo-300 font-medium truncate">
-                                                            {vote.title || vote.page}
-                                                        </Link>
-                                                    </div>
-                                                    <span className="text-gray-500 shrink-0 text-xs">{timeStr}</span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <div className="text-sm text-gray-500 py-8 flex-1 flex items-center justify-center bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
-                                        数据源暂时不可用（Wikit 接口超时或异常）
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="bg-gray-800/50 rounded-xl p-6 border border-white/10">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 border-b border-gray-700 pb-2">
-                                <h3 className="text-xl font-semibold text-white">
-                                    所有发布页面 <span className="text-sm font-normal text-gray-400">(按创建时间倒序)</span>
-                                </h3>
-                                
-                                {Object.keys(siteCounts).length > 0 && (
-                                    <select
-                                        value={filterSite}
-                                        onChange={(e) => setFilterSite(e.target.value)}
-                                        className="bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 outline-none cursor-pointer transition-colors"
-                                    >
-                                        <option value="all">全站总览</option>
-                                        {Object.entries(siteCounts).map(([wikiId, count]) => {
-                                            const siteConfig = config.SUPPORT_WIKI.find(w => w.WIKIT_ID === wikiId || (w.URL && w.URL.includes(wikiId)));
-                                            const siteName = siteConfig ? siteConfig.NAME : wikiId;
-                                            return (
-                                                <option key={wikiId} value={wikiId}>
-                                                    {siteName} ({count} 篇)
-                                                </option>
-                                            );
-                                        })}
-                                    </select>
-                                )}
-                            </div>
-                            
-                            {displayedPages.length > 0 ? (
-                                <div className="space-y-4">
-                                    {displayedPages.map((page, index) => {
-                                        const siteConfig = config.SUPPORT_WIKI.find(w => w.WIKIT_ID === page.wiki || (w.URL && w.URL.includes(page.wiki)));
-                                        const siteParam = siteConfig ? siteConfig.PARAM : page.wiki;
-                                        
-                                        const dateStr = page.created_at && page.created_at.includes('T') 
-                                            ? page.created_at.split('T')[0] 
-                                            : (page.created_at || '未知时间');
-
-                                        return (
-                                            <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-gray-900/50 rounded-lg border border-gray-700/50 hover:border-gray-600 transition-colors">
-                                                <div className="flex-1 min-w-0 pr-4">
-                                                    <div className="flex items-baseline flex-wrap gap-2">
-                                                        <Link 
-                                                            href={`/page?site=${siteParam}&page=${encodeURIComponent(page.page)}`}
-                                                            className="text-lg font-medium text-indigo-400 hover:text-indigo-300 hover:underline truncate"
-                                                        >
-                                                            {page.title || page.page}
-                                                        </Link>
-                                                        <span className={`text-sm font-semibold whitespace-nowrap ${page.rating > 0 ? 'text-green-400' : page.rating < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                                                            ({page.rating > 0 ? `+${page.rating}` : page.rating})
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-xs text-gray-500 mt-1 truncate">
-                                                        发布于 {dateStr} • 所在站点: {page.wiki}
-                                                    </div>
-                                                </div>
-                                                
-                                                <a 
-                                                    href={`http://${page.wiki}.wikidot.com/${page.page}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-xs px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-600 transition-colors whitespace-nowrap text-center shrink-0"
-                                                >
-                                                    在原站打开
-                                                </a>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <div className="text-gray-500 text-center py-8">
-                                    该站点下未找到任何页面。
-                                </div>
+                                </section>
                             )}
-                        </div>
-                    </div>
-                )}
 
-                {!name && !loading && (
-                    <div className="space-y-6">
-                        <div className="flex flex-wrap gap-4 border-b border-gray-700 pb-4">
-                            <button
-                                onClick={() => handleTabClick('global')}
-                                className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                                    activeTab === 'global'
-                                        ? 'bg-indigo-600 text-white'
-                                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                                }`}
-                            >
-                                全站总排行
-                            </button>
-                            
-                            {config.SUPPORT_WIKI.map((site) => (
-                                <button
-                                    key={site.PARAM}
-                                    onClick={() => handleTabClick(site.PARAM)}
-                                    className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                                        activeTab === site.PARAM
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                                    }`}
-                                >
-                                    {site.NAME}
-                                </button>
-                            ))}
-                        </div>
-
-                        {search && (
-                            <div className="text-sm text-gray-400">
-                                正在当前排行榜中为您模糊匹配包含 <span className="text-indigo-400 font-bold">{search}</span> 的作者：
-                            </div>
-                        )}
-
-                        <div className="bg-gray-800/50 rounded-xl border border-white/10 overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="bg-gray-900/50 border-b border-gray-700 text-gray-400 text-sm">
-                                            <th className="p-4 font-medium w-24">原排名</th>
-                                            <th className="p-4 font-medium">作者</th>
-                                            <th className="p-4 font-medium text-right">总评分</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {paginatedList && paginatedList.length > 0 ? (
-                                            paginatedList.map((author, index) => (
-                                                <tr key={index} className="border-b border-gray-700/50 hover:bg-gray-700/20 transition-colors">
-                                                    <td className="p-4">
-                                                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
-                                                            author.rank === 1 ? 'bg-yellow-500/20 text-yellow-500' :
-                                                            author.rank === 2 ? 'bg-gray-300/20 text-gray-300' :
-                                                            author.rank === 3 ? 'bg-orange-400/20 text-orange-400' :
-                                                            'bg-gray-800 text-gray-400'
-                                                        }`}>
-                                                            {author.rank}
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-4 font-medium">
-                                                        <Link 
+                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                                {/* 最喜欢的作者 */}
+                                <section className="flex flex-col overflow-hidden rounded-lg border border-line bg-panel">
+                                    <PanelHeader icon="fa-heart">最喜欢的作者</PanelHeader>
+                                    {data.favoriteAuthors && data.favoriteAuthors.length > 0 ? (
+                                        <ul className="flex-1 divide-y divide-line">
+                                            {data.favoriteAuthors.slice(0, 10).map((author, idx) => {
+                                                const maxScore = data.favoriteAuthors[0].positiveVotes;
+                                                const percentage = Math.max(5, (author.positiveVotes / maxScore) * 100);
+                                                return (
+                                                    <li key={idx} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-sunken">
+                                                        <span className="w-8 shrink-0 text-right font-mono text-xs tabular-nums text-fg-3">#{author.rank}</span>
+                                                        <Link
                                                             href={`/authors?name=${encodeURIComponent(author.name)}`}
-                                                            className="text-indigo-400 hover:text-indigo-300 transition-colors"
+                                                            className="w-28 shrink-0 truncate text-sm font-medium text-fg transition-colors hover:text-accent"
                                                         >
                                                             {author.name}
                                                         </Link>
-                                                    </td>
-                                                    <td className={`p-4 text-right font-semibold ${author.value > 0 ? 'text-green-400' : author.value < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                                                        {author.value > 0 ? `+${author.value}` : author.value}
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan="3" className="p-12 text-center">
-                                                    {search ? (
-                                                        <div className="flex flex-col items-center justify-center space-y-3">
-                                                            <div className="text-gray-400">
-                                                                当前排行榜中未找到包含 <span className="text-white font-bold">{search}</span> 的活跃作者。
-                                                            </div>
-                                                            <button 
-                                                                onClick={() => router.push(`/authors?name=${encodeURIComponent(search)}`)}
-                                                                className="mt-4 px-6 py-2.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-lg hover:bg-indigo-600/30 transition-colors font-medium"
-                                                            >
-                                                                强制精确查找该作者主页
-                                                            </button>
+                                                        <div className="relative h-5 flex-1 overflow-hidden rounded-sm bg-sunken">
+                                                            <div
+                                                                className="h-full border-r-2 border-accent bg-accent-soft transition-all duration-500"
+                                                                style={{ width: `${percentage}%` }}
+                                                            ></div>
+                                                            <span className="absolute left-1.5 top-1/2 -translate-y-1/2 font-mono text-[10px] tabular-nums text-fg-2">
+                                                                +{author.positiveVotes} / -{author.negativeVotes}
+                                                            </span>
                                                         </div>
-                                                    ) : (
-                                                        <span className="text-gray-500">暂无排行数据或尚未加载完毕</span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    ) : (
+                                        <div className="flex flex-1 items-center justify-center p-10 text-xs text-fg-3">
+                                            数据源暂时不可用（Wikit 接口超时或异常）
+                                        </div>
+                                    )}
+                                </section>
+
+                                {/* 最近的投票 */}
+                                <section className="flex flex-col overflow-hidden rounded-lg border border-line bg-panel">
+                                    <PanelHeader icon="fa-square-poll-vertical">最近的投票</PanelHeader>
+                                    {data.voteRecords && data.voteRecords.length > 0 ? (
+                                        <ul className="max-h-[350px] flex-1 divide-y divide-line overflow-y-auto">
+                                            {data.voteRecords.map((vote, idx) => {
+                                                const voteLabel = vote.type === 'cancel' ? '撤票' : vote.new === 1 ? '+1' : vote.new === -1 ? '-1' : vote.type;
+                                                const isUp = vote.new === 1;
+                                                const isCancel = vote.type === 'cancel';
+                                                const badgeCls = isCancel
+                                                    ? 'bg-sunken text-fg-3'
+                                                    : isUp
+                                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500'
+                                                        : 'bg-red-500/10 text-red-600 dark:text-red-500';
+                                                const timeStr = vote.time ? new Date(vote.time).toLocaleDateString('zh-CN') : '';
+                                                const siteConfig = config.SUPPORT_WIKI.find(w => w.WIKIT_ID === vote.wiki);
+                                                const siteParam = siteConfig ? siteConfig.PARAM : vote.wiki;
+                                                return (
+                                                    <li key={idx} className="flex items-center justify-between gap-3 px-4 py-2.5 transition-colors hover:bg-sunken">
+                                                        <div className="flex min-w-0 items-center gap-3">
+                                                            <span className={`shrink-0 rounded-sm px-1.5 py-0.5 font-mono text-xs font-semibold ${badgeCls}`}>
+                                                                {voteLabel}
+                                                            </span>
+                                                            <Link
+                                                                href={`/page?site=${siteParam}&page=${encodeURIComponent(vote.page)}`}
+                                                                className="truncate text-sm font-medium text-fg transition-colors hover:text-accent"
+                                                            >
+                                                                {vote.title || vote.page}
+                                                            </Link>
+                                                        </div>
+                                                        <span className="shrink-0 font-mono text-xs tabular-nums text-fg-3">{timeStr}</span>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    ) : (
+                                        <div className="flex flex-1 items-center justify-center p-10 text-xs text-fg-3">
+                                            数据源暂时不可用（Wikit 接口超时或异常）
+                                        </div>
+                                    )}
+                                </section>
                             </div>
-                            
-                            {search && displayedRankingList.length > 0 && (
-                                <div className="p-4 bg-gray-900/50 border-t border-gray-700 flex flex-col sm:flex-row items-center justify-center gap-3">
-                                    <span className="text-sm text-gray-400">以上没有你想找的作者？</span>
-                                    <button
-                                        onClick={() => router.push(`/authors?name=${encodeURIComponent(search)}`)}
-                                        className="text-sm px-4 py-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded hover:bg-indigo-600/30 transition-colors"
-                                    >
-                                        精确查找作者
-                                    </button>
+
+                            {/* 所有发布页面 */}
+                            <section className="overflow-hidden rounded-lg border border-line bg-panel">
+                                <PanelHeader
+                                    icon="fa-file-lines"
+                                    extra={Object.keys(siteCounts).length > 0 && (
+                                        <select
+                                            value={filterSite}
+                                            onChange={(e) => setFilterSite(e.target.value)}
+                                            className="cursor-pointer rounded border border-line bg-panel px-2 py-1.5 text-sm text-fg transition-colors focus:border-accent-line focus:outline-none"
+                                        >
+                                            <option value="all">全站总览</option>
+                                            {Object.entries(siteCounts).map(([wikiId, count]) => {
+                                                const siteConfig = config.SUPPORT_WIKI.find(w => w.WIKIT_ID === wikiId || (w.URL && w.URL.includes(wikiId)));
+                                                const siteName = siteConfig ? siteConfig.NAME : wikiId;
+                                                return (
+                                                    <option key={wikiId} value={wikiId}>
+                                                        {siteName}（{count} 篇）
+                                                    </option>
+                                                );
+                                            })}
+                                        </select>
+                                    )}
+                                >
+                                    所有发布页面
+                                    <span className="text-xs font-normal text-fg-3">（按创建时间倒序）</span>
+                                </PanelHeader>
+
+                                {displayedPages.length > 0 ? (
+                                    <ul className="divide-y divide-line">
+                                        {displayedPages.map((page, index) => {
+                                            const siteConfig = config.SUPPORT_WIKI.find(w => w.WIKIT_ID === page.wiki || (w.URL && w.URL.includes(page.wiki)));
+                                            const siteParam = siteConfig ? siteConfig.PARAM : page.wiki;
+
+                                            const dateStr = page.created_at && page.created_at.includes('T')
+                                                ? page.created_at.split('T')[0]
+                                                : (page.created_at || '未知时间');
+
+                                            return (
+                                                <li key={index} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-sunken">
+                                                    <div className="min-w-0 flex-1">
+                                                        <Link
+                                                            href={`/page?site=${siteParam}&page=${encodeURIComponent(page.page)}`}
+                                                            className="block truncate text-sm font-medium text-fg transition-colors hover:text-accent"
+                                                        >
+                                                            {page.title || page.page}
+                                                        </Link>
+                                                        <div className="mt-0.5 truncate font-mono text-xs text-fg-3">
+                                                            {dateStr} · {page.wiki}
+                                                        </div>
+                                                    </div>
+                                                    <span className={`w-14 shrink-0 text-right font-mono text-sm font-medium tabular-nums ${ratingColor(page.rating)}`}>
+                                                        {fmtSigned(page.rating)}
+                                                    </span>
+                                                    <a
+                                                        href={`http://${page.wiki}.wikidot.com/${page.page}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        title="在原站打开"
+                                                        aria-label="在原站打开"
+                                                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-line text-fg-3 transition-colors hover:border-accent-line hover:text-accent"
+                                                    >
+                                                        <i className="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                                                    </a>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                ) : (
+                                    <div className="p-10 text-center text-sm text-fg-3">
+                                        该站点下未找到任何页面。
+                                    </div>
+                                )}
+                            </section>
+                        </div>
+                    )}
+
+                    {!name && (
+                        <div className="space-y-4">
+                            {/* 站点选择 chip 组 */}
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    onClick={() => handleTabClick('global')}
+                                    aria-pressed={activeTab === 'global'}
+                                    className={`flex items-center gap-2 rounded border px-3 py-1.5 text-sm transition-colors ${
+                                        activeTab === 'global'
+                                            ? 'border-accent-line bg-accent-soft font-medium text-accent'
+                                            : 'border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg'
+                                    }`}
+                                >
+                                    <i className="fa-solid fa-globe text-xs"></i>
+                                    全站总排行
+                                </button>
+
+                                {config.SUPPORT_WIKI.map((site) => {
+                                    const active = activeTab === site.PARAM;
+                                    return (
+                                        <button
+                                            key={site.PARAM}
+                                            onClick={() => handleTabClick(site.PARAM)}
+                                            aria-pressed={active}
+                                            className={`flex items-center gap-2 rounded border px-3 py-1.5 text-sm transition-colors ${
+                                                active
+                                                    ? 'border-accent-line bg-accent-soft font-medium text-accent'
+                                                    : 'border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg'
+                                            }`}
+                                        >
+                                            <img
+                                                src={site.ImgURL}
+                                                alt=""
+                                                aria-hidden="true"
+                                                className="h-4 w-4 object-contain"
+                                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                            />
+                                            {site.NAME}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* 排行加载骨架：位于站点按钮组下方，占据原吸顶工具栏 + 排行表格的位置 */}
+                            {loading && (
+                                <div className="animate-pulse space-y-4" aria-hidden="true">
+                                    <div className="h-11 rounded-lg border border-line bg-panel"></div>
+                                    <div className="h-80 rounded-lg border border-line bg-panel"></div>
                                 </div>
                             )}
 
-                            {totalPages > 1 && (
-                                <div className="p-4 bg-gray-900/50 border-t border-gray-700 flex items-center justify-center gap-2">
-                                    <button
-                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                        disabled={currentPage === 1}
-                                        className="px-3 py-1.5 text-sm rounded bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                    >
-                                        上一页
-                                    </button>
-                                    <span className="text-sm text-gray-400 px-3">
-                                        第 {currentPage} / {totalPages} 页（共 {displayedRankingList.length} 人）
+                            {/* 吸顶工具栏：匹配信息 + 计数 + 分页 */}
+                            {!loading && displayedRankingList.length > 0 && (
+                                <div className="sticky top-16 z-30 flex items-center justify-between gap-4 rounded-lg border border-line bg-panel px-4 py-2.5">
+                                    <span className="truncate font-mono text-xs tabular-nums text-fg-3">
+                                        {search ? (
+                                            <>匹配 <span className="text-accent">{search}</span> · {displayedRankingList.length} 人</>
+                                        ) : (
+                                            <>共 {displayedRankingList.length} 位活跃作者</>
+                                        )}
                                     </span>
-                                    <button
-                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                        disabled={currentPage === totalPages}
-                                        className="px-3 py-1.5 text-sm rounded bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                    >
-                                        下一页
-                                    </button>
+                                    {totalPages > 1 && (
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            <PagerButton
+                                                icon="fa-chevron-left"
+                                                label="上一页"
+                                                disabled={currentPage === 1}
+                                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            />
+                                            <span className="font-mono text-xs tabular-nums text-fg-2">
+                                                {currentPage} / {totalPages}
+                                            </span>
+                                            <PagerButton
+                                                icon="fa-chevron-right"
+                                                label="下一页"
+                                                disabled={currentPage === totalPages}
+                                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* 排行表格 */}
+                            {!loading && (
+                                <div className="overflow-hidden rounded-lg border border-line bg-panel">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-sm">
+                                            <thead>
+                                                <tr className="border-b border-line text-xs text-fg-3">
+                                                    <th className="w-20 px-4 py-2.5 font-medium">排名</th>
+                                                    <th className="px-4 py-2.5 font-medium">作者</th>
+                                                    <th className="px-4 py-2.5 text-right font-medium">总评分</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-line">
+                                                {paginatedList && paginatedList.length > 0 ? (
+                                                    paginatedList.map((author, index) => (
+                                                        <tr key={index} className="transition-colors hover:bg-sunken">
+                                                            <td className="px-4 py-2.5">
+                                                                <RankBadge rank={author.rank} />
+                                                            </td>
+                                                            <td className="px-4 py-2.5 font-medium">
+                                                                <Link
+                                                                    href={`/authors?name=${encodeURIComponent(author.name)}`}
+                                                                    className="text-fg transition-colors hover:text-accent"
+                                                                >
+                                                                    {author.name}
+                                                                </Link>
+                                                            </td>
+                                                            <td className={`px-4 py-2.5 text-right font-mono font-medium tabular-nums ${ratingColor(author.value)}`}>
+                                                                {fmtSigned(author.value)}
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan="3" className="p-16 text-center">
+                                                            {search ? (
+                                                                <div className="flex flex-col items-center gap-4">
+                                                                    <i className="fa-solid fa-user-slash text-2xl text-fg-3"></i>
+                                                                    <p className="text-sm text-fg-2">
+                                                                        当前排行榜中未找到包含 <span className="font-semibold text-fg">{search}</span> 的活跃作者
+                                                                    </p>
+                                                                    <button
+                                                                        onClick={() => router.push(`/authors?name=${encodeURIComponent(search)}`)}
+                                                                        className="rounded border border-accent-line bg-accent-soft px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent-soft"
+                                                                    >
+                                                                        强制精确查找该作者主页
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-sm text-fg-3">暂无排行数据或尚未加载完毕</span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {search && displayedRankingList.length > 0 && (
+                                        <div className="flex flex-col items-center justify-center gap-2 border-t border-line px-4 py-3 sm:flex-row">
+                                            <span className="text-xs text-fg-3">以上没有你想找的作者？</span>
+                                            <button
+                                                onClick={() => router.push(`/authors?name=${encodeURIComponent(search)}`)}
+                                                className="rounded border border-accent-line bg-accent-soft px-3 py-1 text-xs font-medium text-accent transition-colors"
+                                            >
+                                                精确查找作者
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </>
     );

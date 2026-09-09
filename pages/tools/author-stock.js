@@ -157,19 +157,19 @@ export default function AuthorStock() {
             </Head>
 
             <div className="flex flex-col gap-6">
-                <div className="flex justify-between items-end border-b border-gray-800 pb-4">
+                <div className="flex justify-between items-end border-b border-line pb-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-white tracking-tight">作者概念股交易中心</h1>
-                        <p className="mt-2 text-gray-400 text-sm">在这里投资你认为有潜力的创作者。股价与发文量、存活率挂钩。</p>
+                        <h1 className="text-3xl font-bold text-fg tracking-tight">作者概念股交易中心</h1>
+                        <p className="mt-2 text-fg-3 text-sm">在这里投资你认为有潜力的创作者。股价与发文量、存活率挂钩。</p>
                     </div>
                     <div className="text-right">
                         {username ? (
                             <>
-                                <div className="text-gray-400 text-sm">操作账户: <span className="text-gray-200">{username}</span></div>
-                                <div className="text-2xl font-mono text-green-400">¥{userBalance.toFixed(2)}</div>
+                                <div className="text-fg-3 text-sm">操作账户: <span className="text-fg-2">{username}</span></div>
+                                <div className="text-2xl font-mono text-green-600 dark:text-green-400">¥{userBalance.toFixed(2)}</div>
                             </>
                         ) : (
-                            <div className="text-red-400 font-bold border border-red-900/50 bg-red-900/20 px-4 py-2 rounded-lg">
+                            <div className="text-red-600 dark:text-red-400 font-bold border border-red-900/50 bg-red-900/20 px-4 py-2 rounded-lg">
                                 未登录，请先在顶栏登录
                             </div>
                         )}
@@ -177,44 +177,44 @@ export default function AuthorStock() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    <div className="lg:col-span-1 bg-gray-800/40 rounded-xl border border-gray-700 p-6 flex flex-col h-[500px]">
+                    <div className="lg:col-span-1 bg-panel rounded-xl border border-line p-6 flex flex-col h-[500px]">
                         
                         <div className="space-y-4 mb-4">
                             {/* 删除了之前的交易账户输入框 */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">搜索作者档案</label>
+                                <label className="block text-sm font-medium text-fg-3 mb-1">搜索作者档案</label>
                                 <input 
                                     type="text" 
                                     value={selectedAuthor}
                                     onChange={(e) => setSelectedAuthor(e.target.value)}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                                    className="w-full bg-sunken border border-line rounded-lg px-4 py-2 text-fg focus:outline-none focus:border-accent-line transition-colors"
                                 />
                             </div>
                         </div>
 
                         <div className="flex-1 flex flex-col justify-center space-y-4 my-2">
-                            <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
+                            <div className="bg-sunken rounded-lg p-4 border border-line">
                                 <div className="flex justify-between items-center mb-2">
-                                    <span className="text-gray-400">当前持有</span>
-                                    <span className="text-white font-mono font-bold">{userPosition} 股</span>
+                                    <span className="text-fg-3">当前持有</span>
+                                    <span className="text-fg font-mono font-bold">{userPosition} 股</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-gray-400">最新报价</span>
-                                    <span className="text-blue-400 font-mono font-bold">
+                                    <span className="text-fg-3">最新报价</span>
+                                    <span className="text-blue-600 dark:text-blue-400 font-mono font-bold">
                                         ¥{chartData.length > 0 ? chartData[chartData.length - 1].close.toFixed(2) : '0.00'}
                                     </span>
                                 </div>
                             </div>
                             
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">交易数量 (股)</label>
+                                <label className="block text-sm font-medium text-fg-3 mb-1">交易数量 (股)</label>
                                 <input 
                                     type="number" 
                                     min="1"
                                     value={tradeAmount}
                                     onChange={(e) => setTradeAmount(e.target.value)}
                                     disabled={!username}
-                                    className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2 text-white font-mono focus:outline-none focus:border-blue-500 transition-colors disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed"
+                                    className="w-full bg-sunken border border-line rounded-lg px-4 py-2 text-fg font-mono focus:outline-none focus:border-accent-line transition-colors disabled:bg-line-strong disabled:text-fg-3 disabled:cursor-not-allowed"
                                 />
                             </div>
                         </div>
@@ -223,25 +223,25 @@ export default function AuthorStock() {
                             <button 
                                 onClick={handleBuy}
                                 disabled={!username}
-                                className="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-3 rounded-lg transition-colors disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed"
+                                className="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-3 rounded-lg transition-colors disabled:bg-line-strong disabled:text-fg-3 disabled:cursor-not-allowed"
                             >
                                 买入看涨
                             </button>
                             <button 
                                 onClick={handleSell}
                                 disabled={!username}
-                                className="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-3 rounded-lg transition-colors disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed"
+                                className="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-3 rounded-lg transition-colors disabled:bg-line-strong disabled:text-fg-3 disabled:cursor-not-allowed"
                             >
                                 抛售平仓
                             </button>
                         </div>
                     </div>
 
-                    <div className="lg:col-span-3 bg-gray-800/40 rounded-xl border border-gray-700 p-4 h-[500px]">
+                    <div className="lg:col-span-3 bg-panel rounded-xl border border-line p-4 h-[500px]">
                         {chartData.length > 0 ? (
                             <TradingChart data={chartData} isCandle={true} />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-500">
+                            <div className="w-full h-full flex items-center justify-center text-fg-3">
                                 正在查询数据或该作者暂无图表...
                             </div>
                         )}

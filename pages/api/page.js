@@ -358,7 +358,7 @@ async function handler(req, res) {
                     tableHtml += '</tbody></table>';
                     historyHtml = tableHtml;
                 } else {
-                    historyHtml = `<div class="text-gray-500">Wikit 历史为空，且原生历史请求被拦截。</div>`;
+                    historyHtml = `<div class="text-fg-3">Wikit 历史为空，且原生历史请求被拦截。</div>`;
                 }
             }
 
@@ -377,7 +377,7 @@ async function handler(req, res) {
                 tableHtml += '</tbody></table>';
                 historyHtml = tableHtml;
             } else {
-                historyHtml = '<div class="text-gray-500">历史记录抓取失败：Wikit 接口无数据，且未能在原站网页中解析到 pageId 进行兜底。</div>';
+                historyHtml = '<div class="text-fg-3">历史记录抓取失败：Wikit 接口无数据，且未能在原站网页中解析到 pageId 进行兜底。</div>';
             }
         }
 

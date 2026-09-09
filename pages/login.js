@@ -55,47 +55,47 @@ if (res.ok) {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+        <div className="min-h-screen flex items-center justify-center transition-colors duration-300">
             <Head>
                 <title>登录</title>
             </Head>
             
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-xl border border-gray-200 dark:border-gray-700 w-full max-w-md shadow-xl transition-colors duration-300">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">登录账号</h1>
+            <div className="bg-white dark:bg-zinc-800 p-8 rounded-xl border border-zinc-200 dark:border-zinc-700 w-full max-w-md shadow-xl transition-colors duration-300">
+                <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6 text-center">登录账号</h1>
                 
                 {message && (
-                    <div className="mb-4 p-3 rounded bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 text-sm text-center border border-gray-200 dark:border-gray-600">
+                    <div className="mb-4 p-3 rounded bg-zinc-100 dark:bg-zinc-700/50 text-zinc-600 dark:text-zinc-300 text-sm text-center border border-zinc-200 dark:border-zinc-600">
                         {message}
                     </div>
                 )}
                 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">用户名或邮箱</label>
+                        <label className="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-1">用户名或邮箱</label>
                         <input 
                             type="text"
                             name="username"
                             value={formData.username}
                             onChange={handleChange}
-                            className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-colors"
+                            className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white text-sm rounded-lg focus:ring-accent focus:border-accent-line block p-2.5 outline-none transition-colors"
                         />
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">密码</label>
+                        <label className="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-1">密码</label>
                         <input 
                             type="password"
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
-                            className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-colors"
+                            className="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white text-sm rounded-lg focus:ring-accent focus:border-accent-line block p-2.5 outline-none transition-colors"
                         />
                     </div>
                     
                     <button 
                         type="submit"
                         disabled={loading}
-                        className="w-full text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50 mt-4"
+                        className="w-full text-accent-fg bg-accent-solid hover:bg-accent-solid-hover focus:ring-4 focus:outline-none focus:ring-accent font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors disabled:opacity-50 mt-4"
                     >
                         {loading ? '登录中...' : '登录'}
                     </button>

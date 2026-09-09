@@ -387,35 +387,35 @@ const DeleteAnnouncement = () => {
             </Head>
 
             <div className="py-8 max-w-6xl mx-auto">
-                <div className="mb-6 flex items-center text-sm text-gray-400">
-                    <Link href="/tools" className="hover:text-indigo-400 transition-colors">工具库</Link>
+                <div className="mb-6 flex items-center text-sm text-fg-3">
+                    <Link href="/tools" className="hover:text-accent transition-colors">工具库</Link>
                     <i className="fa-solid fa-chevron-right mx-2 text-xs"></i>
-                    <span className="text-gray-300">删除公告生成</span>
+                    <span className="text-fg-2">删除公告生成</span>
                 </div>
 
-                <div className="mb-8 border-b border-gray-700 pb-6">
-                    <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+                <div className="mb-8 border-b border-line pb-6">
+                    <h1 className="text-3xl font-bold text-fg flex items-center gap-3">
                         <i className="fa-solid fa-bullhorn text-red-500"></i>
                         页面自动删除公告生成器
                     </h1>
-                    <p className="text-gray-400 mt-2 text-sm">
+                    <p className="text-fg-3 mt-2 text-sm">
                         自动识别“自删页面”和“低分删除页面”，并一键生成包含完整源代码折叠块的 Wikidot 格式公告。
                     </p>
                 </div>
 
                 {deletedPages.length > 0 && (
-                    <div className="mb-6 bg-red-900/20 border border-red-500/50 rounded-xl p-5">
+                    <div className="mb-6 bg-red-500/10 border border-red-500/50 rounded-xl p-5">
                         <div className="flex items-start gap-3">
                             <i className="fa-solid fa-triangle-exclamation text-red-500 text-xl mt-0.5"></i>
                             <div className="flex-1">
-                                <h3 className="text-lg font-bold text-red-400 mb-1">注意：当前选择的站点存在位于 deleted: 分类下的页面！</h3>
-                                <p className="text-sm text-gray-300 mb-3">这些页面可能已被移动至待删除区，但没有挂上相应标签。你可以快速将它们加入待处理列表：</p>
-                                <div className="bg-gray-900/50 rounded border border-red-900/30 p-3 mb-4 max-h-40 overflow-y-auto space-y-2">
+                                <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-1">注意：当前选择的站点存在位于 deleted: 分类下的页面！</h3>
+                                <p className="text-sm text-fg-2 mb-3">这些页面可能已被移动至待删除区，但没有挂上相应标签。你可以快速将它们加入待处理列表：</p>
+                                <div className="bg-sunken rounded border border-red-500/20 p-3 mb-4 max-h-40 overflow-y-auto space-y-2">
                                     {deletedPages.map((dp, idx) => (
                                         <div key={idx} className="text-sm">
-                                            <span className="text-red-400 font-medium">{dp.title}</span>
-                                            <span className="text-gray-500 ml-2">
-                                                (原作者: {dp.creatorName} | 当前评分: <span className={dp.rating < 0 ? 'text-red-400' : 'text-green-400'}>{dp.rating > 0 ? `+${dp.rating}` : dp.rating}</span> | 最后更新: {dp.lastUpdated})
+                                            <span className="text-red-600 dark:text-red-400 font-medium">{dp.title}</span>
+                                            <span className="text-fg-3 ml-2">
+                                                (原作者: {dp.creatorName} | 当前评分: <span className={dp.rating < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>{dp.rating > 0 ? `+${dp.rating}` : dp.rating}</span> | 最后更新: {dp.lastUpdated})
                                             </span>
                                         </div>
                                     ))}
@@ -438,7 +438,7 @@ const DeleteAnnouncement = () => {
                                         });
                                         setDeletedPages([]);
                                     }}
-                                    className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/50 rounded hover:bg-red-500/30 transition-colors text-sm font-medium flex items-center gap-2"
+                                    className="px-4 py-2 bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/50 rounded hover:bg-red-500/30 transition-colors text-sm font-medium flex items-center gap-2"
                                 >
                                     <i className="fa-solid fa-plus"></i> 一键将以上所有分类页面加入下方处理列表
                                 </button>
@@ -447,7 +447,7 @@ const DeleteAnnouncement = () => {
                     </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row gap-4 mb-6 bg-gray-800/50 p-4 rounded-xl border border-white/5">
+                <div className="flex flex-col sm:flex-row gap-4 mb-6 bg-panel p-4 rounded-xl border border-line">
                     <form onSubmit={handleTagFetch} className="flex-1 flex flex-col sm:flex-row gap-3">
                         <div className="relative flex-1">
                             <input
@@ -456,11 +456,11 @@ const DeleteAnnouncement = () => {
                                 value={tagInput}
                                 onChange={(e) => setTagInput(e.target.value)}
                                 disabled={isBatchFetching}
-                                className="w-full bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 px-4 disabled:opacity-50"
+                                className="w-full bg-sunken border border-line text-fg text-sm rounded-lg focus:ring-accent focus:border-accent-line block p-2.5 px-4 disabled:opacity-50"
                             />
                         </div>
                         <select 
-                            className="bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2.5 sm:w-36 outline-none"
+                            className="bg-sunken border border-line text-fg text-sm rounded-lg focus:ring-accent focus:border-accent-line p-2.5 sm:w-36 outline-none"
                             value={selectedSite}
                             onChange={(e) => setSelectedSite(e.target.value)}
                             disabled={isBatchFetching}
@@ -472,24 +472,24 @@ const DeleteAnnouncement = () => {
                         <button 
                             type="submit"
                             disabled={isBatchFetching || !tagInput.trim()}
-                            className="px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors shrink-0"
+                            className="px-4 py-2.5 bg-accent-solid text-accent-fg font-medium rounded-lg hover:bg-accent-solid-hover disabled:opacity-50 transition-colors shrink-0"
                         >
                             {isBatchFetching ? `抓取中... ${batchProgress.total > 0 ? `(${batchProgress.current}/${batchProgress.total})` : ''}` : '按标签抓取'}
                         </button>
                     </form>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 mb-4 bg-gray-800/50 px-4 py-3 rounded-xl border border-white/5">
-                    <span className="text-sm text-gray-300 flex items-center gap-2">
-                        <i className="fa-solid fa-square-check text-indigo-400"></i>
-                        已勾选 <span className="font-bold text-indigo-400">{selectedUrls.size}</span> / {pagesList.length} 个页面
-                        {selectedUrls.size > 0 && <span className="text-xs text-gray-500">（仅勾选的页面会生成公告）</span>}
+                <div className="flex flex-wrap items-center gap-3 mb-4 bg-panel px-4 py-3 rounded-xl border border-line">
+                    <span className="text-sm text-fg-2 flex items-center gap-2">
+                        <i className="fa-solid fa-square-check text-accent"></i>
+                        已勾选 <span className="font-bold text-accent">{selectedUrls.size}</span> / {pagesList.length} 个页面
+                        {selectedUrls.size > 0 && <span className="text-xs text-fg-3">（仅勾选的页面会生成公告）</span>}
                     </span>
                     <div className="flex-1"></div>
                     <button
                         onClick={toggleSelectAll}
                         disabled={pagesList.length === 0}
-                        className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-40 border-gray-600 text-gray-300 hover:bg-gray-700/50"
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-40 border-line text-fg-2 hover:bg-sunken"
                     >
                         <i className="fa-solid fa-check-double mr-1"></i>
                         {selectedUrls.size === pagesList.length && pagesList.length > 0 ? '取消全选' : '全选'}
@@ -497,66 +497,66 @@ const DeleteAnnouncement = () => {
                     <button
                         onClick={() => selectByType(true)}
                         disabled={pagesList.length === 0}
-                        className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-40 border-red-500/40 text-red-400 hover:bg-red-500/10"
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-40 border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10"
                     >
                         <i className="fa-solid fa-user-slash mr-1"></i> 仅选自删
                     </button>
                     <button
                         onClick={() => selectByType(false)}
                         disabled={pagesList.length === 0}
-                        className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-40 border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-40 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
                     >
                         <i className="fa-solid fa-arrow-trend-down mr-1"></i> 仅选低分
                     </button>
                     <button
                         onClick={clearSelection}
                         disabled={selectedUrls.size === 0}
-                        className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-40 border-gray-600 text-gray-300 hover:bg-gray-700/50"
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-40 border-line text-fg-2 hover:bg-sunken"
                     >
                         <i className="fa-solid fa-eraser mr-1"></i> 清空
                     </button>
                 </div>
 
-                <div className="bg-gray-800/30 rounded-xl border border-white/5 overflow-hidden mb-8">
+                <div className="bg-panel rounded-xl border border-line overflow-hidden mb-8">
                     <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-700/50">
-                            <thead className="bg-gray-900/40">
+                        <table className="min-w-full divide-y divide-line">
+                            <thead className="bg-sunken">
                                 <tr>
-                                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase w-10">
+                                    <th className="px-6 py-4 text-left text-xs font-medium text-fg-3 uppercase w-10">
                                         <input
                                             ref={selectAllRef}
                                             type="checkbox"
                                             checked={pagesList.length > 0 && selectedUrls.size === pagesList.length}
                                             onChange={toggleSelectAll}
                                             title="全选 / 取消全选"
-                                            className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                            className="w-4 h-4 rounded border-line bg-sunken text-accent focus:ring-accent cursor-pointer"
                                         />
                                     </th>
-                                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase">页面标题</th>
-                                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase w-32">原作者</th>
-                                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase w-24">当前评分</th>
-                                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase w-40">最后更新</th>
-                                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-400 uppercase w-20">操作</th>
+                                    <th className="px-6 py-4 text-left text-xs font-medium text-fg-3 uppercase">页面标题</th>
+                                    <th className="px-6 py-4 text-left text-xs font-medium text-fg-3 uppercase w-32">原作者</th>
+                                    <th className="px-6 py-4 text-left text-xs font-medium text-fg-3 uppercase w-24">当前评分</th>
+                                    <th className="px-6 py-4 text-left text-xs font-medium text-fg-3 uppercase w-40">最后更新</th>
+                                    <th className="px-6 py-4 text-right text-xs font-medium text-fg-3 uppercase w-20">操作</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-700/30">
+                            <tbody className="divide-y divide-line">
                                 {pagesList.length > 0 ? (
                                     pagesList.map((page, index) => (
-                                        <tr key={index} className={`hover:bg-gray-800/40 transition-colors ${selectedUrls.has(page.originalUrl) ? 'bg-indigo-900/10' : ''}`}>
+                                        <tr key={index} className={`hover:bg-sunken transition-colors ${selectedUrls.has(page.originalUrl) ? 'bg-accent-soft' : ''}`}>
                                             <td className="px-6 py-4 whitespace-nowrap w-10">
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedUrls.has(page.originalUrl)}
                                                     onChange={() => toggleSelect(page.originalUrl)}
                                                     title="勾选/取消勾选以决定是否生成公告"
-                                                    className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                    className="w-4 h-4 rounded border-line bg-sunken text-accent focus:ring-accent cursor-pointer"
                                                 />
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <a href={page.originalUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 font-medium truncate max-w-xs block">
+                                                <a href={page.originalUrl} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover font-medium truncate max-w-xs block">
                                                     {page.title}
                                                 </a>
-                                                <div className="text-xs text-gray-500 mt-1">{page.siteName}</div>
+                                                <div className="text-xs text-fg-3 mt-1">{page.siteName}</div>
                                                 {page.timerIframe && (
                                                     <div
                                                         className="mt-2"
@@ -564,21 +564,21 @@ const DeleteAnnouncement = () => {
                                                     />
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-fg-2">
                                                 {page.creatorName}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                <span className={`font-semibold ${page.rating > 0 ? 'text-green-400' : page.rating < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                                                <span className={`font-semibold ${page.rating > 0 ? 'text-green-600 dark:text-green-400' : page.rating < 0 ? 'text-red-600 dark:text-red-400' : 'text-fg-3'}`}>
                                                     {page.rating > 0 ? `+${page.rating}` : page.rating}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-fg-3">
                                                 {page.lastUpdated}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right">
                                                 <button 
                                                     onClick={() => removePage(index)}
-                                                    className="text-red-400 hover:text-red-300 p-2 rounded-md hover:bg-red-400/10 transition-colors"
+                                                    className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 rounded-md hover:bg-red-400/10 transition-colors"
                                                     title="移除"
                                                 >
                                                     <i className="fa-solid fa-trash-can"></i>
@@ -588,7 +588,7 @@ const DeleteAnnouncement = () => {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                        <td colSpan="6" className="px-6 py-12 text-center text-fg-3">
                                             <div className="flex flex-col items-center">
                                                 <i className="fa-solid fa-inbox text-4xl mb-3 opacity-50"></i>
                                                 列表为空，请在上方添加页面
@@ -601,12 +601,12 @@ const DeleteAnnouncement = () => {
                     </div>
                 </div>
 
-                <div className="bg-gray-800/50 rounded-xl p-6 border border-white/5">
+                <div className="bg-panel rounded-xl p-6 border border-line">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-bold text-white">生成的 Wikidot 代码</h2>
+                        <h2 className="text-lg font-bold text-fg">生成的 Wikidot 代码</h2>
                         <button 
                             onClick={generateCode}
-                            className="px-4 py-1.5 bg-green-600/20 text-green-400 border border-green-500/30 rounded hover:bg-green-600/30 transition-colors text-sm font-medium"
+                            className="px-4 py-1.5 bg-green-600/20 text-green-600 dark:text-green-400 border border-green-500/30 rounded hover:bg-green-600/30 transition-colors text-sm font-medium"
                         >
                             <i className="fa-solid fa-code mr-1.5"></i>
                             生成公告代码{selectedUrls.size > 0 ? ` (${selectedUrls.size})` : ''}
@@ -614,7 +614,7 @@ const DeleteAnnouncement = () => {
                     </div>
                     <pre
                         id="generated-code-container"
-                        className="w-full h-48 bg-gray-900 border border-gray-700 text-gray-300 rounded-lg p-4 font-mono text-sm overflow-auto resize-y whitespace-pre-wrap outline-none"
+                        className="w-full h-48 bg-sunken border border-line text-fg-2 rounded-lg p-4 font-mono text-sm overflow-auto resize-y whitespace-pre-wrap outline-none"
                     >
                         {generatedCode || '点击右上角按钮生成代码...'}
                     </pre>
@@ -622,7 +622,7 @@ const DeleteAnnouncement = () => {
                         <div className="mt-4 flex justify-end">
                             <button 
                                 onClick={copyToClipboard}
-                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+                                className="px-4 py-2 bg-accent-solid text-accent-fg rounded-lg hover:bg-accent-solid-hover transition-colors text-sm font-medium"
                             >
                                 <i className="fa-regular fa-copy mr-1.5"></i> 复制代码
                             </button>

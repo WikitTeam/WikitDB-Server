@@ -7,9 +7,9 @@ const forumSyncSites = config.SUPPORT_WIKI.filter(w => w.FORUM_SYNC);
 
 function KpiTile({ label, value }) {
     return (
-        <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-5 transition-all hover:border-neutral-700 hover:shadow-md">
-            <div className="text-xs font-medium text-neutral-400">{label}</div>
-            <div className="mt-2 text-3xl font-bold text-neutral-100">{(value ?? 0).toLocaleString()}</div>
+        <div className="rounded-lg border border-line bg-panel p-5 transition-all hover:border-line-strong hover:shadow-md">
+            <div className="text-xs font-medium text-fg-3">{label}</div>
+            <div className="mt-2 text-3xl font-bold text-fg">{(value ?? 0).toLocaleString()}</div>
         </div>
     );
 }
@@ -137,7 +137,7 @@ export default function AdminDashboard() {
 
     const outerWrap = children => (
         <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-            <div className="min-h-screen bg-neutral-950 py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+            <div className="min-h-screen bg-canvas py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
                 <div className="max-w-7xl mx-auto w-full flex items-center justify-center">
                     {children}
                 </div>
@@ -146,16 +146,16 @@ export default function AdminDashboard() {
     );
 
     if (!authChecked) return outerWrap(
-        <div className="text-neutral-400 text-sm">加载中...</div>
+        <div className="text-fg-3 text-sm">加载中...</div>
     );
     if (!currentUser) return outerWrap(
-        <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-6 text-center">
-            <div className="text-neutral-400 text-sm mb-3">请先登录后访问管理面板</div>
-            <Link href="/login?redirect=/admin" className="inline-block rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors">前往登录</Link>
+        <div className="rounded-lg border border-line bg-panel p-6 text-center">
+            <div className="text-fg-3 text-sm mb-3">请先登录后访问管理面板</div>
+            <Link href="/login?redirect=/admin" className="inline-block rounded-md bg-accent-solid px-4 py-2 text-sm font-medium text-accent-fg hover:bg-accent-solid-hover transition-colors">前往登录</Link>
         </div>
     );
     if (!currentUser.isAdmin) return outerWrap(
-        <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-6 text-neutral-300 text-sm">无权限访问管理面板</div>
+        <div className="rounded-lg border border-line bg-panel p-6 text-fg-2 text-sm">无权限访问管理面板</div>
     );
 
     const api = async (url, opts = {}) => {
@@ -366,24 +366,24 @@ export default function AdminDashboard() {
         { id: 'access', label: '访问日志' },
     ];
 
-    const inputCls = 'flex-1 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 placeholder-neutral-500 outline-none focus:ring-2 focus:ring-indigo-500';
-    const inputLgCls = 'rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 outline-none focus:ring-2 focus:ring-indigo-500';
-    const btnGhost = 'rounded-md border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-sm text-neutral-300 hover:bg-neutral-800';
-    const btnDanger = 'rounded-md border border-red-800 bg-neutral-900 px-3 py-1.5 text-sm text-red-400 hover:bg-red-950';
-    const btnPrimary = 'rounded-md bg-indigo-600 border border-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700';
-    const cardCls = 'rounded-lg border border-neutral-800 bg-neutral-900 p-5';
-    const tableTheadCls = 'bg-neutral-800';
-    const tableRowCls = 'divide-y divide-neutral-800 bg-neutral-900';
-    const hoverRowCls = 'hover:bg-neutral-800';
+    const inputCls = 'flex-1 rounded-md border border-line bg-sunken px-3 py-1.5 text-sm text-fg placeholder:text-fg-3 outline-none focus:ring-2 focus:ring-accent';
+    const inputLgCls = 'rounded-lg border border-line bg-sunken px-3 py-2 text-sm text-fg placeholder:text-fg-3 outline-none focus:ring-2 focus:ring-accent';
+    const btnGhost = 'rounded-md border border-line bg-panel px-3 py-1.5 text-sm text-fg-2 hover:bg-raised';
+    const btnDanger = 'rounded-md border border-red-500/30 bg-panel px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-500/10';
+    const btnPrimary = 'rounded-md bg-accent-solid border border-accent-solid px-3 py-1.5 text-sm font-medium text-accent-fg hover:bg-accent-solid-hover';
+    const cardCls = 'rounded-lg border border-line bg-panel p-5';
+    const tableTheadCls = 'bg-sunken';
+    const tableRowCls = 'divide-y divide-line bg-panel';
+    const hoverRowCls = 'hover:bg-raised';
 
     const fmtTime = ts => ts ? new Date(ts).toLocaleString() : '-';
 
     const siteStatusBadge = (status) => {
         const map = {
-            running: ['bg-amber-950 text-amber-300 border-amber-800', '运行中'],
-            done: ['bg-emerald-950 text-emerald-300 border-emerald-800', '完成'],
-            pending: ['bg-neutral-800 text-neutral-400 border-neutral-700', '等待'],
-            error: ['bg-red-950 text-red-300 border-red-800', '异常'],
+            running: ['bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/30', '运行中'],
+            done: ['bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-500/30', '完成'],
+            pending: ['bg-sunken text-fg-3 border-line', '等待'],
+            error: ['bg-red-500/10 text-red-600 dark:text-red-300 border-red-500/30', '异常'],
         };
         const [cls, label] = map[status] || map.pending;
         return <span className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${cls}`}>{label}</span>;
@@ -397,16 +397,16 @@ export default function AdminDashboard() {
 
     return (
         <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-            <div className="min-h-screen bg-neutral-950 py-8 px-4 sm:px-6 lg:px-8">
+            <div className="min-h-screen bg-canvas py-8 px-4 sm:px-6 lg:px-8">
                 <Head><title>管理面板 - WikitDB</title></Head>
                 <div className="max-w-7xl mx-auto space-y-6">
-                    <h1 className="text-2xl font-semibold text-neutral-100">管理中心</h1>
+                    <h1 className="text-2xl font-semibold text-fg">管理中心</h1>
 
                     {/* Tab nav */}
-                    <nav className="flex flex-wrap gap-1 rounded-lg border border-neutral-800 bg-neutral-900 p-1">
+                    <nav className="flex flex-wrap gap-1 rounded-lg border border-line bg-panel p-1">
                         {tabs.map(t => (
                             <button key={t.id} onClick={() => setActiveTab(t.id)}
-                                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === t.id ? 'bg-indigo-600 text-white' : 'text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800'}`}>
+                                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${activeTab === t.id ? 'bg-accent-solid text-accent-fg' : 'text-fg-3 hover:text-fg hover:bg-raised'}`}>
                                 {t.label}
                             </button>
                         ))}
@@ -422,15 +422,15 @@ export default function AdminDashboard() {
                                 <KpiTile label="蜜罐捕获" value={honeypotLogs.length} />
                             </div>
                             <div className={cardCls}>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-3">最近操作日志</div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-fg-3 mb-3">最近操作日志</div>
                                 <div className="space-y-2 max-h-64 overflow-y-auto">
                                     {logs.slice(0, 10).map((l, i) => (
-                                        <div key={i} className="flex items-center justify-between text-sm border-b border-neutral-800 pb-2 last:border-0">
-                                            <span className="text-neutral-300">{l.action || l.type}</span>
-                                            <span className="text-neutral-500 text-xs">{l.createdAt?.slice(0, 16).replace('T', ' ')}</span>
+                                        <div key={i} className="flex items-center justify-between text-sm border-b border-line pb-2 last:border-0">
+                                            <span className="text-fg-2">{l.action || l.type}</span>
+                                            <span className="text-fg-3 text-xs">{l.createdAt?.slice(0, 16).replace('T', ' ')}</span>
                                         </div>
                                     ))}
-                                    {logs.length === 0 && <div className="text-neutral-500 text-sm">暂无日志</div>}
+                                    {logs.length === 0 && <div className="text-fg-3 text-sm">暂无日志</div>}
                                 </div>
                             </div>
                         </div>
@@ -440,46 +440,46 @@ export default function AdminDashboard() {
                     {activeTab === 'sites' && (
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">收录站点管理（写入 wikitdb.config.js）</div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">收录站点管理（写入 wikitdb.config.js）</div>
                                 <button onClick={refreshSites} className={btnGhost}>刷新</button>
                             </div>
 
                             {siteMsg && (
-                                <div className={`rounded-md border px-3 py-2 text-sm ${siteMsg.type === 'ok' ? 'border-emerald-800 bg-emerald-950 text-emerald-300' : 'border-red-800 bg-red-950 text-red-300'}`}>
+                                <div className={`rounded-md border px-3 py-2 text-sm ${siteMsg.type === 'ok' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300' : 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-300'}`}>
                                     {siteMsg.text}
                                 </div>
                             )}
 
-                            <div className="rounded-lg border border-neutral-800 overflow-hidden bg-neutral-900">
+                            <div className="rounded-lg border border-line overflow-hidden bg-panel">
                                 <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-neutral-800">
+                                    <table className="min-w-full divide-y divide-line">
                                         <thead className={tableTheadCls}>
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">站点</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">链接</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">PARAM</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">WIKIT_ID</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">归属页</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">论坛同步</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">操作</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">站点</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">链接</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">PARAM</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">WIKIT_ID</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">归属页</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">论坛同步</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">操作</th>
                                             </tr>
                                         </thead>
                                         <tbody className={tableRowCls}>
                                             {sites.map(site => (
                                                 <tr key={site.PARAM} className={hoverRowCls}>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-200">
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2">
                                                         <div className="flex items-center gap-2">
-                                                            {site.ImgURL && <img src={site.ImgURL} alt="" className="h-6 w-6 rounded object-cover bg-neutral-800" onError={e => { e.currentTarget.style.display = 'none'; }} />}
+                                                            {site.ImgURL && <img src={site.ImgURL} alt="" className="h-6 w-6 rounded object-cover bg-sunken" onError={e => { e.currentTarget.style.display = 'none'; }} />}
                                                             <span>{site.NAME}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-2.5 text-xs text-indigo-400 max-w-[240px] truncate">
+                                                    <td className="px-4 py-2.5 text-xs text-accent max-w-[240px] truncate">
                                                         <a href={site.URL} target="_blank" rel="noreferrer" className="hover:underline">{site.URL}</a>
                                                     </td>
-                                                    <td className="px-4 py-2.5 text-sm font-mono text-neutral-300">{site.PARAM}</td>
-                                                    <td className="px-4 py-2.5 text-sm font-mono text-neutral-300">{site.WIKIT_ID}</td>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-300">{site.ATTRIBUTION_PAGE ? <span className="font-mono text-xs text-indigo-400">{site.ATTRIBUTION_PAGE}</span> : '-'}</td>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-300">{site.FORUM_SYNC ? '是' : '否'}</td>
+                                                    <td className="px-4 py-2.5 text-sm font-mono text-fg-2">{site.PARAM}</td>
+                                                    <td className="px-4 py-2.5 text-sm font-mono text-fg-2">{site.WIKIT_ID}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2">{site.ATTRIBUTION_PAGE ? <span className="font-mono text-xs text-accent">{site.ATTRIBUTION_PAGE}</span> : '-'}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2">{site.FORUM_SYNC ? '是' : '否'}</td>
                                                     <td className="px-4 py-2.5 text-sm">
                                                         <div className="flex items-center justify-end gap-2">
                                                             <button onClick={() => handleEditSite(site)} className={btnGhost}>编辑</button>
@@ -491,11 +491,11 @@ export default function AdminDashboard() {
                                         </tbody>
                                     </table>
                                 </div>
-                                {sites.length === 0 && <div className="p-6 text-center text-sm text-neutral-500">暂无收录站点</div>}
+                                {sites.length === 0 && <div className="p-6 text-center text-sm text-fg-3">暂无收录站点</div>}
                             </div>
 
                             <div id="site-form-card" className={cardCls + ' space-y-3'}>
-                                <div className="text-sm font-medium text-neutral-200">{editingSiteParam ? `编辑站点：${editingSiteParam}` : '添加站点'}</div>
+                                <div className="text-sm font-medium text-fg-2">{editingSiteParam ? `编辑站点：${editingSiteParam}` : '添加站点'}</div>
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <input value={siteForm.NAME} onChange={e => setSiteForm(p => ({ ...p, NAME: e.target.value }))} placeholder="站点名称 *（如 深林文学部）" className={inputLgCls} />
                                     <input value={siteForm.URL} onChange={e => setSiteForm(p => ({ ...p, URL: e.target.value }))} placeholder="站点 URL *（如 https://xxx.wikidot.com/）" className={inputLgCls} />
@@ -505,8 +505,8 @@ export default function AdminDashboard() {
                                     <input value={siteForm.GQL_API} onChange={e => setSiteForm(p => ({ ...p, GQL_API: e.target.value }))} placeholder="GQL_API 端点（可选，默认 wikit 官方）" className={inputLgCls} />
                                     <input value={siteForm.AUTHOR_TAG} onChange={e => setSiteForm(p => ({ ...p, AUTHOR_TAG: e.target.value }))} placeholder="作者标签（可选，默认 作者）" className={inputLgCls} />
                                     <input value={siteForm.ATTRIBUTION_PAGE} onChange={e => setSiteForm(p => ({ ...p, ATTRIBUTION_PAGE: e.target.value }))} placeholder="归属资料页面（可选，如 attribution-metadata）" className={inputLgCls} />
-                                    <label className="flex items-center gap-2 text-sm text-neutral-300">
-                                        <input type="checkbox" checked={!!siteForm.FORUM_SYNC} onChange={e => setSiteForm(p => ({ ...p, FORUM_SYNC: e.target.checked }))} className="h-4 w-4 rounded border-neutral-700 bg-neutral-950" />
+                                    <label className="flex items-center gap-2 text-sm text-fg-2">
+                                        <input type="checkbox" checked={!!siteForm.FORUM_SYNC} onChange={e => setSiteForm(p => ({ ...p, FORUM_SYNC: e.target.checked }))} className="h-4 w-4 rounded border-line bg-sunken" />
                                         启用论坛同步 (FORUM_SYNC)
                                     </label>
                                 </div>
@@ -514,7 +514,7 @@ export default function AdminDashboard() {
                                     <button onClick={handleAddSite} disabled={savingSite} className={btnPrimary + ' disabled:opacity-50'}>{savingSite ? '保存中...' : (editingSiteParam ? '保存修改' : '添加站点')}</button>
                                     {editingSiteParam && <button onClick={handleCancelEdit} className={btnGhost}>取消编辑</button>}
                                 </div>
-                                <div className="text-xs text-neutral-500">提示：站点变更会立即写入 wikitdb.config.js。已构建的静态页面与正在运行的爬虫进程（npm run worker）需重启后才会使用新的站点列表。</div>
+                                <div className="text-xs text-fg-3">提示：站点变更会立即写入 wikitdb.config.js。已构建的静态页面与正在运行的爬虫进程（npm run worker）需重启后才会使用新的站点列表。</div>
                             </div>
                         </div>
                     )}
@@ -523,68 +523,68 @@ export default function AdminDashboard() {
                     {activeTab === 'crawler' && (
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">爬虫运行状态（每 3 小时自动执行）</div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">爬虫运行状态（每 3 小时自动执行）</div>
                                 <div className="flex items-center gap-2">
-                                    {crawlerLoading && <span className="text-xs text-neutral-500">加载中...</span>}
+                                    {crawlerLoading && <span className="text-xs text-fg-3">加载中...</span>}
                                     <button onClick={refreshCrawler} className={btnGhost}>刷新</button>
                                 </div>
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                 <div className={cardCls}>
-                                    <div className="text-xs font-medium text-neutral-400">爬虫进程</div>
-                                    <div className="mt-2 text-2xl font-bold text-neutral-100">{crawlerStatus?.running ? '运行中' : '空闲'}</div>
-                                    {crawlerStatus?.running && <div className="mt-1 text-xs text-amber-400">{crawlerStatus.currentSite ? `正在抓取: ${crawlerStatus.currentSite}` : '准备中...'}（{siteStageLabel(crawlerStatus.currentStage)}）</div>}
+                                    <div className="text-xs font-medium text-fg-3">爬虫进程</div>
+                                    <div className="mt-2 text-2xl font-bold text-fg">{crawlerStatus?.running ? '运行中' : '空闲'}</div>
+                                    {crawlerStatus?.running && <div className="mt-1 text-xs text-amber-600 dark:text-amber-400">{crawlerStatus.currentSite ? `正在抓取: ${crawlerStatus.currentSite}` : '准备中...'}（{siteStageLabel(crawlerStatus.currentStage)}）</div>}
                                 </div>
                                 <div className={cardCls}>
-                                    <div className="text-xs font-medium text-neutral-400">站点进度</div>
-                                    <div className="mt-2 text-2xl font-bold text-neutral-100">{crawlerStatus?.overall?.doneSites ?? 0} <span className="text-sm font-normal text-neutral-500">/ {crawlerStatus?.overall?.totalSites ?? crawlerSites.length}</span></div>
+                                    <div className="text-xs font-medium text-fg-3">站点进度</div>
+                                    <div className="mt-2 text-2xl font-bold text-fg">{crawlerStatus?.overall?.doneSites ?? 0} <span className="text-sm font-normal text-fg-3">/ {crawlerStatus?.overall?.totalSites ?? crawlerSites.length}</span></div>
                                 </div>
                                 <div className={cardCls}>
-                                    <div className="text-xs font-medium text-neutral-400">上次开始</div>
-                                    <div className="mt-2 text-lg font-semibold text-neutral-100">{fmtTime(crawlerStatus?.startedAt)}</div>
+                                    <div className="text-xs font-medium text-fg-3">上次开始</div>
+                                    <div className="mt-2 text-lg font-semibold text-fg">{fmtTime(crawlerStatus?.startedAt)}</div>
                                 </div>
                                 <div className={cardCls}>
-                                    <div className="text-xs font-medium text-neutral-400">上次完成</div>
-                                    <div className="mt-2 text-lg font-semibold text-neutral-100">{fmtTime(crawlerStatus?.finishedAt || crawlerStatus?.lastRun)}</div>
+                                    <div className="text-xs font-medium text-fg-3">上次完成</div>
+                                    <div className="mt-2 text-lg font-semibold text-fg">{fmtTime(crawlerStatus?.finishedAt || crawlerStatus?.lastRun)}</div>
                                 </div>
                             </div>
 
-                            <div className="rounded-lg border border-neutral-800 overflow-hidden bg-neutral-900">
+                            <div className="rounded-lg border border-line overflow-hidden bg-panel">
                                 <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-neutral-800">
+                                    <table className="min-w-full divide-y divide-line">
                                         <thead className={tableTheadCls}>
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">站点</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">状态</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">页面清单</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">已处理</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">评分</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">讨论</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">失败/重试</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">最近运行</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">站点</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">状态</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">页面清单</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">已处理</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">评分</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">讨论</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">失败/重试</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">最近运行</th>
                                             </tr>
                                         </thead>
                                         <tbody className={tableRowCls}>
                                             {crawlerSites.map(s => (
                                                 <tr key={s.param} className={hoverRowCls}>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-200">
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2">
                                                         <div>{s.name}</div>
-                                                        <div className="text-xs font-mono text-neutral-500">{s.param}</div>
+                                                        <div className="text-xs font-mono text-fg-3">{s.param}</div>
                                                     </td>
                                                     <td className="px-4 py-2.5 text-sm" title={s.error || ''}>{siteStatusBadge(s.status)}</td>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-300">{s.pagesFound ?? 0}</td>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-300">{s.pagesProcessed ?? 0}</td>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-300">{s.votes ?? 0}</td>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-300">{s.discussions ?? 0}</td>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-300">{s.errors ?? 0}</td>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-500 whitespace-nowrap">{fmtTime(s.lastRun)}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2">{s.pagesFound ?? 0}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2">{s.pagesProcessed ?? 0}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2">{s.votes ?? 0}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2">{s.discussions ?? 0}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2">{s.errors ?? 0}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-3 whitespace-nowrap">{fmtTime(s.lastRun)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
                                 </div>
-                                {crawlerSites.length === 0 && <div className="p-6 text-center text-sm text-neutral-500">暂无站点数据，请先运行爬虫进程（npm run worker）</div>}
+                                {crawlerSites.length === 0 && <div className="p-6 text-center text-sm text-fg-3">暂无站点数据，请先运行爬虫进程（npm run worker）</div>}
                             </div>
                         </div>
                     )}
@@ -593,38 +593,38 @@ export default function AdminDashboard() {
                     {activeTab === 'honeypot' && (
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">蜜罐监控</div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">蜜罐监控</div>
                                 <div className="flex gap-2">
                                     <button onClick={refreshHoneypot} className={btnGhost}>刷新</button>
                                     <button onClick={clearHoneypot} className={btnDanger}>清空</button>
                                 </div>
                             </div>
-                            <div className="rounded-lg border border-neutral-800 overflow-hidden bg-neutral-900">
+                            <div className="rounded-lg border border-line overflow-hidden bg-panel">
                                 <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-neutral-800">
+                                    <table className="min-w-full divide-y divide-line">
                                         <thead className={tableTheadCls}>
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">时间</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">IP</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">路径</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">方法</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">UA</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">时间</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">IP</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">路径</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">方法</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">UA</th>
                                             </tr>
                                         </thead>
                                         <tbody className={tableRowCls}>
                                             {honeypotLogs.slice(0, 50).map((l, i) => (
                                                 <tr key={i} className={hoverRowCls}>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-300 whitespace-nowrap">{l.createdAt?.slice(0, 16).replace('T', ' ')}</td>
-                                                    <td className="px-4 py-2.5 text-sm font-mono text-neutral-200">{l.ip}</td>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-300 max-w-[200px] truncate">{l.path}</td>
-                                                    <td className="px-4 py-2.5 text-sm"><span className="rounded bg-neutral-800 px-1.5 py-0.5 text-xs font-medium text-neutral-300">{l.method}</span></td>
-                                                    <td className="px-4 py-2.5 text-xs text-neutral-500 max-w-[200px] truncate">{l.userAgent}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2 whitespace-nowrap">{l.createdAt?.slice(0, 16).replace('T', ' ')}</td>
+                                                    <td className="px-4 py-2.5 text-sm font-mono text-fg-2">{l.ip}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2 max-w-[200px] truncate">{l.path}</td>
+                                                    <td className="px-4 py-2.5 text-sm"><span className="rounded bg-sunken px-1.5 py-0.5 text-xs font-medium text-fg-2">{l.method}</span></td>
+                                                    <td className="px-4 py-2.5 text-xs text-fg-3 max-w-[200px] truncate">{l.userAgent}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
                                 </div>
-                                {honeypotLogs.length === 0 && <div className="p-6 text-center text-sm text-neutral-500">暂无蜜罐记录</div>}
+                                {honeypotLogs.length === 0 && <div className="p-6 text-center text-sm text-fg-3">暂无蜜罐记录</div>}
                             </div>
                         </div>
                     )}
@@ -638,24 +638,24 @@ export default function AdminDashboard() {
                             </div>
 
                             {staffMsg && (
-                                <div className={`rounded-md border px-3 py-2 text-sm ${staffMsg.type === 'ok' ? 'border-emerald-800 bg-emerald-950 text-emerald-300' : 'border-red-800 bg-red-950 text-red-300'}`}>
+                                <div className={`rounded-md border px-3 py-2 text-sm ${staffMsg.type === 'ok' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300' : 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-300'}`}>
                                     {staffMsg.text}
                                 </div>
                             )}
 
                             {staffEditing && (
                                 <div className={cardCls + ' space-y-3'}>
-                                    <div className="text-sm font-medium text-neutral-200">
+                                    <div className="text-sm font-medium text-fg-2">
                                         设为职员：{staffEditing}
-                                        <span className="ml-2 text-xs text-neutral-500">选择其负责的站点（可多选）</span>
+                                        <span className="ml-2 text-xs text-fg-3">选择其负责的站点（可多选）</span>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {config.SUPPORT_WIKI.map(w => (
                                             <button key={w.PARAM} onClick={() => setStaffEditSites(p => p.includes(w.PARAM) ? p.filter(x => x !== w.PARAM) : [...p, w.PARAM])}
                                                 className={`rounded-md border px-2.5 py-1 text-xs transition-colors ${
                                                     staffEditSites.includes(w.PARAM)
-                                                        ? 'border-emerald-500/60 bg-emerald-500/10 text-emerald-300'
-                                                        : 'border-neutral-700 bg-neutral-900 text-neutral-400 hover:text-neutral-200'
+                                                        ? 'border-emerald-500/60 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
+                                                        : 'border-line bg-panel text-fg-3 hover:text-fg-2'
                                                 }`}>
                                                 {w.NAME} ({w.PARAM})
                                             </button>
@@ -664,44 +664,44 @@ export default function AdminDashboard() {
                                     <div className="flex items-center gap-2">
                                         <button onClick={handleSetStaff} className={btnPrimary}>确认设为职员</button>
                                         <button onClick={() => { setStaffEditing(null); setStaffEditSites([]); }} className={btnGhost}>取消</button>
-                                        {staffEditSites.length === 0 && <span className="text-xs text-neutral-500">请至少选择一个站点</span>}
+                                        {staffEditSites.length === 0 && <span className="text-xs text-fg-3">请至少选择一个站点</span>}
                                     </div>
                                 </div>
                             )}
 
-                            <div className="rounded-lg border border-neutral-800 overflow-hidden bg-neutral-900">
+                            <div className="rounded-lg border border-line overflow-hidden bg-panel">
                                 <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-neutral-800">
+                                    <table className="min-w-full divide-y divide-line">
                                         <thead className={tableTheadCls}>
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">用户名</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">余额</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">角色</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">职员</th>
-                                                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-400">操作</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">用户名</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">余额</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">角色</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">职员</th>
+                                                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-fg-3">操作</th>
                                             </tr>
                                         </thead>
                                         <tbody className={tableRowCls}>
                                             {filteredUsers.map(u => (
                                                 <tr key={u.username} className={hoverRowCls}>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-200">{u.username}</td>
-                                                    <td className="px-4 py-2.5 text-sm font-mono text-neutral-300">{u.balance?.toLocaleString()}</td>
-                                                    <td className="px-4 py-2.5 text-sm">{u.isAdmin ? <span className="rounded bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 text-xs text-amber-400">管理员</span> : <span className="text-neutral-500">用户</span>}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2">{u.username}</td>
+                                                    <td className="px-4 py-2.5 text-sm font-mono text-fg-2">{u.balance?.toLocaleString()}</td>
+                                                    <td className="px-4 py-2.5 text-sm">{u.isAdmin ? <span className="rounded bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 text-xs text-amber-600 dark:text-amber-400">管理员</span> : <span className="text-fg-3">用户</span>}</td>
                                                     <td className="px-4 py-2.5 text-sm">
                                                         {u.isStaff ? (
                                                             <div>
-                                                                <span className="rounded bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.5 text-xs text-emerald-400">职员</span>
-                                                                <div className="mt-0.5 text-[10px] text-neutral-500">{(u.staffSites || []).join('、')}</div>
+                                                                <span className="rounded bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.5 text-xs text-emerald-600 dark:text-emerald-400">职员</span>
+                                                                <div className="mt-0.5 text-[10px] text-fg-3">{(u.staffSites || []).join('、')}</div>
                                                             </div>
-                                                        ) : <span className="text-neutral-600">-</span>}
+                                                        ) : <span className="text-fg-3">-</span>}
                                                     </td>
                                                     <td className="px-4 py-2.5 text-right">
                                                         <div className="flex items-center justify-end gap-2">
                                                             <button onClick={() => { setInspectTarget(u.username); handleInspect(); }} className={btnGhost}>查看</button>
                                                             {u.isStaff ? (
-                                                                <button onClick={() => handleUnsetStaff(u.username)} className={btnGhost + ' !text-red-400 hover:!border-red-500/50'}>取消职员</button>
+                                                                <button onClick={() => handleUnsetStaff(u.username)} className={btnGhost + ' !text-red-600 dark:!text-red-400 hover:!border-red-500/50'}>取消职员</button>
                                                             ) : (
-                                                                <button onClick={() => { setStaffEditing(u.username); setStaffEditSites(u.staffSites || []); setStaffMsg(null); }} className={btnGhost + ' !text-emerald-400 hover:!border-emerald-500/50'}>设为职员</button>
+                                                                <button onClick={() => { setStaffEditing(u.username); setStaffEditSites(u.staffSites || []); setStaffMsg(null); }} className={btnGhost + ' !text-emerald-600 dark:!text-emerald-400 hover:!border-emerald-500/50'}>设为职员</button>
                                                             )}
                                                         </div>
                                                     </td>
@@ -715,20 +715,20 @@ export default function AdminDashboard() {
                             {/* Inspect & Adjust */}
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className={cardCls + ' space-y-3'}>
-                                    <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">查询用户</div>
+                                    <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">查询用户</div>
                                     <div className="flex gap-2">
                                         <input value={inspectTarget} onChange={e => setInspectTarget(e.target.value)} placeholder="用户名"
                                             className={inputCls} />
                                         <button onClick={handleInspect} className={btnGhost}>查询</button>
                                     </div>
                                     {inspectData && (
-                                        <pre className="rounded-md bg-neutral-800 border border-neutral-700 p-3 text-xs text-neutral-300 overflow-auto max-h-48">{JSON.stringify(inspectData, null, 2)}</pre>
+                                        <pre className="rounded-md bg-sunken border border-line p-3 text-xs text-fg-2 overflow-auto max-h-48">{JSON.stringify(inspectData, null, 2)}</pre>
                                     )}
                                 </div>
                                 <div className={cardCls + ' space-y-3'}>
-                                    <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">调整余额</div>
+                                    <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">调整余额</div>
                                     <input value={inspectTarget} onChange={e => setInspectTarget(e.target.value)} placeholder="用户名"
-                                        className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                        className="w-full rounded-md border border-line bg-sunken px-3 py-1.5 text-sm text-fg outline-none focus:ring-2 focus:ring-accent" />
                                     <div className="flex gap-2">
                                         <input value={adjustAmount} onChange={e => setAdjustAmount(e.target.value)} placeholder="金额 (可为负)" type="number"
                                             className={inputCls} />
@@ -745,18 +745,18 @@ export default function AdminDashboard() {
                     {/* Quarantine */}
                     {activeTab === 'quarantine' && (
                         <div className="space-y-4">
-                            <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">内容隔离区</div>
+                            <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">内容隔离区</div>
                             {['wikis', 'tags', 'authors'].map(type => (
                                 <div key={type} className={cardCls + ' space-y-3'}>
-                                    <div className="text-sm font-medium text-neutral-200 capitalize">{type === 'wikis' ? 'Wiki 站点' : type === 'tags' ? '标签' : '作者'}</div>
+                                    <div className="text-sm font-medium text-fg-2 capitalize">{type === 'wikis' ? 'Wiki 站点' : type === 'tags' ? '标签' : '作者'}</div>
                                     <div className="flex flex-wrap gap-2">
                                         {(quarantineData[type] || []).map(v => (
-                                            <span key={v} className="inline-flex items-center gap-1 rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-neutral-300">
+                                            <span key={v} className="inline-flex items-center gap-1 rounded-md border border-line bg-sunken px-2 py-1 text-xs text-fg-2">
                                                 {v}
-                                                <button onClick={() => handleQuarantineRemove(type, v)} className="text-neutral-500 hover:text-red-400 ml-1">&times;</button>
+                                                <button onClick={() => handleQuarantineRemove(type, v)} className="text-fg-3 hover:text-red-600 dark:hover:text-red-400 ml-1">&times;</button>
                                             </span>
                                         ))}
-                                        {(quarantineData[type] || []).length === 0 && <span className="text-xs text-neutral-500">空</span>}
+                                        {(quarantineData[type] || []).length === 0 && <span className="text-xs text-fg-3">空</span>}
                                     </div>
                                     <div className="flex gap-2">
                                         <input value={qInput[type] || ''} onChange={e => setQInput(p => ({ ...p, [type]: e.target.value }))} placeholder={`添加${type === 'wikis' ? '站点' : type === 'tags' ? '标签' : '作者'}...`}
@@ -772,27 +772,27 @@ export default function AdminDashboard() {
                     {activeTab === 'logs' && (
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">操作日志</div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">操作日志</div>
                                 <button onClick={refreshLogs} className={btnGhost}>刷新</button>
                             </div>
-                            <div className="rounded-lg border border-neutral-800 overflow-hidden bg-neutral-900">
+                            <div className="rounded-lg border border-line overflow-hidden bg-panel">
                                 <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-neutral-800">
+                                    <table className="min-w-full divide-y divide-line">
                                         <thead className={tableTheadCls}>
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">时间</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">操作</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">用户</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">详情</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">时间</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">操作</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">用户</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">详情</th>
                                             </tr>
                                         </thead>
                                         <tbody className={tableRowCls}>
                                             {logs.map((l, i) => (
                                                 <tr key={i} className={hoverRowCls}>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-300 whitespace-nowrap">{l.createdAt?.slice(0, 16).replace('T', ' ')}</td>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-200">{l.action || l.type}</td>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-300">{l.username || '-'}</td>
-                                                    <td className="px-4 py-2.5 text-xs text-neutral-500 max-w-[300px] truncate">{l.details || l.payload || ''}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2 whitespace-nowrap">{l.createdAt?.slice(0, 16).replace('T', ' ')}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2">{l.action || l.type}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2">{l.username || '-'}</td>
+                                                    <td className="px-4 py-2.5 text-xs text-fg-3 max-w-[300px] truncate">{l.details || l.payload || ''}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -806,10 +806,10 @@ export default function AdminDashboard() {
                     {activeTab === 'logs' && (
                         <div className={cardCls + ' space-y-3'}>
                             <div className="flex items-center justify-between flex-wrap gap-2">
-                                <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">服务器 / 爬虫文件日志</div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">服务器 / 爬虫文件日志</div>
                                 <div className="flex items-center gap-2">
                                     <select value={fileLogKey} onChange={e => { setFileLogKey(e.target.value); refreshFileLogs(e.target.value); }}
-                                        className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:ring-2 focus:ring-indigo-500">
+                                        className="rounded-md border border-line bg-sunken px-3 py-1.5 text-sm text-fg outline-none focus:ring-2 focus:ring-accent">
                                         <option value="crawler">crawler.log（爬虫）</option>
                                         <option value="server">server.log</option>
                                         <option value="serverErr">server-err.log</option>
@@ -817,11 +817,11 @@ export default function AdminDashboard() {
                                     <button onClick={() => refreshFileLogs()} className={btnGhost}>{fileLogLoading ? '加载中...' : '刷新'}</button>
                                 </div>
                             </div>
-                            <pre className="rounded-md bg-neutral-800 border border-neutral-700 p-3 text-xs text-neutral-300 overflow-auto max-h-96 whitespace-pre-wrap leading-relaxed">
+                            <pre className="rounded-md bg-sunken border border-line p-3 text-xs text-fg-2 overflow-auto max-h-96 whitespace-pre-wrap leading-relaxed">
                                 {fileLogs.lines && fileLogs.lines.length > 0 ? fileLogs.lines.join('\n') : '（暂无日志内容）'}
                             </pre>
                             {fileLogs.totalLines > 0 && (
-                                <div className="text-xs text-neutral-500">
+                                <div className="text-xs text-fg-3">
                                     共 {fileLogs.totalLines} 行，显示最近 {fileLogs.lines ? fileLogs.lines.length : 0} 行
                                     {fileLogs.mtime ? `（最后更新：${fmtTime(fileLogs.mtime)}）` : ''}
                                 </div>
@@ -832,9 +832,9 @@ export default function AdminDashboard() {
                     {/* Broadcast */}
                     {activeTab === 'broadcast' && (
                         <div className={cardCls + ' space-y-4'}>
-                            <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">全站广播</div>
+                            <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">全站广播</div>
                             <textarea value={broadcastMsg} onChange={e => setBroadcastMsg(e.target.value)} rows={3} placeholder="输入广播内容..."
-                                className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 outline-none resize-none focus:ring-2 focus:ring-indigo-500" />
+                                className="w-full rounded-md border border-line bg-sunken px-3 py-2 text-sm text-fg placeholder:text-fg-3 outline-none resize-none focus:ring-2 focus:ring-accent" />
                             <button onClick={handleBroadcast} className={btnPrimary}>发送广播</button>
                         </div>
                     )}
@@ -842,40 +842,40 @@ export default function AdminDashboard() {
                     {/* Economy */}
                     {activeTab === 'economy' && (
                         <div className="space-y-4">
-                            <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">宏观经济控制</div>
+                            <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">宏观经济控制</div>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 <div className={cardCls + ' space-y-3'}>
-                                    <div className="text-sm font-medium text-neutral-200">空投</div>
+                                    <div className="text-sm font-medium text-fg-2">空投</div>
                                     <input value={airdropAmount} onChange={e => setAirdropAmount(Number(e.target.value))} type="number"
-                                        className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                        className="w-full rounded-md border border-line bg-sunken px-3 py-1.5 text-sm text-fg outline-none focus:ring-2 focus:ring-accent" />
                                     <button onClick={handleAirdrop} className={btnPrimary}>执行空投</button>
                                 </div>
                                 <div className={cardCls + ' space-y-3'}>
-                                    <div className="text-sm font-medium text-neutral-200">税率 (%)</div>
+                                    <div className="text-sm font-medium text-fg-2">税率 (%)</div>
                                     <input value={taxRate} onChange={e => setTaxRate(Number(e.target.value))} type="number"
-                                        className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                        className="w-full rounded-md border border-line bg-sunken px-3 py-1.5 text-sm text-fg outline-none focus:ring-2 focus:ring-accent" />
                                     <button onClick={handleTax} className={btnPrimary}>设置税率</button>
                                 </div>
                                 <div className={cardCls + ' space-y-3'}>
-                                    <div className="text-sm font-medium text-neutral-200">Bingo 配置</div>
+                                    <div className="text-sm font-medium text-fg-2">Bingo 配置</div>
                                     <input value={bingoTagsInput} onChange={e => setBingoTagsInput(e.target.value)} placeholder="标签 (逗号分隔)"
-                                        className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                        className="w-full rounded-md border border-line bg-sunken px-3 py-1.5 text-sm text-fg outline-none focus:ring-2 focus:ring-accent" />
                                     <input value={bingoCostInput} onChange={e => setBingoCostInput(Number(e.target.value))} type="number" placeholder="费用"
-                                        className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                        className="w-full rounded-md border border-line bg-sunken px-3 py-1.5 text-sm text-fg outline-none focus:ring-2 focus:ring-accent" />
                                     <button onClick={handleBingo} className={btnPrimary}>更新 Bingo</button>
                                 </div>
                             </div>
                             <div className={cardCls + ' space-y-3'}>
-                                <div className="text-sm font-medium text-neutral-200">赏金任务配置</div>
+                                <div className="text-sm font-medium text-fg-2">赏金任务配置</div>
                                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                                     <input value={bountyTagsInput} onChange={e => setBountyTagsInput(e.target.value)} placeholder="标签 (逗号分隔)"
-                                        className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                        className="rounded-md border border-line bg-sunken px-3 py-1.5 text-sm text-fg outline-none focus:ring-2 focus:ring-accent" />
                                     <input value={bountyMinRating} onChange={e => setBountyMinRating(Number(e.target.value))} type="number" placeholder="最低评分"
-                                        className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                        className="rounded-md border border-line bg-sunken px-3 py-1.5 text-sm text-fg outline-none focus:ring-2 focus:ring-accent" />
                                     <input value={bountyMaxRating} onChange={e => setBountyMaxRating(Number(e.target.value))} type="number" placeholder="最高评分"
-                                        className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                        className="rounded-md border border-line bg-sunken px-3 py-1.5 text-sm text-fg outline-none focus:ring-2 focus:ring-accent" />
                                     <input value={bountyBaseReward} onChange={e => setBountyBaseReward(Number(e.target.value))} type="number" placeholder="基础奖励"
-                                        className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:ring-2 focus:ring-indigo-500" />
+                                        className="rounded-md border border-line bg-sunken px-3 py-1.5 text-sm text-fg outline-none focus:ring-2 focus:ring-accent" />
                                 </div>
                                 <button onClick={handleBounty} className={btnPrimary}>更新赏金</button>
                             </div>
@@ -885,10 +885,10 @@ export default function AdminDashboard() {
                     {/* Forum Sync */}
                     {activeTab === 'forum' && (
                         <div className={cardCls + ' space-y-4'}>
-                            <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">论坛同步</div>
+                            <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">论坛同步</div>
                             <div className="flex gap-3 items-center">
                                 <select value={forumSyncSite} onChange={e => setForumSyncSite(e.target.value)}
-                                    className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-100 outline-none focus:ring-2 focus:ring-indigo-500">
+                                    className="rounded-md border border-line bg-sunken px-3 py-1.5 text-sm text-fg outline-none focus:ring-2 focus:ring-accent">
                                     <option value="all">全部站点</option>
                                     {forumSyncSites.map(s => <option key={s.SLUG} value={s.SLUG}>{s.NAME}</option>)}
                                 </select>
@@ -898,7 +898,7 @@ export default function AdminDashboard() {
                                 </button>
                             </div>
                             {forumSyncResult && (
-                                <pre className="rounded-md bg-neutral-800 border border-neutral-700 p-3 text-xs text-neutral-300 overflow-auto max-h-48">{JSON.stringify(forumSyncResult, null, 2)}</pre>
+                                <pre className="rounded-md bg-sunken border border-line p-3 text-xs text-fg-2 overflow-auto max-h-48">{JSON.stringify(forumSyncResult, null, 2)}</pre>
                             )}
                         </div>
                     )}
@@ -907,35 +907,35 @@ export default function AdminDashboard() {
                     {activeTab === 'access' && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
-                                <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">访问日志</div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">访问日志</div>
                                 <input value={accessLogFilter} onChange={e => setAccessLogFilter(e.target.value)} placeholder="过滤 IP / 路径..."
                                     className={inputCls} />
                                 <button onClick={refreshAccessLogs} className={btnGhost}>刷新</button>
                             </div>
-                            <div className="rounded-lg border border-neutral-800 overflow-hidden bg-neutral-900">
+                            <div className="rounded-lg border border-line overflow-hidden bg-panel">
                                 <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-neutral-800">
+                                    <table className="min-w-full divide-y divide-line">
                                         <thead className={tableTheadCls}>
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">时间</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">IP</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">路径</th>
-                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-400">状态</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">时间</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">IP</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">路径</th>
+                                                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-fg-3">状态</th>
                                             </tr>
                                         </thead>
                                         <tbody className={tableRowCls}>
                                             {filteredAccessLogs.slice(0, 100).map((l, i) => (
                                                 <tr key={i} className={hoverRowCls}>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-300 whitespace-nowrap">{l.createdAt?.slice(0, 16).replace('T', ' ')}</td>
-                                                    <td className="px-4 py-2.5 text-sm font-mono text-neutral-200">{l.ip}</td>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-300 max-w-[250px] truncate">{l.path}</td>
-                                                    <td className="px-4 py-2.5 text-sm text-neutral-500">{l.status || '-'}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2 whitespace-nowrap">{l.createdAt?.slice(0, 16).replace('T', ' ')}</td>
+                                                    <td className="px-4 py-2.5 text-sm font-mono text-fg-2">{l.ip}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-2 max-w-[250px] truncate">{l.path}</td>
+                                                    <td className="px-4 py-2.5 text-sm text-fg-3">{l.status || '-'}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
                                 </div>
-                                {filteredAccessLogs.length === 0 && <div className="p-6 text-center text-sm text-neutral-500">暂无访问记录</div>}
+                                {filteredAccessLogs.length === 0 && <div className="p-6 text-center text-sm text-fg-3">暂无访问记录</div>}
                             </div>
                         </div>
                     )}

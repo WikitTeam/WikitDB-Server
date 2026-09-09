@@ -13,30 +13,30 @@ export default function WraithquestContest() {
                 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet" />
             </Head>
             <style dangerouslySetInnerHTML={{__html: `
-                .contest-page { background: #141414; color: #fefefe; font-family: -apple-system, "Noto Sans SC", sans-serif; line-height: 1.7; }
-                .contest-wrap { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 4rem; background: #202020; border-left: 1px solid #3a3a3a; border-right: 1px solid #3a3a3a; min-height: 100vh; }
-                .contest-page h1 { font-size: 1.6em; border-bottom: 1px solid #84201e; padding-bottom: .4em; margin: 1.8em 0 .8em; color: #fff; }
-                .contest-page h2 { font-size: 1.2em; color: #84201e; margin: 1.4em 0 .5em; font-weight: bold; }
-                .contest-page a { color: #84201e; }
-                .contest-page a:hover { color: #b44; text-decoration: underline; }
+                .contest-page { background: var(--w-canvas); color: var(--w-fg); font-family: -apple-system, "Noto Sans SC", sans-serif; line-height: 1.7; }
+                .contest-wrap { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 4rem; background: var(--w-panel); border-left: 1px solid var(--w-line); border-right: 1px solid var(--w-line); min-height: 100vh; }
+                .contest-page h1 { font-size: 1.6em; border-bottom: 1px solid var(--w-accent); padding-bottom: .4em; margin: 1.8em 0 .8em; color: var(--w-fg); }
+                .contest-page h2 { font-size: 1.2em; color: var(--w-accent); margin: 1.4em 0 .5em; font-weight: bold; }
+                .contest-page a { color: var(--w-accent); }
+                .contest-page a:hover { color: var(--w-accent-hover); text-decoration: underline; }
                 .contest-page table { width: 100%; border-collapse: collapse; margin: .8em 0; font-size: .92em; }
-                .contest-page th, .contest-page td { border: 1px solid #3a3a3a; padding: .55em .8em; }
-                .contest-page th { background: #282828; font-weight: 600; text-align: left; }
+                .contest-page th, .contest-page td { border: 1px solid var(--w-line); padding: .55em .8em; }
+                .contest-page th { background: var(--w-sunken); font-weight: 600; text-align: left; }
                 .contest-page ul { padding-left: 1.4em; margin: .5em 0; }
-                .contest-page li { margin-bottom: .35em; font-size: .92em; color: #ddd; }
-                .contest-page .sub { color: #a29a9b; font-size: .85em; }
-                .contest-page pre { background: #181818; border: 1px solid #3a3a3a; padding: 1em; border-radius: 4px; overflow-x: auto; font-size: .85em; color: #cfc; }
-                .contest-page code { background: #181818; padding: .15em .4em; border-radius: 3px; font-size: .9em; }
-                .contest-page .tabs { display: flex; border-bottom: 1px solid #3a3a3a; margin-bottom: .8em; }
-                .contest-page .tab { padding: .5em 1.2em; cursor: pointer; color: #a29a9b; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-                .contest-page .tab.active { color: #fefefe; border-bottom-color: #84201e; }
+                .contest-page li { margin-bottom: .35em; font-size: .92em; color: var(--w-fg-2); }
+                .contest-page .sub { color: var(--w-fg-3); font-size: .85em; }
+                .contest-page pre { background: var(--w-sunken); border: 1px solid var(--w-line); padding: 1em; border-radius: 4px; overflow-x: auto; font-size: .85em; color: var(--w-accent); }
+                .contest-page code { background: var(--w-sunken); padding: .15em .4em; border-radius: 3px; font-size: .9em; }
+                .contest-page .tabs { display: flex; border-bottom: 1px solid var(--w-line); margin-bottom: .8em; }
+                .contest-page .tab { padding: .5em 1.2em; cursor: pointer; color: var(--w-fg-3); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+                .contest-page .tab.active { color: var(--w-fg); border-bottom-color: var(--w-accent); }
                 .contest-page .banner { text-align: center; margin-bottom: 2em; }
                 .contest-page .banner img { max-width: 100%; height: auto; }
                 .contest-page .orgs { display: flex; align-items: center; justify-content: center; gap: 1.5em; margin: 1.2em 0; font-size: 1.1em; }
-                .contest-page .literary { font-family: "Noto Serif SC", serif; line-height: 2; color: #ddd; margin: 1em 0; }
-                .contest-page .footer { margin-top: 3em; padding-top: 1em; border-top: 1px solid #3a3a3a; font-size: .8em; color: #a29a9b; }
-                .contest-page .back { color: #a29a9b; font-size: .9em; display: inline-block; margin-bottom: 1.5em; text-decoration: none; }
-                .contest-page .back:hover { color: #fff; }
+                .contest-page .literary { font-family: "Noto Serif SC", serif; line-height: 2; color: var(--w-fg-2); margin: 1em 0; }
+                .contest-page .footer { margin-top: 3em; padding-top: 1em; border-top: 1px solid var(--w-line); font-size: .8em; color: var(--w-fg-3); }
+                .contest-page .back { color: var(--w-fg-3); font-size: .9em; display: inline-block; margin-bottom: 1.5em; text-decoration: none; }
+                .contest-page .back:hover { color: var(--w-fg); }
             `}} />
             <div className="contest-page">
                 <div className="contest-wrap">
@@ -69,7 +69,7 @@ export default function WraithquestContest() {
                     <h1>联合举办</h1>
                     <div className="orgs">
                         <a href="https://rule-wiki.wikidot.com/" target="_blank" rel="noopener noreferrer">规则怪谈档案馆</a>
-                        <span style={{color:'#666'}}>×</span>
+                        <span style={{color:'var(--w-fg-3)'}}>×</span>
                         <a href="https://cas-wiki-cn.wikidot.com/" target="_blank" rel="noopener noreferrer">中华异学会</a>
                     </div>
                     <p className="literary">礼法之外，别有异谭。一方沉于古卷残册，深耕怪诞法则的辨识与归档；另一方周旋于近世异象，志在搜罗天下奇诡。二者虽殊途，却同归于怪力乱神之域，所涉鬼魅妖氛，多有交叠。今值良辰，两馆携手设局，以「寻魍异闻」为题，广邀同好落笔竞逐。凡涉魍魉之异闻传说，咸待君子访而录之。</p>
@@ -77,7 +77,7 @@ export default function WraithquestContest() {
                     <h1>参赛作品</h1>
                     <table>
                         <thead><tr><th>作品名称</th><th>评分</th><th>作者</th></tr></thead>
-                        <tbody><tr><td colSpan="3" style={{textAlign:'center',color:'#a29a9b'}}>投稿尚未开始</td></tr></tbody>
+                        <tbody><tr><td colSpan="3" style={{textAlign:'center',color:'var(--w-fg-3)'}}>投稿尚未开始</td></tr></tbody>
                     </table>
 
                     <h1>奖品清单</h1>

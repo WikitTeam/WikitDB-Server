@@ -1,0 +1,63 @@
+/*
+ * Header 选项卡按钮 —— 伪元素背景渐变
+ *
+ * 职责边界：Tailwind 负责颜色 / 间距 / 布局，这里只写 Tailwind 表达不了的部分
+ * （伪元素、渐变、多属性 transition、prefers-reduced-motion）。
+ * 两者不重叠，避免同优先级下 CSS 注入顺序不确定导致的样式漂移。
+ */
+
+.headerButton {
+    position: relative;
+    text-indent: 0.15rem; /* 抵消 letter-spacing 误差 */
+}
+
+.headerButton::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+    /* header 自身 z-40 且 sticky（建立层叠上下文），41 足以压住 header::after 的分割线 */
+    z-index: 41;
+
+    opacity: 0;
+    /* 渐变画布是元素高度的两倍，靠 background-position 上下位移做「升起」 */
+    background-image: linear-gradient(0deg, rgb(196 181 253 / 0.25) 0%, transparent 55%);
+    background-size: 100% 200%;
+    /* 起始：画布贴顶，可见的是透明的上半段 */
+    background-position: 0 0;
+    border-bottom: 1.5px solid rgb(139 92 246);
+
+    transition: opacity 250ms ease, background-position 350ms ease;
+}
+
+/* 终态：画布下移，底部 violet 渐变进入视野 */
+.headerButton:hover::before,
+.headerButton.chosen::before {
+    opacity: 1;
+    background-position: 0 100%;
+}
+
+/*
+ * 亮色底适配：violet-300 在 zinc-100 上几乎不可见，换成更深的 violet-400 / violet-600。
+ * 明暗由 Header 的切换按钮控制（_document.js 内联脚本在首屏前应用 localStorage 偏好）。
+ */
+:global(html:not(.dark)) .headerButton::before {
+    background-image: linear-gradient(0deg, rgb(167 139 250 / 0.25) 0%, transparent 50%);
+    border-bottom-color: rgb(124 58 237);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .headerButton::before {
+        transition: none;
+    }
+}
+
+@media screen and (max-width: 1000px) {
+    .headerButton {
+        text-indent: 0;
+        letter-spacing: 0;
+        padding: 0 0.5rem;
+        margin: 0 !important;
+    }
+}

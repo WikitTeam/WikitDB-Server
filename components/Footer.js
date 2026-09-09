@@ -9,7 +9,7 @@ const Footer = () => {
 
     return (
         <>
-            <footer className="relative bg-gray-800/50 py-8 text-sm font-medium text-gray-300 text-center">
+            <footer className="relative bg-sunken border-t border-line py-8 text-sm font-medium text-fg-3 text-center">
                 {`© ${copyrightDate} - `}{config.SITE_AUTHOR}
             </footer>
         </>

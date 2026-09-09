@@ -8,6 +8,20 @@ const { singleFlight } = require('../../utils/singleFlight');
 const { wikitLimiter } = require('../../utils/rateLimiter');
 const config = require('../../wikitdb.config.js');
 
+// avatar.php 只认 userid（account= 已失效，一律 404）。
+// 当 Wikit 未返回 author_id 时，从用户资料页 user:info/<unix名> 抓真实头像地址；
+// 失败返回 null，前端走默认头像兜底。
+async function resolveAvatarByName(request, unixName) {
+    try {
+        const resp = await request.get(`https://www.wikidot.com/user:info/${encodeURIComponent(unixName)}`);
+        const html = typeof resp.data === 'string' ? resp.data : '';
+        const m = html.match(/avatar\.php\?userid=(\d+)/);
+        return m ? `https://www.wikidot.com/avatar.php?userid=${m[1]}` : null;
+    } catch (e) {
+        return null;
+    }
+}
+
 async function handler(req, res) {
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -161,7 +175,7 @@ async function handler(req, res) {
                         const accountName2 = queryName.toLowerCase().replace(/_/g, '-').replace(/ /g, '-');
                         return {
                             name: queryName,
-                            avatar: `https://www.wikidot.com/avatar.php?account=${accountName2}`,
+                            avatar: await resolveAvatarByName(request, accountName2),
                             globalRank: '无记录',
                             totalRating: attribution.score,
                             totalPages: attribution.pages,
@@ -197,9 +211,11 @@ async function handler(req, res) {
                 let averageRating = 0;
                 if (totalPages > 0) averageRating = (totalRating / totalPages).toFixed(1);
 
+                // 必须 https：http 会 302 到 http 的 CloudFront 地址，
+                // 在 https 页面下被浏览器混合内容策略拦截，导致头像永远加载失败
                 const avatarUrl = userid
-                    ? `http://www.wikidot.com/avatar.php?userid=${userid}`
-                    : `https://www.wikidot.com/avatar.php?account=${accountName}`;
+                    ? `https://www.wikidot.com/avatar.php?userid=${userid}`
+                    : await resolveAvatarByName(request, accountName);
 
                 return {
                     name: queryName,

@@ -18,14 +18,14 @@ function applyInline(text) {
     // 先转义 HTML
     s = escapeHtml(s);
     // 内联代码 `code`
-    s = s.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-gray-800/60 text-indigo-300 rounded text-sm font-mono">$1</code>');
+    s = s.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-sunken text-accent rounded text-sm font-mono">$1</code>');
     // 粗体 **text**
-    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-white">$1</strong>');
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-fg">$1</strong>');
     // 斜体 *text* 或 _text_（避免和 ** 冲突）
-    s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em class="italic text-gray-300">$2</em>');
+    s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em class="italic text-fg-2">$2</em>');
     // 链接 [text](url)
     s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-        '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 decoration-indigo-500/30">$1</a>');
+        '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-accent hover:text-accent-hover underline underline-offset-2 decoration-accent-line">$1</a>');
     // --- 引用块里的加粗符号（保持即可）
     return s;
 }
@@ -41,15 +41,15 @@ function renderTable(lines) {
     const sep = rest[0];
     if (!sep || !sep.every(c => /^:?-{3,}:?$/.test(c))) return '';
     const body = rest.slice(1);
-    const headHtml = '<thead class="bg-gray-800/60 text-white"><tr>'
-        + head.map(h => `<th class="px-4 py-3 text-left text-sm font-semibold border-b border-gray-700">${applyInline(h)}</th>`).join('')
+    const headHtml = '<thead class="bg-sunken text-fg"><tr>'
+        + head.map(h => `<th class="px-4 py-3 text-left text-sm font-semibold border-b border-line-strong">${applyInline(h)}</th>`).join('')
         + '</tr></thead>';
-    const bodyHtml = '<tbody class="divide-y divide-gray-800/70">'
-        + body.map(r => '<tr class="hover:bg-gray-800/30 transition-colors">'
-            + r.map(c => `<td class="px-4 py-3 text-sm text-gray-300">${applyInline(c)}</td>`).join('')
+    const bodyHtml = '<tbody class="divide-y divide-line">'
+        + body.map(r => '<tr class="hover:bg-sunken transition-colors">'
+            + r.map(c => `<td class="px-4 py-3 text-sm text-fg-2">${applyInline(c)}</td>`).join('')
             + '</tr>').join('')
         + '</tbody>';
-    return `<div class="overflow-x-auto rounded-xl border border-gray-700/50 my-6"><table class="w-full border-collapse">${headHtml}${bodyHtml}</table></div>`;
+    return `<div class="overflow-x-auto rounded-xl border border-line my-6"><table class="w-full border-collapse">${headHtml}${bodyHtml}</table></div>`;
 }
 
 function markdownLite(md) {
@@ -129,24 +129,24 @@ function markdownLite(md) {
         switch (b.type) {
             case 'h':
                 const cls = b.level <= 2
-                    ? 'text-3xl font-bold text-white mt-10 mb-4 tracking-tight'
-                    : 'text-xl font-semibold text-white mt-8 mb-3';
+                    ? 'text-3xl font-bold text-fg mt-10 mb-4 tracking-tight'
+                    : 'text-xl font-semibold text-fg mt-8 mb-3';
                 html += `<h${b.level} class="${cls}" id="h-${b.text.slice(0, 12).replace(/\s+/g, '-').toLowerCase()}">${applyInline(b.text)}</h${b.level}>\n`;
                 break;
             case 'hr':
-                html += '<hr class="my-10 border-t border-gray-700/50" />\n';
+                html += '<hr class="my-10 border-t border-line" />\n';
                 break;
             case 'quote':
-                html += `<blockquote class="my-6 pl-5 border-l-4 border-indigo-500/60 bg-indigo-500/5 py-3 pr-4 rounded-r-lg italic text-gray-300 leading-relaxed">${applyInline(b.text)}</blockquote>\n`;
+                html += `<blockquote class="my-6 pl-5 border-l-4 border-accent bg-accent-soft py-3 pr-4 rounded-r-lg italic text-fg-2 leading-relaxed">${applyInline(b.text)}</blockquote>\n`;
                 break;
             case 'ul':
-                html += '<ul class="my-4 space-y-2 list-disc pl-6 text-gray-300 leading-relaxed">'
+                html += '<ul class="my-4 space-y-2 list-disc pl-6 text-fg-2 leading-relaxed">'
                     + b.items.map(it => `<li>${applyInline(it)}</li>`).join('')
                     + '</ul>\n';
                 break;
             case 'ol':
-                html += '<ol class="my-4 space-y-2 list-decimal pl-6 text-gray-300 leading-relaxed">'
-                    + b.items.map((it, idx) => `<li class="marker:text-indigo-400">${applyInline(it)}</li>`).join('')
+                html += '<ol class="my-4 space-y-2 list-decimal pl-6 text-fg-2 leading-relaxed">'
+                    + b.items.map((it, idx) => `<li class="marker:text-accent">${applyInline(it)}</li>`).join('')
                     + '</ol>\n';
                 break;
             case 'table':
@@ -154,7 +154,7 @@ function markdownLite(md) {
                 break;
             case 'p':
             default:
-                html += `<p class="my-4 text-gray-400 leading-relaxed">${applyInline(b.text)}</p>\n`;
+                html += `<p class="my-4 text-fg-2 leading-relaxed">${applyInline(b.text)}</p>\n`;
         }
     }
     return sanitizeRichHtml(html);

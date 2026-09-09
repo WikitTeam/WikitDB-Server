@@ -1,6 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { createChart, CrosshairMode, LineType } from 'lightweight-charts';
 
+const isDark = () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+
+// canvas 无法读取 CSS 变量，按当前主题返回具体色值
+const getThemeColors = () => isDark()
+    ? { grid: 'rgba(255, 255, 255, 0.06)', text: '#a1a1aa' }
+    : { grid: 'rgba(0, 0, 0, 0.06)', text: '#52525b' };
+
 export default function TradingChart({ data, markers = [], isCandle = false, stepLine = false }) {
     const chartContainerRef = useRef();
     const chartRef = useRef();
@@ -8,16 +15,18 @@ export default function TradingChart({ data, markers = [], isCandle = false, ste
     useEffect(() => {
         if (!chartContainerRef.current) return;
 
+        const theme = getThemeColors();
+
         const chart = createChart(chartContainerRef.current, {
             layout: {
                 background: { type: 'solid', color: 'transparent' },
-                textColor: '#6b7280',
+                textColor: theme.text,
                 fontSize: 12,
                 fontFamily: 'sans-serif',
             },
             grid: {
-                vertLines: { color: 'rgba(0, 0, 0, 0.04)' },
-                horzLines: { color: 'rgba(0, 0, 0, 0.04)' },
+                vertLines: { color: theme.grid },
+                horzLines: { color: theme.grid },
             },
             rightPriceScale: {
                 borderVisible: false,
@@ -59,9 +68,9 @@ export default function TradingChart({ data, markers = [], isCandle = false, ste
             });
         } else {
             mainSeries = chart.addAreaSeries({
-                lineColor: '#3b82f6',
-                topColor: 'rgba(59, 130, 246, 0.3)',
-                bottomColor: 'rgba(59, 130, 246, 0.0)',
+                lineColor: '#8b5cf6',
+                topColor: 'rgba(139, 92, 246, 0.28)',
+                bottomColor: 'rgba(139, 92, 246, 0.05)',
                 lineWidth: 2,
                 crosshairMarkerVisible: true,
                 crosshairMarkerRadius: 4,
@@ -76,6 +85,20 @@ export default function TradingChart({ data, markers = [], isCandle = false, ste
 
         chart.timeScale().fitContent();
 
+        // 亮暗主题切换时更新网格/标签配色（canvas 不支持 CSS 变量，需 JS 侧感知）
+        const applyTheme = () => {
+            const t = getThemeColors();
+            chart.applyOptions({
+                layout: { textColor: t.text },
+                grid: {
+                    vertLines: { color: t.grid },
+                    horzLines: { color: t.grid },
+                },
+            });
+        };
+        const themeObserver = new MutationObserver(applyTheme);
+        themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
         const handleResize = () => {
             chart.applyOptions({
                 width: chartContainerRef.current.clientWidth,
@@ -85,6 +108,7 @@ export default function TradingChart({ data, markers = [], isCandle = false, ste
         window.addEventListener('resize', handleResize);
 
         return () => {
+            themeObserver.disconnect();
             window.removeEventListener('resize', handleResize);
             chart.remove();
         };

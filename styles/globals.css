@@ -2,7 +2,112 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design Tokens —— 两层架构
+ *
+ * Layer 1 Primitive：原始色板（--w-primary-*，oklch violet 色阶），不直接用于组件。
+ * Layer 2 Semantic：语义 token（canvas / panel / line / fg / accent），
+ *   随 html.dark 自动翻转。组件一律使用语义 token（bg-panel、text-fg、border-line…），
+ *   不再为颜色写 dark: 变体。
+ *
+ * 设计基调：violet 为唯一品牌强调色，zinc 承担背景/文字/描边；
+ * 圆角收紧为 2/4/6 三档；阴影只留给浮层，静态面板用 border 表达层级。
+ */
+
+/* ---------- Layer 1: Primitive ---------- */
+:where(:root) {
+    --w-primary: oklch(60.6% 0.25 292.717);
+    --w-primary-50: oklch(96.9% 0.016 293.756);
+    --w-primary-100: oklch(94.3% 0.029 294.588);
+    --w-primary-200: oklch(89.4% 0.057 293.283);
+    --w-primary-300: oklch(81.1% 0.111 293.571);
+    --w-primary-400: oklch(70.2% 0.183 293.541);
+    --w-primary-500: oklch(60.6% 0.25 292.717);
+    --w-primary-600: oklch(54.1% 0.281 293.009);
+    --w-primary-700: oklch(49.1% 0.27 292.581);
+    --w-primary-800: oklch(43.2% 0.232 292.759);
+    --w-primary-900: oklch(38% 0.189 293.745);
+    --w-primary-950: oklch(28.3% 0.141 291.089);
+}
+
+/* ---------- Layer 2: Semantic（亮色默认） ---------- */
+:root {
+    /* 表面层级：canvas 页面底 / panel 面板 / raised 浮层 / sunken 凹陷区（代码块、条纹行） */
+    --w-canvas: #fafafa;   /* zinc-50 */
+    --w-panel: #ffffff;
+    --w-raised: #ffffff;
+    --w-sunken: #f4f4f5;   /* zinc-100 */
+
+    /* 描边：层级靠 border / divide 表达，不靠嵌套面板 */
+    --w-line: #e4e4e7;        /* zinc-200 */
+    --w-line-strong: #d4d4d8; /* zinc-300 */
+
+    /* 文字三级：正文 / 次要 / 弱化 */
+    --w-fg: #18181b;   /* zinc-900 */
+    --w-fg-2: #52525b; /* zinc-600 */
+    --w-fg-3: #71717a; /* zinc-500 */
+
+    /* 品牌 accent（violet）：只用于主 CTA / 链接 / 激活态 */
+    --w-accent: var(--w-primary-600);        /* 文字、图标、链接 */
+    --w-accent-hover: var(--w-primary-700);
+    --w-accent-solid: var(--w-primary-600);  /* 实心按钮底 */
+    --w-accent-solid-hover: var(--w-primary-700);
+    --w-accent-fg: #ffffff;                  /* 实心按钮上的文字 */
+    --w-accent-soft: var(--w-primary-50);    /* 淡色底（徽章、高亮行） */
+    --w-accent-line: var(--w-primary-200);   /* 淡色描边 */
+
+    /* 圆角三档：徽章 2 / 控件 4 / 面板 6，禁止更大 */
+    --w-radius-1: 2px;
+    --w-radius-2: 4px;
+    --w-radius-3: 6px;
+
+    /* 阴影仅用于浮层（下拉、弹窗），静态面板禁用阴影 */
+    --w-shadow-pop: 0 4px 16px rgb(0 0 0 / 0.08), 0 1px 3px rgb(0 0 0 / 0.06);
+}
+
+/* ---------- Layer 2: Semantic（暗色覆盖） ---------- */
+html.dark {
+    --w-canvas: #09090b;   /* zinc-950 */
+    --w-panel: #18181b;    /* zinc-900 */
+    --w-raised: #27272a;   /* zinc-800 */
+    --w-sunken: #09090b;
+
+    --w-line: #27272a;     /* zinc-800 */
+    --w-line-strong: #3f3f46; /* zinc-700 */
+
+    --w-fg: #f4f4f5;  /* zinc-100 */
+    --w-fg-2: #a1a1aa; /* zinc-400 */
+    --w-fg-3: #71717a; /* zinc-500 */
+
+    --w-accent: var(--w-primary-400);
+    --w-accent-hover: var(--w-primary-300);
+    --w-accent-solid: var(--w-primary-600);
+    --w-accent-solid-hover: var(--w-primary-500);
+    --w-accent-fg: #ffffff;
+    --w-accent-soft: color-mix(in oklab, var(--w-primary-400) 12%, transparent);
+    --w-accent-line: color-mix(in oklab, var(--w-primary-400) 30%, transparent);
+
+    --w-shadow-pop: 0 4px 16px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.4);
+}
+
+html {
+    color-scheme: light;
+    background-color: var(--w-canvas);
+}
+
 html.dark {
     color-scheme: dark;
-    background-color: #111827;
+    background-color: var(--w-canvas);
+}
+
+/*
+ * 正文字体栈：中文交给各平台系统字体（零加载、无 FOIT），
+ * 展示字体 Anton / Archivo 由组件通过 font-[family-name:...] 按需引用。
+ */
+body {
+    font-family:
+        ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Roboto, "Helvetica Neue", Arial,
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+        "Noto Sans SC", sans-serif;
 }

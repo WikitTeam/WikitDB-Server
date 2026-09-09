@@ -198,6 +198,7 @@ WikitDB-Server/
 - **白然** — WikitDB LOGO 设计师
 - **Kakushi** - Wikit创始人，Wikit API运维
 - **UMOU** - 贡献者
+- **OxygenNine** - ui-redesign
 - 每一位为 Wikidot 社区贡献原创内容的创作者
 
 ## 许可证

@@ -105,18 +105,18 @@ export default function Forums() {
     return (
         <>
             <Head><title>论坛浏览 - WikitDB</title></Head>
-            <div className="min-h-screen bg-gray-900 text-gray-100 p-4 md:p-8">
+            <div className="min-h-screen bg-canvas text-fg p-4 md:p-8">
                 <div className="max-w-5xl mx-auto">
                     <div className="flex items-center justify-between mb-6">
                         <h1 className="text-2xl font-bold">论坛浏览</h1>
-                        <Link href="/" className="text-blue-400 hover:underline text-sm">返回首页</Link>
+                        <Link href="/" className="text-accent hover:underline text-sm">返回首页</Link>
                     </div>
 
                     <div className="flex flex-wrap gap-3 mb-6 items-center">
                         <select
                             value={selectedSite}
                             onChange={e => { setSelectedSite(e.target.value); setView('categories'); }}
-                            className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-sm"
+                            className="bg-sunken border border-line rounded px-3 py-2 text-sm"
                         >
                             {forumSites.map(s => (
                                 <option key={s.PARAM} value={s.PARAM}>{s.NAME}</option>
@@ -130,18 +130,18 @@ export default function Forums() {
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                                className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-sm flex-1"
+                                className="bg-sunken border border-line rounded px-3 py-2 text-sm flex-1"
                             />
-                            <button onClick={() => handleSearch()} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">搜索</button>
+                            <button onClick={() => handleSearch()} className="bg-accent-solid hover:bg-accent-solid-hover text-accent-fg px-4 py-2 rounded text-sm">搜索</button>
                         </div>
                     </div>
 
                     {view !== 'categories' && (
-                        <button onClick={goBack} className="text-blue-400 hover:underline text-sm mb-4 block">&larr; 返回</button>
+                        <button onClick={goBack} className="text-accent hover:underline text-sm mb-4 block">&larr; 返回</button>
                     )}
 
-                    {error && <div className="bg-red-900/50 border border-red-700 rounded p-3 mb-4 text-sm">{error}</div>}
-                    {loading && <div className="text-gray-400 text-sm mb-4">加载中...</div>}
+                    {error && <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 rounded p-3 mb-4 text-sm">{error}</div>}
+                    {loading && <div className="text-fg-3 text-sm mb-4">加载中...</div>}
 
                     {!loading && view === 'categories' && (
                         <div className="grid gap-3 md:grid-cols-2">
@@ -149,17 +149,17 @@ export default function Forums() {
                                 <div
                                     key={cat.categoryId}
                                     onClick={() => loadThreads(cat.categoryId)}
-                                    className="bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition"
+                                    className="bg-panel border border-line rounded-lg p-4 cursor-pointer hover:border-accent-line transition"
                                 >
                                     <h3 className="font-semibold text-lg">{cat.title}</h3>
-                                    {cat.description && <p className="text-gray-400 text-sm mt-1">{cat.description}</p>}
-                                    <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                                    {cat.description && <p className="text-fg-3 text-sm mt-1">{cat.description}</p>}
+                                    <div className="flex gap-4 mt-2 text-xs text-fg-3">
                                         <span>帖子: {cat.threadsCount}</span>
                                         <span>回复: {cat.postsCount}</span>
                                     </div>
                                 </div>
                             ))}
-                            {categories.length === 0 && <p className="text-gray-500">暂无分类数据，请先执行同步</p>}
+                            {categories.length === 0 && <p className="text-fg-3">暂无分类数据，请先执行同步</p>}
                         </div>
                     )}
 
@@ -169,18 +169,18 @@ export default function Forums() {
                                 <div
                                     key={t.threadId}
                                     onClick={() => loadPosts(t.threadId)}
-                                    className="bg-gray-800 border border-gray-700 rounded p-3 cursor-pointer hover:border-blue-500 transition flex justify-between items-center"
+                                    className="bg-panel border border-line rounded p-3 cursor-pointer hover:border-accent-line transition flex justify-between items-center"
                                 >
                                     <div>
                                         <span className="font-medium">{t.isSticky ? '📌 ' : ''}{t.title}</span>
-                                        <div className="text-xs text-gray-500 mt-1">
+                                        <div className="text-xs text-fg-3 mt-1">
                                             {t.createdBy} · {t.createdAt}
                                         </div>
                                     </div>
-                                    <span className="text-xs text-gray-500 whitespace-nowrap ml-4">{t.postCount} 回复</span>
+                                    <span className="text-xs text-fg-3 whitespace-nowrap ml-4">{t.postCount} 回复</span>
                                 </div>
                             ))}
-                            {threads.length === 0 && <p className="text-gray-500">该分类暂无帖子</p>}
+                            {threads.length === 0 && <p className="text-fg-3">该分类暂无帖子</p>}
                             <Pagination page={page} totalPages={totalPages} onPageChange={p => loadThreads(currentCategory, p)} />
                         </div>
                     )}
@@ -188,7 +188,7 @@ export default function Forums() {
                     {!loading && view === 'posts' && posts && (
                         <div className="space-y-4">
                             <h2 className="text-xl font-semibold">{posts.threadTitle}</h2>
-                            <p className="text-sm text-gray-500">作者: {posts.threadAuthor} · 共 {posts.total} 条回复</p>
+                            <p className="text-sm text-fg-3">作者: {posts.threadAuthor} · 共 {posts.total} 条回复</p>
                             <div className="space-y-3">
                                 {posts.posts.map(p => <PostItem key={p.postId} post={p} />)}
                             </div>
@@ -198,12 +198,12 @@ export default function Forums() {
 
                     {!loading && view === 'search' && searchResults && (
                         <div className="space-y-2">
-                            <p className="text-sm text-gray-400 mb-3">找到 {searchResults.total} 条结果</p>
+                            <p className="text-sm text-fg-3 mb-3">找到 {searchResults.total} 条结果</p>
                             {searchResults.results.map(r => (
-                                <div key={r.postId} className="bg-gray-800 border border-gray-700 rounded p-3">
+                                <div key={r.postId} className="bg-panel border border-line rounded p-3">
                                     <div className="text-sm font-medium">{r.threadTitle}</div>
-                                    <div className="text-xs text-gray-500 mt-1">{r.author} · {r.createdAt}</div>
-                                    <div className="text-sm text-gray-300 mt-2 line-clamp-2" dangerouslySetInnerHTML={{ __html: r.contentHtml?.substring(0, 200) || '' }} />
+                                    <div className="text-xs text-fg-3 mt-1">{r.author} · {r.createdAt}</div>
+                                    <div className="text-sm text-fg-2 mt-2 line-clamp-2" dangerouslySetInnerHTML={{ __html: r.contentHtml?.substring(0, 200) || '' }} />
                                 </div>
                             ))}
                             <Pagination page={page} totalPages={totalPages} onPageChange={p => handleSearch(p)} />
@@ -218,13 +218,13 @@ export default function Forums() {
 function PostItem({ post, depth = 0 }) {
     return (
         <div style={{ marginLeft: Math.min(depth * 24, 96) }}>
-            <div className="bg-gray-800 border border-gray-700 rounded p-3">
+            <div className="bg-panel border border-line rounded p-3">
                 <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-blue-300">{post.author}</span>
-                    <span className="text-xs text-gray-500">{post.createdAt}</span>
+                    <span className="text-sm font-medium text-accent">{post.author}</span>
+                    <span className="text-xs text-fg-3">{post.createdAt}</span>
                 </div>
                 {post.title && <div className="text-sm font-semibold mb-1">{post.title}</div>}
-                <div className="text-sm text-gray-300 prose prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: post.contentHtml || '' }} />
+                <div className="text-sm text-fg-2 prose dark:prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: post.contentHtml || '' }} />
             </div>
             {post.children && post.children.map(child => (
                 <PostItem key={child.postId} post={child} depth={depth + 1} />
@@ -240,13 +240,13 @@ function Pagination({ page, totalPages, onPageChange }) {
             <button
                 disabled={page <= 1}
                 onClick={() => onPageChange(page - 1)}
-                className="px-3 py-1 rounded bg-gray-700 text-sm disabled:opacity-50 hover:bg-gray-600"
+                className="px-3 py-1 rounded bg-raised text-sm disabled:opacity-50 hover:bg-sunken"
             >上一页</button>
-            <span className="px-3 py-1 text-sm text-gray-400">{page} / {totalPages}</span>
+            <span className="px-3 py-1 text-sm text-fg-3">{page} / {totalPages}</span>
             <button
                 disabled={page >= totalPages}
                 onClick={() => onPageChange(page + 1)}
-                className="px-3 py-1 rounded bg-gray-700 text-sm disabled:opacity-50 hover:bg-gray-600"
+                className="px-3 py-1 rounded bg-raised text-sm disabled:opacity-50 hover:bg-sunken"
             >下一页</button>
         </div>
     );
