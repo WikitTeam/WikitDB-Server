@@ -12,7 +12,7 @@ const PLACEHOLDER_SVG =
 
 // ---------- 数据 ----------
 const stats = (wikiCount) => [
-    { num: `${wikiCount}`, label: '收录站点', icon: 'fa-globe', iconColor: 'text-primary-600' },
+    { num: `${wikiCount}`, label: '收录站点', icon: 'fa-globe', iconColor: 'text-primary-600 dark:text-primary-400' },
     { num: '实时', label: '数据同步', icon: 'fa-bolt', iconColor: 'text-emerald-600 dark:text-emerald-400' },
     { num: '多维', label: '搜索筛选', icon: 'fa-filter', iconColor: 'text-amber-600 dark:text-amber-400' },
     { num: '免费', label: '开放使用', icon: 'fa-heart', iconColor: 'text-pink-600 dark:text-pink-400' }
@@ -229,7 +229,7 @@ const Home = () => {
             </section>
 
             {/* ==================== 数据亮点 · 白色账本带 ==================== */}
-            <section className="w-full bg-white" aria-label="数据亮点">
+            <section className="w-full bg-white dark:bg-canvas" aria-label="数据亮点">
                 {/* flex + justify-between：剩余空间被均分到所有子项之间，分割线因此落在相邻两项的正中 */}
                 <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-y-10 px-6 py-20 sm:px-10 lg:px-16">
                     {stats(wikis.length).map((item, i) => (
@@ -237,14 +237,14 @@ const Home = () => {
                             {i > 0 && (
                                 <div
                                     aria-hidden="true"
-                                    className="hidden h-24 w-px shrink-0 bg-zinc-200 md:block"
+                                    className="hidden h-24 w-px shrink-0 bg-zinc-200 dark:bg-line md:block"
                                 />
                             )}
                             <div className="group flex w-1/2 flex-col items-start gap-1 px-2 py-2 md:w-auto md:py-0">
-                                <div className="font-[family-name:Archivo,sans-serif] text-[64px] font-black leading-none tracking-tight text-zinc-900">
+                                <div className="font-[family-name:Archivo,sans-serif] text-[64px] font-black leading-none tracking-tight text-zinc-900 dark:text-fg">
                                     {item.num}
                                 </div>
-                                <div className="flex items-center gap-2 text-sm text-zinc-500">
+                                <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-fg-3">
                                     <i aria-hidden="true" className={`fa-solid ${item.icon} text-base ${item.iconColor}`} />
                                     <span>{item.label}</span>
                                 </div>
@@ -277,7 +277,8 @@ const Home = () => {
                             <div
                                 className="featureBg"
                                 style={{
-                                    backgroundImage: `linear-gradient(0deg, rgba(250,250,250,1) 35%, transparent 140%), url(${f.img})`
+                                    // 遮罩色走 CSS 变量，明暗主题各一套（见末尾 <style jsx>）
+                                    backgroundImage: `linear-gradient(0deg, var(--fs-veil, rgba(250,250,250,1)) 35%, transparent 140%), url(${f.img})`
                                 }}
                                 aria-hidden="true"
                             />
@@ -298,7 +299,7 @@ const Home = () => {
                                     <p className="featureDesc">{f.desc}</p>
                                     <Link
                                         href={f.href}
-                                        className="featureCta px-2 py-3 bg-zinc-200 text-zinc-800 hover:bg-zinc-100 transition-colors rounded-sm"
+                                        className="featureCta px-2 py-3 bg-zinc-200 hover:bg-zinc-100 dark:bg-raised dark:hover:bg-zinc-700 transition-colors rounded-sm"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         {f.cta}
@@ -353,18 +354,18 @@ const Home = () => {
             </section>
 
             {/* ==================== 收录站点 · 双行反向跑马灯 ==================== */}
-            <section className="w-full bg-zinc-50 py-20 lg:py-24" aria-labelledby="wikis-title">
+            <section className="w-full bg-zinc-50 py-20 lg:py-24 dark:bg-canvas" aria-labelledby="wikis-title">
                 <div className="mx-auto max-w-[1280px] px-6 sm:px-10 lg:px-16">
                     <div className="mb-8 flex items-end justify-between gap-6">
                         <div>
-                            <div className="font-[family-name:Anton,sans-serif] text-[15px] tracking-[4px] text-zinc-400">
+                            <div className="font-[family-name:Anton,sans-serif] text-[15px] tracking-[4px] text-zinc-400 dark:text-fg-3">
                                 ARCHIVE
                             </div>
-                            <h2 id="wikis-title" className="mt-2 text-3xl font-black text-zinc-900 sm:text-4xl">
+                            <h2 id="wikis-title" className="mt-2 text-3xl font-black text-zinc-900 dark:text-fg sm:text-4xl">
                                 收录站点
                             </h2>
                         </div>
-                        <span className="hidden pb-1 text-sm tabular-nums text-zinc-500 sm:block">
+                        <span className="hidden pb-1 text-sm tabular-nums text-zinc-500 dark:text-fg-3 sm:block">
                             {wikis.length} 个站点
                         </span>
                     </div>
@@ -373,8 +374,8 @@ const Home = () => {
                 {/* 行 1 · 向左滚动 */}
                 <div className="group/marquee relative w-full overflow-hidden">
                     {/* 边缘渐隐遮罩 */}
-                    <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-10 w-[140px] bg-gradient-to-r from-zinc-50 to-transparent" />
-                    <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-10 w-[140px] bg-gradient-to-l from-zinc-50 to-transparent" />
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-10 w-[140px] bg-gradient-to-r from-zinc-50 to-transparent dark:from-canvas" />
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-10 w-[140px] bg-gradient-to-l from-zinc-50 to-transparent dark:from-canvas" />
                     {/* 两份完全等宽的分组：组内 gap-4、组尾 pr-4 补齐接缝间距，
                         translateX(-50%) 恰好等于一个分组宽 → 无缝循环 */}
                     <div className="flex w-max marquee-track marquee-left hover:[animation-play-state:paused]">
@@ -386,10 +387,10 @@ const Home = () => {
                                         <a
                                             key={`r1-${param}-${idx}`}
                                             href={`/site/${param}`}
-                                            className="flex shrink-0 items-center gap-4 rounded-md border border-zinc-200 bg-white px-6 py-4 transition-colors hover:border-primary-400 hover:bg-white"
+                                            className="flex shrink-0 items-center gap-4 rounded-md border border-zinc-200 bg-white px-6 py-4 transition-colors hover:border-primary-400 hover:bg-white dark:border-line dark:bg-panel dark:hover:bg-raised"
                                             aria-label={`${wiki.NAME} 站点概览`}
                                         >
-                                            <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded bg-zinc-100">
+                                            <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded bg-zinc-100 dark:bg-raised">
                                                 <img
                                                     src={wiki.ImgURL}
                                                     alt={`${wiki.NAME} logo`}
@@ -400,7 +401,7 @@ const Home = () => {
                                                     className="h-full w-full object-contain p-1.5"
                                                 />
                                             </span>
-                                            <span className="text-base font-semibold text-zinc-900 whitespace-nowrap">
+                                            <span className="text-base font-semibold text-zinc-900 dark:text-fg whitespace-nowrap">
                                                 {wiki.NAME}
                                             </span>
                                         </a>
@@ -413,8 +414,8 @@ const Home = () => {
 
                 {/* 行 2 · 向右滚动（reverse） */}
                 <div className="group/marquee relative mt-7 w-full overflow-hidden">
-                    <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-10 w-[140px] bg-gradient-to-r from-zinc-50 to-transparent" />
-                    <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-10 w-[140px] bg-gradient-to-l from-zinc-50 to-transparent" />
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-10 w-[140px] bg-gradient-to-r from-zinc-50 to-transparent dark:from-canvas" />
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-10 w-[140px] bg-gradient-to-l from-zinc-50 to-transparent dark:from-canvas" />
                     <div className="flex w-max marquee-track marquee-right hover:[animation-play-state:paused]">
                         {[0, 1].map((half) => (
                             <div key={half} aria-hidden={half === 1} className="flex gap-4 pr-4">
@@ -424,10 +425,10 @@ const Home = () => {
                                         <a
                                             key={`r2-${param}-${idx}`}
                                             href={`/site/${param}`}
-                                            className="flex shrink-0 items-center gap-4 rounded-md border border-zinc-200 bg-white px-6 py-4 transition-colors hover:border-primary-400 hover:bg-white"
+                                            className="flex shrink-0 items-center gap-4 rounded-md border border-zinc-200 bg-white px-6 py-4 transition-colors hover:border-primary-400 hover:bg-white dark:border-line dark:bg-panel dark:hover:bg-raised"
                                             aria-label={`${wiki.NAME} 站点概览`}
                                         >
-                                            <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded bg-zinc-100">
+                                            <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded bg-zinc-100 dark:bg-raised">
                                                 <img
                                                     src={wiki.ImgURL}
                                                     alt={`${wiki.NAME} logo`}
@@ -438,7 +439,7 @@ const Home = () => {
                                                     className="h-full w-full object-contain p-1.5"
                                                 />
                                             </span>
-                                            <span className="text-base font-semibold text-zinc-900 whitespace-nowrap">
+                                            <span className="text-base font-semibold text-zinc-900 dark:text-fg whitespace-nowrap">
                                                 {wiki.NAME}
                                             </span>
                                         </a>
@@ -451,33 +452,33 @@ const Home = () => {
             </section>
 
             {/* ==================== FAQ · 白色双栏区 ==================== */}
-            <section className="w-full bg-white" aria-labelledby="faq-title">
+            <section className="w-full bg-white dark:bg-canvas" aria-labelledby="faq-title">
                 <div className="mx-auto grid max-w-[1280px] grid-cols-1 gap-16 px-6 py-20 sm:px-10 md:grid-cols-[300px_1fr] lg:px-16 lg:py-28">
                     <div className="space-y-3">
-                        <div className="font-[family-name:Anton,sans-serif] text-[15px] tracking-[4px] text-zinc-400">
+                        <div className="font-[family-name:Anton,sans-serif] text-[15px] tracking-[4px] text-zinc-400 dark:text-fg-3">
                             FAQ
                         </div>
-                        <h2 id="faq-title" className="text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">
+                        <h2 id="faq-title" className="text-3xl font-black tracking-tight text-zinc-900 dark:text-fg sm:text-4xl">
                             常见问题
                         </h2>
-                        <p className="text-sm leading-[1.8] text-zinc-500">
+                        <p className="text-sm leading-[1.8] text-zinc-500 dark:text-fg-3">
                             若没找到答案，可查看关于页或联系管理员
                         </p>
                     </div>
-                    <div className="divide-y divide-zinc-200 border-y border-zinc-200">
+                    <div className="divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-line dark:border-line">
                         {faqs.map((f, i) => (
                             <details
                                 key={i}
                                 className="group py-7 [&_summary::-webkit-details-marker]:hidden"
                             >
                                 <summary className="flex cursor-pointer items-center justify-between gap-6 list-none">
-                                    <span className="flex items-start gap-3 pr-4 text-base font-semibold text-zinc-900">
-                                        <i aria-hidden="true" className="fa-solid fa-circle-question mt-1 text-sm text-primary-600" />
+                                    <span className="flex items-start gap-3 pr-4 text-base font-semibold text-zinc-900 dark:text-fg">
+                                        <i aria-hidden="true" className="fa-solid fa-circle-question mt-1 text-sm text-primary-600 dark:text-primary-400" />
                                         <span>{f.q}</span>
                                     </span>
-                                    <i aria-hidden="true" className="fa-solid fa-chevron-down text-xs text-zinc-500 transition-transform group-open:rotate-180" />
+                                    <i aria-hidden="true" className="fa-solid fa-chevron-down text-xs text-zinc-500 dark:text-fg-3 transition-transform group-open:rotate-180" />
                                 </summary>
-                                <div className="mt-4 pl-7 text-sm leading-[1.9] text-zinc-600">
+                                <div className="mt-4 pl-7 text-sm leading-[1.9] text-zinc-600 dark:text-fg-2">
                                     {f.a}
                                 </div>
                             </details>
@@ -556,7 +557,32 @@ const Home = () => {
                 .featureStrip {
                     display: flex;
                     flex-direction: column;
-                    background-color: #efeff5ff;
+                    /* 主题变量：亮色沿用原值，暗色值见下方 html.dark 覆盖块 */
+                    --fs-bg: #efeff5ff;
+                    --fs-veil: rgba(250, 250, 250, 1);
+                    --fs-border: rgba(208, 208, 208, .08);
+                    --fs-num: rgba(27, 27, 28, .5);
+                    --fs-title: #000000ff;
+                    --fs-title-mark: #8100ccff;
+                    --fs-desc: rgba(32, 32, 32, .82);
+                    --fs-cta-fg: #000000ff;
+                    --fs-cta-icon-bg: #000000ff;
+                    --fs-cta-icon-fg: #e7e7e7ff;
+                    background-color: var(--fs-bg);
+                }
+
+                /* 暗色模式：整条翻转为暗底亮字，accent 复用语义 token */
+                :global(html.dark) .featureStrip {
+                    --fs-bg: var(--w-canvas);
+                    --fs-veil: rgba(9, 9, 11, .95);
+                    --fs-border: rgba(255, 255, 255, .09);
+                    --fs-num: rgba(244, 244, 245, .45);
+                    --fs-title: var(--w-fg);
+                    --fs-title-mark: var(--w-accent);
+                    --fs-desc: var(--w-fg-2);
+                    --fs-cta-fg: var(--w-fg);
+                    --fs-cta-icon-bg: var(--w-fg);
+                    --fs-cta-icon-fg: var(--w-canvas);
                 }
 
                 .featurePanel {
@@ -566,7 +592,7 @@ const Home = () => {
                     outline: none;
                     /* 移动端：较矮的纵列 */
                     height: 172px;
-                    border-top: 1px solid rgba(208, 208, 208, 0.08);
+                    border-top: 1px solid var(--fs-border);
                     transition: height .5s cubic-bezier(.4, 0, .2, 1);
                 }
                 .featurePanel:focus-visible {
@@ -636,7 +662,7 @@ const Home = () => {
                     font-size: 44px;
                     line-height: 1;
                     letter-spacing: .02em;
-                    color: rgba(27, 27, 28, 0.5);
+                    color: var(--fs-num);
                 }
                 .featureNumSm { font-size: 34px; }
                 .featureTitle {
@@ -645,19 +671,19 @@ const Home = () => {
                     font-size: 20px;
                     font-weight: 900;
                     line-height: 1.2;
-                    color: #000000ff;
+                    color: var(--fs-title);
                     white-space: nowrap;
                 }
                 .featureTitleOpen::before {
                     content: '//';
                     font-size: 75%;
-                    color: #8100ccff
+                    color: var(--fs-title-mark)
                 }
                 .featureDesc {
                     margin: .9rem 0 .9rem 0;
                     font-size: 15px;
                     line-height: 1.85;
-                    color: rgba(32, 32, 32, 0.82);
+                    color: var(--fs-desc);
                 }
                 .featureCta {
                     display: inline-flex;
@@ -665,7 +691,7 @@ const Home = () => {
                     gap: .6rem;
                     font-size: 15px;
                     font-weight: 700;
-                    color: #000000ff;
+                    color: var(--fs-cta-fg);
                 }
                 .featureCtaIcon {
                     display: inline-flex;
@@ -673,8 +699,8 @@ const Home = () => {
                     justify-content: center;
                     width: 24px;
                     height: 24px;
-                    background: #000000ff;
-                    color: #e7e7e7ff;
+                    background: var(--fs-cta-icon-bg);
+                    color: var(--fs-cta-icon-fg);
                     transition: transform .3s ease;
                 }
                 .featureCta:hover .featureCtaIcon { transform: translateX(4px); }
