@@ -4,17 +4,19 @@ module.exports = {
     SITE_SINCE: '2026',
     SITE_AUTHOR: 'WikitDB Team',
     SUPPORT_WIKI: [
-   /*站点格式
+
+        /*站点格式
+             {
+                 NAME: "站点名称",
+                 URL: "站点链接",
+                 ImgURL: "Logo链接",
+                 PARAM: "简写",
+                 WIKIT_ID: "Wikit站点里写的站点名称，这里用于筛选作者的站点页面",
+                 GQL_API: "可选，自定义GraphQL端点，不填则默认 https://wikit.unitreaty.org/apiv1/graphql"
+             },
+         */
+
         {
-            NAME: "站点名称",
-            URL: "站点链接",
-            ImgURL: "Logo链接",
-            PARAM: "简写",
-            WIKIT_ID: "Wikit站点里写的站点名称，这里用于筛选作者的站点页面",
-            GQL_API: "可选，自定义GraphQL端点，不填则默认 https://wikit.unitreaty.org/apiv1/graphql"
-        },
-    */
-    {
             NAME: "深林文学部",
             URL: "https://deep-forest-club.wikidot.com/",
             ImgURL: "https://deep-forest-club.wdfiles.com/local--files/component%3Atheme/logo.png",
@@ -25,7 +27,7 @@ module.exports = {
         {
             NAME: "后室IF分站",
             URL: "https://if-backrooms.wikidot.com/",
-            ImgURL: "https://laimu.backroomswiki.top/img/Logo.png",
+            ImgURL: "https://if-backrooms.wdfiles.com/local--files/start/Logo",
             PARAM: "if",
             WIKIT_ID: "if-backrooms",
             AUTHOR_TAG: "作者"

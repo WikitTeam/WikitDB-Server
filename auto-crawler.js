@@ -204,20 +204,20 @@ async function runCrawler() {
                 await Promise.all(batch.map(async (pageNode) => {
                     const secureUrl = `${baseUrl}/${pageNode.page}`;
                     let success = false, attempt = 0;
-                    
+
                     while (!success && attempt < 3) {
                         attempt++;
                         try {
                             const { data: html } = await request.get(secureUrl, { headers: baseHeaders });
-                            
+
                             const $page = cheerio.load(html);
                             let threadId = null;
-                            
+
                             let href = $page('#discuss-button').attr('href');
-                            if (!href) href = $page('#page-info a').filter((_, el) => ($page(el).attr('href')||'').includes('/forum/t-')).attr('href');
+                            if (!href) href = $page('#page-info a').filter((_, el) => ($page(el).attr('href') || '').includes('/forum/t-')).attr('href');
                             if (!href) href = $page('#page-content').parent().find('a').filter((_, el) => {
                                 const text = $page(el).text().toLowerCase();
-                                return (text.includes('discuss') || text.includes('讨论') || text.includes('评论')) && ($page(el).attr('href')||'').includes('/forum/t-');
+                                return (text.includes('discuss') || text.includes('讨论') || text.includes('评论')) && ($page(el).attr('href') || '').includes('/forum/t-');
                             }).attr('href');
 
                             if (href) {
@@ -235,7 +235,7 @@ async function runCrawler() {
                                     const $forum = cheerio.load(forumHtml);
                                     const posts = [];
                                     const userIdCache = {};
-                                    
+
                                     const postElements = $forum('.post').toArray();
                                     for (const el of postElements) {
                                         const $el = $forum(el);
@@ -251,7 +251,7 @@ async function runCrawler() {
 
                                         let author = '未知用户';
                                         const $printUser = $el.find('.head .printuser').length ? $el.find('.head .printuser').first() : $el.find('.info .printuser').first();
-                                        
+
                                         if ($printUser.length) {
                                             const $links = $printUser.find('a');
                                             if ($links.length) author = $links.last().text().trim();
@@ -299,7 +299,7 @@ async function runCrawler() {
                                         const odate = $el.find('.odate').first();
                                         const odateClass = odate.attr('class') || '';
                                         const timeMatch = odateClass.match(/time_(\d+)/);
-                                        
+
                                         let timestamp = odate.text().trim();
                                         if (timeMatch) {
                                             const dateObj = new Date(parseInt(timeMatch[1]) * 1000);
@@ -308,17 +308,17 @@ async function runCrawler() {
 
                                         posts.push({ postId, parentId, author, avatarUrl, timestamp, contentHtml, children: [] });
                                     }
-                                    
+
                                     const postMap = {};
                                     const rootPosts = [];
                                     posts.forEach(p => { p.children = []; postMap[p.postId] = p; });
-                                    posts.forEach(p => { 
-                                        if (p.parentId && postMap[p.parentId]) postMap[p.parentId].children.push(p); 
-                                        else rootPosts.push(p); 
+                                    posts.forEach(p => {
+                                        if (p.parentId && postMap[p.parentId]) postMap[p.parentId].children.push(p);
+                                        else rootPosts.push(p);
                                     });
-                                    
+
                                     const forumData = { threadId, url: forumUrl, total: posts.length, threads: rootPosts };
-                                    
+
                                     await prisma.setting.upsert({
                                         where: { key: cacheKey },
                                         update: { value: JSON.stringify(forumData) },
@@ -344,7 +344,7 @@ async function runCrawler() {
 
                             const origin = new URL(secureUrl).origin;
                             const ajaxUrl = `${origin}/ajax-module-connector.php`;
-                            
+
                             const ajaxHeaders = {
                                 'User-Agent': 'Mozilla/5.0',
                                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -401,7 +401,7 @@ async function runCrawler() {
                                 parsed.forEach(v => existingMap.set(`${v.wiki}:${v.page}`, v));
                             }
                         }
-                        
+
                         newVotes.forEach(nv => {
                             const id = `${nv.wiki}:${nv.page}`;
                             if (!existingMap.has(id)) existingMap.set(id, nv);
@@ -418,7 +418,7 @@ async function runCrawler() {
                             create: { key, value: JSON.stringify(truncatedVotes) }
                         });
                     }
-                    userVotesMap = {}; 
+                    userVotesMap = {};
                 }
                 await sleep(2500);
             }

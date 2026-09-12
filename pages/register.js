@@ -72,7 +72,7 @@ export default function Register() {
         setSuccess('');
         
         if (!username || !password || !email || !code) {
-            setError('请完整填写所有信息（含邮箱和验证码）');
+            setError('请完整填写全部信息（含邮箱和验证码）');
             return;
         }
         if (password !== confirmPassword) {
@@ -167,8 +167,8 @@ export default function Register() {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-accent-soft rounded-full blur-3xl pointer-events-none"></div>
 
                 <div className="text-center mb-8 relative z-10">
-                    <h1 className="text-3xl font-bold text-fg mb-2">加入 {config.SITE_NAME}</h1>
-                    <p className="text-fg-2 text-sm font-medium tracking-tight uppercase tracking-widest opacity-80">初始化你的数字档案身份</p>
+                    <h1 className="text-3xl font-bold text-fg mb-2">注册 {config.SITE_NAME}</h1>
+                    <p className="text-fg-2 text-sm font-medium tracking-tight uppercase tracking-widest opacity-80">快速创建你的 {config.SITE_NAME} 账号</p>
                 </div>
 
                 {error && (
@@ -191,7 +191,7 @@ export default function Register() {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 className="w-full bg-sunken border border-line rounded-xl px-4 py-3 text-fg focus:outline-none focus:border-accent-line transition-all shadow-inner"
-                                placeholder="推荐使用您的常用代号"
+                                placeholder="推荐使用你的常用代号"
                             />
                         </div>
                         <div>
@@ -263,7 +263,7 @@ export default function Register() {
 
                         <div className="mt-6 text-center">
                             <p className="text-fg-3 text-xs">
-                                已有档案记录？ <Link href="/login" className="text-accent font-bold hover:underline ml-1 tracking-tight">立即接入终端</Link>
+                                已有账号？ <Link href="/login" className="text-accent font-bold hover:underline ml-1 tracking-tight">立即登录</Link>
                             </p>
                         </div>
                     </form>
@@ -316,7 +316,7 @@ export default function Register() {
                                 <i className="fa-solid fa-circle-check"></i>
                             </div>
                             <h3 className="text-xl font-bold text-fg mb-2 tracking-tight">身份识别成功</h3>
-                            <p className="text-fg-2 text-sm mb-8 leading-relaxed">我们已在 Wikit 验证记录中确认了您的身份，邮箱验证也已就绪。</p>
+                            <p className="text-fg-2 text-sm mb-8 leading-relaxed">我们已在 Wikit 验证记录中确认了你的身份，邮箱验证也已就绪。</p>
                             
                             <div className="bg-panel p-5 rounded-2xl border border-line shadow-sm">
                                 <span className="text-[10px] text-fg-3 font-bold uppercase tracking-widest block mb-2">绑定的 Wikidot 身份</span>
@@ -336,7 +336,7 @@ export default function Register() {
                                 disabled={isVerifying}
                                 className="flex-1 bg-accent-solid hover:bg-accent-solid-hover text-accent-fg font-black py-4 rounded-xl transition-all shadow-xl shadow-violet-500/20 text-xs uppercase tracking-[0.2em] disabled:opacity-50"
                             >
-                                {isVerifying ? '正在建立档案...' : '确认绑定并注册'}
+                                {isVerifying ? '正在创建...' : '确认绑定并注册'}
                             </button>
                         </div>
                     </div>

@@ -44,7 +44,7 @@ const faqs = [
     },
     {
         q: '数据来源是什么？更新及时吗？',
-        a: '数据来自 Wikit API，由其调用 kakushi-w/wikit CLI 定期抓取 Wikidot 平台公开页面。每天 12:00（Asia/Shanghai）自动执行备份任务，接口层面会尽可能快地反映最新内容。'
+        a: '数据来自 Wikit API，由其调用 kakushi-w/Wikit CLI工具定期抓取 Wikidot 平台公开页面。每天 12:00（Asia/Shanghai）自动执行备份任务，接口层面会尽可能快地反映最新内容。'
     },
     {
         q: '我是作者，不希望我的作品被收录？',
@@ -498,7 +498,7 @@ const Home = () => {
                         注册一下？
                     </h2>
                     <p className="mx-auto mt-5 max-w-[520px] text-base leading-[1.9] text-zinc-200">
-                        有账号才能用作者评分、动态追踪、高级搜索这些功能。免费的，花不了一分钟。
+                        有账号才能使用作者评分、动态追踪、高级搜索这些功能，快速注册你的 WikitDB 账号。
                     </p>
                     <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
                         <Link
@@ -517,7 +517,7 @@ const Home = () => {
                     </div>
                     <p className="mt-6 text-xs tracking-wide text-primary-300">
                         <i aria-hidden="true" className="fa-solid fa-lock mr-1" />
-                        仅需Wikidot验证防机器人，不与第三方共享
+                        需验证并绑定你的Wikidot账号
                     </p>
                 </div>
             </section>

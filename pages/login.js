@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+const config = require('../wikitdb.config.js');
 
 export default function Login() {
     const router = useRouter();
@@ -61,7 +62,7 @@ if (res.ok) {
             </Head>
             
             <div className="bg-white dark:bg-zinc-800 p-8 rounded-xl border border-zinc-200 dark:border-zinc-700 w-full max-w-md shadow-xl transition-colors duration-300">
-                <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6 text-center">登录账号</h1>
+                <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6 text-center">登录 {config.SITE_NAME}</h1>
                 
                 {message && (
                     <div className="mb-4 p-3 rounded bg-zinc-100 dark:bg-zinc-700/50 text-zinc-600 dark:text-zinc-300 text-sm text-center border border-zinc-200 dark:border-zinc-600">
