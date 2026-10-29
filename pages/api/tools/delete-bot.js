@@ -70,12 +70,6 @@ function readLatestLog(lines = 40) {
 }
 
 async function handler(req, res) {
-    if (process.env.VERCEL) {
-        return res.status(501).json({
-            success: false,
-            error: '宿主机删帖机器人依赖 systemd 和本地磁盘，无服务器部署请改用职员面板里的 BotAccount 自动扫描。',
-        });
-    }
     // GET：状态 + 配置 + 日志
     if (req.method === 'GET') {
         const active = run(`systemctl is-active ${SERVICE}`).toLowerCase() === 'active';

@@ -25,7 +25,7 @@ WikitDB 是一个面向 Wikidot 社区生态的**非营利性同人项目**。�
 | 论坛渲染 | FTML (Wikidot 文本标记语言) WASM 内核 |
 | HTML 消毒 | sanitize-html |
 | 鉴权 | JWT (HS256) + bcrypt + httpOnly Cookie |
-| 定时任务 | GitHub Actions（`.github/workflows/serverless-jobs.yml`）或 Vercel Cron |
+| 定时任务 | node-cron |
 | 邮件 | nodemailer |
 | 缓存 | Upstash Redis (可选) |
 | 语言 | JavaScript (逐步迁移至 TypeScript) |
@@ -86,52 +86,39 @@ npm run dev
 
 默认监听 `http://localhost:3000`。
 
-## 生产部署（无服务器）
+## 生产部署
 
-站点本身是 Next.js，部署到 Vercel 后每个页面和 API 都是按需启动的函数，**不要再跑 `npm start` + PM2，也不要再跑常驻 worker**。
-
-状态都在 Postgres 里：爬虫游标（`crawler:cursor`）、运行状态（`crawler:status`）、任务日志（`logs:crawler`）、管理后台改过的站点列表（`site:config`）。函数结束不影响进度。
-
-### 1. 部署 Web
-
-把仓库接到 Vercel（或任何支持 Next.js 的无服务器平台），配上：
-
-- `DATABASE_URL` — 用连接池地址（Neon / Supabase pooler），带 `connection_limit=1`
-- `JWT_SECRET`、`SITE_ORIGIN`
-- `CRON_SECRET` — 至少 16 字符，调度接口靠它鉴权
-- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` — 可选，配了之后限速跨实例共享
-
-`vercel.json` 里有两条每天一次的 Cron（Hobby 计划不允许更密）。真正的推进频率靠下面的 GitHub Actions。
-
-### 2. 调度爬虫和归属同步
-
-`.github/workflows/serverless-jobs.yml` 每 10 分钟跑一片（最长约 8 分钟），游标没跑完下次接着跑。爬虫一轮结束后冷却 3 小时，归属同步冷却 30 分钟。
-
-在仓库 Secrets 里设置 `DATABASE_URL`（以及可选的 `WIKIDOT_BOT_USER` / `WIKIDOT_BOT_PASS`）。没有数据库密钥时，可以改成调用线上接口：仓库 Variables 设 `SITE_ORIGIN`，Secrets 设 `CRON_SECRET`。
-
-本地手动跑一整轮或一片：
+### 构建
 
 ```bash
-node auto-crawler.js            # 把当前一轮爬完后退出
-node auto-crawler.js --for 480  # 最多 480 秒
-node auto-attribution.js --slice
+npm run build
+npm start
 ```
 
-`npm run worker` 仍指向爬虫脚本，但**跑完就退出**，不要再用 PM2 守护它。
+### 备份 Worker（可选）
 
-### 3. 全站备份
+如需启用 Wikidot 站点定时备份，需将 wikit CLI 安装到服务器 PATH 中，并以常驻进程方式运行 worker：
 
-`wikit` CLI 要二进制和磁盘，不能塞进函数。每天 12:00（北京时间）由同一条 Actions 工作流下载 `wikit`、执行 `node auto-crawler.js --backup`，把 `wikit_data/` 收成 artifact。
+```bash
+npm run worker
+```
 
-### 4. 仍然想自建虚拟机
+Worker 会在每天 12:00（Asia/Shanghai 时区）对所有 `wikitdb.config.js` 中声明的站点执行备份，归档写入工作目录下的 `wikit_data/`。任务限定为单进程串行执行，且服务端始终传递 `--keep-removed`，确保从 sitemap 消失的页面仍保留在归档中。
 
-可以 `npm run build && npm start`，但调度请用系统 cron 调用上面的一次性命令，不要再装 `deploy/wikitdb-attribution.service` 那种常驻进程。
+### 进程管理
+
+推荐使用 PM2 守护 `npm start` 与 `npm run worker` 两个进程：
+
+```bash
+pm2 start "npm start" --name wikitdb
+pm2 start "npm run worker" --name wikitdb-worker
+pm2 save
+```
 
 ## 项目结构
 
 ```
 WikitDB-Server/
-├── jobs/                   # 无服务器任务切片（爬虫 / 归属 / 备份）
 ├── pages/                  # Next.js Pages Router
 │   ├── api/                # API 路由
 │   ├── tools/              # 工具页面
@@ -161,9 +148,7 @@ WikitDB-Server/
 | `npm run typecheck` | TypeScript 类型检查 (`tsc --noEmit`) |
 | `npm test` | 运行单元测试 (`node --test tests/*.test.js`) |
 | `npm run test:ftml` | FTML 运行时测试 |
-| `npm run worker` / `npm run job:crawl` | 跑一轮爬虫后退出（不再常驻） |
-| `npm run job:attribution` | 跑一轮归属同步后退出 |
-| `npm run job:backup` | 调用本机 wikit CLI 做备份 |
+| `npm run worker` | 启动备份定时任务 worker |
 | `npm run prisma:generate` | 生成 Prisma Client |
 | `npm run prisma:push` | 同步 schema 到数据库 |
 | `npm run prisma:studio` | 打开 Prisma Studio 可视化管理数据库 |

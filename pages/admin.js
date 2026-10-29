@@ -201,7 +201,7 @@ export default function AdminDashboard() {
                 body: JSON.stringify(isEdit ? { param: editingSiteParam, ...siteForm } : siteForm)
             });
             setSites(d.sites || []);
-            setSiteMsg({ type: 'ok', text: isEdit ? (d.message || '站点已更新') : '站点已写入数据库（磁盘可写时会同时刷新配置文件）' });
+            setSiteMsg({ type: 'ok', text: isEdit ? (d.message || '站点已更新') : '站点已添加，配置已写入 wikitdb.config.js' });
             setEditingSiteParam(null);
             setSiteForm({ NAME: '', URL: '', PARAM: '', WIKIT_ID: '', ImgURL: '', GQL_API: '', AUTHOR_TAG: '', ATTRIBUTION_PAGE: '', FORUM_SYNC: false });
         } catch (e) {
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
     };
 
     const handleDeleteSite = async (param) => {
-        if (!confirm(`确定删除站点 "${param}"？此操作会写入数据库里的站点配置。`)) return;
+        if (!confirm(`确定删除站点 "${param}"？此操作会立即修改 wikitdb.config.js。`)) return;
         try {
             const d = await api('/api/admin/sites', { method: 'DELETE', body: JSON.stringify({ param }) });
             setSites(d.sites || []);
@@ -440,7 +440,7 @@ export default function AdminDashboard() {
                     {activeTab === 'sites' && (
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">收录站点管理（写入数据库）</div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">收录站点管理（写入 wikitdb.config.js）</div>
                                 <button onClick={refreshSites} className={btnGhost}>刷新</button>
                             </div>
 
@@ -514,7 +514,7 @@ export default function AdminDashboard() {
                                     <button onClick={handleAddSite} disabled={savingSite} className={btnPrimary + ' disabled:opacity-50'}>{savingSite ? '保存中...' : (editingSiteParam ? '保存修改' : '添加站点')}</button>
                                     {editingSiteParam && <button onClick={handleCancelEdit} className={btnGhost}>取消编辑</button>}
                                 </div>
-                                <div className="text-xs text-fg-3">提示：站点变更写入数据库，爬虫下一片就会读到。已经打包进页面的导航列表要重新部署后才更新。无服务器环境写不了 wikitdb.config.js，这是预期行为。</div>
+                                <div className="text-xs text-fg-3">提示：站点变更会立即写入 wikitdb.config.js。已构建的静态页面与正在运行的爬虫进程（npm run worker）需重启后才会使用新的站点列表。</div>
                             </div>
                         </div>
                     )}
@@ -523,7 +523,7 @@ export default function AdminDashboard() {
                     {activeTab === 'crawler' && (
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">爬虫运行状态（无服务器切片，每轮间隔 3 小时）</div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">爬虫运行状态（每 3 小时自动执行）</div>
                                 <div className="flex items-center gap-2">
                                     {crawlerLoading && <span className="text-xs text-fg-3">加载中...</span>}
                                     <button onClick={refreshCrawler} className={btnGhost}>刷新</button>
@@ -806,11 +806,11 @@ export default function AdminDashboard() {
                     {activeTab === 'logs' && (
                         <div className={cardCls + ' space-y-3'}>
                             <div className="flex items-center justify-between flex-wrap gap-2">
-                                <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">爬虫日志（数据库）</div>
+                                <div className="text-xs font-semibold uppercase tracking-wide text-fg-3">服务器 / 爬虫文件日志</div>
                                 <div className="flex items-center gap-2">
                                     <select value={fileLogKey} onChange={e => { setFileLogKey(e.target.value); refreshFileLogs(e.target.value); }}
                                         className="rounded-md border border-line bg-sunken px-3 py-1.5 text-sm text-fg outline-none focus:ring-2 focus:ring-accent">
-                                        <option value="crawler">爬虫日志（数据库）</option>
+                                        <option value="crawler">crawler.log（爬虫）</option>
                                         <option value="server">server.log</option>
                                         <option value="serverErr">server-err.log</option>
                                     </select>
