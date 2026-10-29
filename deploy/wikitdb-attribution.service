@@ -1,19 +1,23 @@
+# DEPRECATED
+# 无服务器部署不要启用这个单元。归属同步由 /api/cron/attribution
+# 或 .github/workflows/serverless-jobs.yml 触发，进程跑完即退出。
+# 若仍在虚拟机上临时使用：不要 Restart=always，否则冷却期也会被立刻拉起。
+
 [Unit]
-Description=WikitDB Attribution Sync (fetch attribution pages + compute author scores every 30min)
+Description=WikitDB Attribution Sync (one-shot; scheduler should invoke this)
 After=network.target postgresql.service
 Wants=postgresql.service
 
 [Service]
-Type=simple
+Type=oneshot
 User=root
 WorkingDirectory=/opt/WikitDB-Server
 EnvironmentFile=/opt/WikitDB-Server/.env
 Environment=NODE_ENV=production
 Environment=NODE_OPTIONS=--max-old-space-size=1024
 Environment=PATH=/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/usr/bin/node /opt/WikitDB-Server/auto-attribution.js
-Restart=always
-RestartSec=10
+ExecStart=/usr/bin/node /opt/WikitDB-Server/auto-attribution.js --for 480
+Restart=no
 
 [Install]
 WantedBy=multi-user.target

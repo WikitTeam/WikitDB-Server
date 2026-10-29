@@ -1,7 +1,8 @@
 /**
- * wikitdb.config.js 运行时读写工具
- * 使用 vm 沙箱解析配置文件，避免 Next.js webpack 打包导致的 require 缓存问题，
- * 确保读取到的始终是磁盘上的最新配置。
+ * 站点配置。
+ * 仓库里的 wikitdb.config.js 是默认值（会打进部署包）。
+ * 管理后台的改动写入 settings.site:config，无服务器实例没有可写磁盘时也能生效。
+ * 磁盘可写时仍会尝试刷新文件，方便自建虚拟机沿用原来的工作流。
  */
 
 const fs = require('fs');
@@ -9,13 +10,13 @@ const path = require('path');
 const vm = require('vm');
 
 const CONFIG_FILENAME = 'wikitdb.config.js';
+const CONFIG_KEY = 'site:config';
 
 function getConfigPath() {
     return path.join(process.cwd(), CONFIG_FILENAME);
 }
 
-/** 从磁盘加载配置（vm 沙箱执行，不污染全局） */
-function loadSiteConfig() {
+function loadSiteConfigFromFile() {
     const filePath = getConfigPath();
     const source = fs.readFileSync(filePath, 'utf8');
     const sandbox = { module: { exports: {} }, exports: {} };
@@ -25,7 +26,37 @@ function loadSiteConfig() {
     return cfg;
 }
 
-/** 使 Node 侧的 require 缓存失效（对 auto-crawler.js 等独立进程生效） */
+/** 同步读取磁盘配置。已打包的页面仍直接 require 该文件。 */
+function loadSiteConfig() {
+    return loadSiteConfigFromFile();
+}
+
+function normalizeStored(value) {
+    if (!value) return null;
+    if (typeof value === 'string') {
+        try { return JSON.parse(value); } catch (e) { return null; }
+    }
+    return value;
+}
+
+/** 数据库覆盖优先，没有记录或数据库不可用时退回文件。 */
+async function loadEffectiveConfig() {
+    const fileCfg = loadSiteConfigFromFile();
+    try {
+        const prisma = require('../lib/prisma');
+        const row = await prisma.setting.findUnique({ where: { key: CONFIG_KEY } });
+        const stored = normalizeStored(row && row.value);
+        if (stored && Array.isArray(stored.SUPPORT_WIKI)) {
+            return {
+                ...fileCfg,
+                ...stored,
+                SUPPORT_WIKI: stored.SUPPORT_WIKI,
+            };
+        }
+    } catch (e) { /* 构建期或未连上数据库时用文件 */ }
+    return fileCfg;
+}
+
 function invalidateConfigCache() {
     try {
         const resolved = require.resolve(getConfigPath());
@@ -33,7 +64,6 @@ function invalidateConfigCache() {
     } catch (e) { /* 打包环境中可能无法解析，忽略 */ }
 }
 
-/** 生成配置文件内容（保留站点模板注释，便于后续手工编辑） */
 function buildConfigFileContent(config) {
     const lines = [];
     lines.push('module.exports = {');
@@ -61,10 +91,27 @@ function buildConfigFileContent(config) {
     return lines.join('\n') + '\n';
 }
 
-/** 写回配置文件并刷新缓存 */
-function saveSiteConfig(config) {
-    fs.writeFileSync(getConfigPath(), buildConfigFileContent(config), 'utf8');
-    invalidateConfigCache();
+async function saveSiteConfig(config) {
+    const payload = {
+        SITE_NAME: config.SITE_NAME || 'WikitDB',
+        SITE_URL: config.SITE_URL || '',
+        SITE_SINCE: config.SITE_SINCE || '2026',
+        SITE_AUTHOR: config.SITE_AUTHOR || 'WikitDB Team',
+        SUPPORT_WIKI: config.SUPPORT_WIKI || [],
+    };
+    const prisma = require('../lib/prisma');
+    await prisma.setting.upsert({
+        where: { key: CONFIG_KEY },
+        update: { value: payload },
+        create: { key: CONFIG_KEY, value: payload },
+    });
+    try {
+        fs.writeFileSync(getConfigPath(), buildConfigFileContent(payload), 'utf8');
+        invalidateConfigCache();
+    } catch (e) {
+        if (e.code !== 'EROFS' && e.code !== 'EACCES' && e.code !== 'EPERM' && e.code !== 'ENOENT') throw e;
+    }
+    return payload;
 }
 
 function isHttpUrl(value) {
@@ -77,10 +124,8 @@ function isHttpUrl(value) {
     }
 }
 
-/** 校验并规范化一个站点对象，返回 { site } 或 { error } */
 function validateSite(input) {
     input = input || {};
-
     const site = {};
 
     site.NAME = String(input.NAME || '').trim();
@@ -100,7 +145,6 @@ function validateSite(input) {
         return { error: 'WIKIT_ID 只能包含字母、数字、点、下划线和连字符（1-80 位）' };
     }
 
-    // 可选字段
     if (input.ImgURL) {
         const imgUrl = String(input.ImgURL).trim();
         if (!isHttpUrl(imgUrl)) return { error: 'Logo 链接 (ImgURL) 必须是有效的 http(s) 链接' };
@@ -127,8 +171,11 @@ function validateSite(input) {
 module.exports = {
     getConfigPath,
     loadSiteConfig,
+    loadSiteConfigFromFile,
+    loadEffectiveConfig,
     saveSiteConfig,
     validateSite,
     buildConfigFileContent,
     invalidateConfigCache,
+    CONFIG_KEY,
 };
