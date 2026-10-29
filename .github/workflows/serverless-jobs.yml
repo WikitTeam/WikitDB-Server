@@ -1,0 +1,126 @@
+name: Serverless jobs
+
+# 替代原来的常驻 worker / systemd。
+# 爬虫和归属同步优先在 Actions 里跑（单次最长约 8 分钟，游标写在数据库里）。
+# 没配 DATABASE_URL 时，改为请求已部署站点的 /api/cron/*（需要 SITE_ORIGIN 与 CRON_SECRET）。
+# 每天 12:00（Asia/Shanghai，04:00 UTC）用 wikit CLI 打备份包并上传 artifact。
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Which job to run
+        required: true
+        default: crawl
+        type: choice
+        options:
+          - crawl
+          - attribution
+          - backup
+
+permissions:
+  contents: read
+
+jobs:
+  crawl:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'crawl') ||
+      (github.event_name == 'schedule' && github.event.schedule == '*/10 * * * *')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      WIKIDOT_BOT_USER: ${{ secrets.WIKIDOT_BOT_USER }}
+      WIKIDOT_BOT_PASS: ${{ secrets.WIKIDOT_BOT_PASS }}
+      SITE_ORIGIN: ${{ vars.SITE_ORIGIN }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Crawl with database
+        if: env.DATABASE_URL != ''
+        run: |
+          npm ci
+          npx prisma generate
+          node auto-crawler.js --for 480
+      - name: Crawl via deployed cron endpoint
+        if: env.DATABASE_URL == '' && env.SITE_ORIGIN != '' && env.CRON_SECRET != ''
+        run: |
+          curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$SITE_ORIGIN/api/cron/crawl"
+      - name: Skip notice
+        if: env.DATABASE_URL == '' && (env.SITE_ORIGIN == '' || env.CRON_SECRET == '')
+        run: echo "未配置 DATABASE_URL，也没有 SITE_ORIGIN + CRON_SECRET，跳过爬虫。在仓库 Secrets / Variables 里补上即可。"
+
+  attribution:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'attribution') ||
+      (github.event_name == 'schedule' && github.event.schedule == '*/10 * * * *')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SITE_ORIGIN: ${{ vars.SITE_ORIGIN }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Attribution with database
+        if: env.DATABASE_URL != ''
+        run: |
+          npm ci
+          npx prisma generate
+          node auto-attribution.js --for 480
+      - name: Attribution via deployed cron endpoint
+        if: env.DATABASE_URL == '' && env.SITE_ORIGIN != '' && env.CRON_SECRET != ''
+        run: |
+          curl -fsS -H "Authorization: Bearer $CRON_SECRET" "$SITE_ORIGIN/api/cron/attribution"
+      - name: Skip notice
+        if: env.DATABASE_URL == '' && (env.SITE_ORIGIN == '' || env.CRON_SECRET == '')
+        run: echo "未配置归属同步所需的 DATABASE_URL 或 SITE_ORIGIN + CRON_SECRET，跳过。"
+
+  backup:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'backup') ||
+      (github.event_name == 'schedule' && github.event.schedule == '0 4 * * *')
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Skip notice
+        if: env.DATABASE_URL == ''
+        run: echo "备份需要 Secrets.DATABASE_URL 来读取站点列表。未配置，跳过。"
+      - name: Install wikit CLI
+        if: env.DATABASE_URL != ''
+        run: |
+          curl -fsSL -o /tmp/wikit "https://github.com/WikitTeam/wikit/releases/download/v0.2.3/wikit-linux-amd64"
+          chmod +x /tmp/wikit
+          sudo mv /tmp/wikit /usr/local/bin/wikit
+      - name: Run backup
+        if: env.DATABASE_URL != ''
+        run: |
+          npm ci
+          npx prisma generate
+          node auto-crawler.js --backup
+      - uses: actions/upload-artifact@v4
+        if: env.DATABASE_URL != ''
+        with:
+          name: wikit-backup
+          path: wikit_data
+          if-no-files-found: ignore
+          retention-days: 14
+

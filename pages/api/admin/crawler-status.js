@@ -1,12 +1,10 @@
 import prisma from '../../../lib/prisma';
 import { withAdmin } from '../../../utils/withAdmin';
-import { loadSiteConfig } from '../../../utils/siteConfig';
+import { loadEffectiveConfig } from '../../../utils/siteConfig';
 
 /**
  * 爬虫状态 API
  * GET /api/admin/crawler-status
- * 返回：爬虫持久化的结构化状态（crawler:status），
- * 并与当前配置中的站点列表合并，保证新增/删除站点后状态表始终完整。
  */
 async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -20,7 +18,7 @@ async function handler(req, res) {
 
         let configuredSites = [];
         try {
-            configuredSites = (loadSiteConfig().SUPPORT_WIKI) || [];
+            configuredSites = ((await loadEffectiveConfig()).SUPPORT_WIKI) || [];
         } catch (e) {
             configuredSites = [];
         }
@@ -46,7 +44,6 @@ async function handler(req, res) {
             };
         });
 
-        // 用合并后的站点列表修正总进度统计，保证新增站点也能反映到进度里
         if (status && typeof status === 'object' && !status.running) {
             status = {
                 ...status,

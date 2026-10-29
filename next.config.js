@@ -9,6 +9,9 @@ const ALLOWED_FRAME_DOMAINS = ['https://timer.backroomswiki.cn'];
 const isDev = process.env.NODE_ENV !== 'production';
 
 const nextConfig = {
+    outputFileTracingIncludes: {
+        '/*': ['./wikitdb.config.js', './content/**/*'],
+    },
     async rewrites() {
         return [
             // Honeypot traps for common attack paths
